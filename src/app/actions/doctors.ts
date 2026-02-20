@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { deleteDoctor as deleteDoctorQuery } from "@/db/queries/doctors";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { users, doctors, clinicDoctors, clinicUsers, doctorSpecialties } from "@/db/schema";
+import { users, doctors, clinicDoctors, clinicUsers, doctorSpecialties, doctorPracticeAreas } from "@/db/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 
@@ -16,6 +16,7 @@ const createDoctorSchema = z.object({
     crm: z.string().optional(),
     crmState: z.string().optional(),
     specialtyIds: z.array(z.string().uuid()).optional(),
+    practiceAreaIds: z.array(z.string().uuid()).optional(),
 });
 
 export async function createDoctorAction(formData: FormData) {
@@ -27,9 +28,11 @@ export async function createDoctorAction(formData: FormData) {
     }
 
     const specialtyIdsRaw = formData.getAll("specialtyIds");
+    const practiceAreaIdsRaw = formData.getAll("practiceAreaIds");
     const data = {
         ...Object.fromEntries(formData),
         specialtyIds: specialtyIdsRaw,
+        practiceAreaIds: practiceAreaIdsRaw,
     };
 
     const parsed = createDoctorSchema.safeParse(data);
@@ -38,7 +41,7 @@ export async function createDoctorAction(formData: FormData) {
         return { error: "Dados inválidos", details: parsed.error.flatten() };
     }
 
-    const { name, email, password, crm, crmState, specialtyIds } = parsed.data;
+    const { name, email, password, crm, crmState, specialtyIds, practiceAreaIds } = parsed.data;
 
     try {
         // Check if user exists
@@ -92,6 +95,16 @@ export async function createDoctorAction(formData: FormData) {
             );
         }
 
+        // 6. Link to practice areas if provided
+        if (practiceAreaIds && practiceAreaIds.length > 0) {
+            await db.insert(doctorPracticeAreas).values(
+                practiceAreaIds.map(id => ({
+                    doctorId: newDoctor.id,
+                    practiceAreaId: id,
+                }))
+            );
+        }
+
         revalidatePath("/doctors");
         return { success: true };
     } catch (error: any) {
@@ -124,6 +137,7 @@ const updateDoctorSchema = z.object({
     crm: z.string().optional(),
     crmState: z.string().optional(),
     specialtyIds: z.array(z.string().uuid()).optional(),
+    practiceAreaIds: z.array(z.string().uuid()).optional(),
 });
 
 export async function updateDoctorAction(formData: FormData) {
@@ -135,9 +149,11 @@ export async function updateDoctorAction(formData: FormData) {
     }
 
     const specialtyIdsRaw = formData.getAll("specialtyIds");
+    const practiceAreaIdsRaw = formData.getAll("practiceAreaIds");
     const data = {
         ...Object.fromEntries(formData),
         specialtyIds: specialtyIdsRaw,
+        practiceAreaIds: practiceAreaIdsRaw,
     };
 
     const parsed = updateDoctorSchema.safeParse(data);
@@ -146,7 +162,7 @@ export async function updateDoctorAction(formData: FormData) {
         return { error: "Dados inválidos", details: parsed.error.flatten() };
     }
 
-    const { id: doctorId, name, email, crm, crmState, specialtyIds } = parsed.data;
+    const { id: doctorId, name, email, crm, crmState, specialtyIds, practiceAreaIds } = parsed.data;
 
     try {
         // 1. Get doctor to find userId
@@ -183,6 +199,21 @@ export async function updateDoctorAction(formData: FormData) {
                     specialtyIds.map(id => ({
                         doctorId,
                         specialtyId: id,
+                    }))
+                );
+            }
+        }
+
+        // 5. Update Practice Areas
+        if (practiceAreaIds) {
+            // Delete existing and insert new
+            await db.delete(doctorPracticeAreas).where(eq(doctorPracticeAreas.doctorId, doctorId));
+
+            if (practiceAreaIds.length > 0) {
+                await db.insert(doctorPracticeAreas).values(
+                    practiceAreaIds.map(id => ({
+                        doctorId,
+                        practiceAreaId: id,
                     }))
                 );
             }

@@ -48,6 +48,10 @@ const data = {
                     url: "/specialties",
                 },
                 {
+                    title: "Áreas de Atuação",
+                    url: "/practice-areas",
+                },
+                {
                     title: "Planos/Pacotes",
                     url: "/packages",
                 },

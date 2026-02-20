@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Mail, Lock, Check, Pencil } from "lucide-react";
 import { updateDoctorAction } from "@/app/actions/doctors";
 import { getSpecialtiesAction } from "@/app/actions/specialties";
+import { getPracticeAreasAction } from "@/app/actions/practice-areas";
 import { toast } from "sonner";
 import ReactSelect from "react-select";
 
@@ -34,7 +35,64 @@ const doctorFormSchema = z.object({
     crm: z.string().optional(),
     crmState: z.string().optional(),
     specialtyIds: z.array(z.string()).min(1, "Selecione pelo menos uma especialidade"),
+    practiceAreaIds: z.array(z.string()).optional(),
 });
+
+const customSelectStyles = {
+    control: (base: any, state: any) => ({
+        ...base,
+        backgroundColor: "rgba(var(--muted), 0.3)",
+        borderColor: state.isFocused ? "rgba(var(--primary), 0.3)" : "rgba(var(--muted-foreground), 0.1)",
+        borderRadius: "0.5rem",
+        minHeight: "44px",
+        boxShadow: "none",
+        "&:hover": {
+            borderColor: "rgba(var(--primary), 0.3)",
+        }
+    }),
+    menu: (base: any) => ({
+        ...base,
+        backgroundColor: "white",
+        borderRadius: "0.75rem",
+        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+        padding: "4px",
+        zIndex: 50,
+    }),
+    option: (base: any, state: any) => ({
+        ...base,
+        borderRadius: "0.5rem",
+        backgroundColor: state.isSelected
+            ? "hsl(var(--primary))"
+            : state.isFocused
+                ? "hsl(var(--primary) / 0.1)"
+                : "transparent",
+        color: state.isSelected ? "white" : "inherit",
+        "&:active": {
+            backgroundColor: "hsl(var(--primary) / 0.2)",
+        }
+    }),
+    multiValue: (base: any) => ({
+        ...base,
+        backgroundColor: "hsl(var(--primary) / 0.1)",
+        borderRadius: "1rem",
+        padding: "2px 8px",
+    }),
+    multiValueLabel: (base: any) => ({
+        ...base,
+        color: "hsl(var(--primary))",
+        fontWeight: "500",
+        fontSize: "12px",
+    }),
+    multiValueRemove: (base: any) => ({
+        ...base,
+        color: "hsl(var(--primary))",
+        "&:hover": {
+            backgroundColor: "hsl(var(--primary) / 0.2)",
+            color: "hsl(var(--primary))",
+            borderRadius: "1rem",
+        }
+    })
+};
 
 type DoctorFormValues = z.infer<typeof doctorFormSchema>;
 
@@ -46,6 +104,7 @@ interface EditDoctorDialogProps {
         crm: string | null;
         crmState: string | null;
         specialties: { id: string; name: string }[];
+        practiceAreas: { id: string; name: string }[];
     };
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
@@ -54,6 +113,7 @@ interface EditDoctorDialogProps {
 export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDialogProps) {
     const [isPending, setIsPending] = useState(false);
     const [specialties, setSpecialties] = useState<{ value: string; label: string }[]>([]);
+    const [practiceAreas, setPracticeAreas] = useState<{ value: string; label: string }[]>([]);
 
     const form = useForm<DoctorFormValues>({
         resolver: zodResolver(doctorFormSchema),
@@ -64,6 +124,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
             crm: doctor.crm || "",
             crmState: doctor.crmState || "",
             specialtyIds: [],
+            practiceAreaIds: [],
         },
     });
 
@@ -74,6 +135,11 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                     setSpecialties(result.data.map(s => ({ value: s.id, label: s.name })));
                 }
             });
+            getPracticeAreasAction().then((result) => {
+                if (result.success && result.data) {
+                    setPracticeAreas(result.data.map(pa => ({ value: pa.id, label: pa.name })));
+                }
+            });
             form.reset({
                 id: doctor.id,
                 name: doctor.name || "",
@@ -81,6 +147,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                 crm: doctor.crm || "",
                 crmState: doctor.crmState || "",
                 specialtyIds: doctor.specialties.map(s => s.id),
+                practiceAreaIds: doctor.practiceAreas.map(pa => pa.id),
             });
         }
     }, [isOpen, doctor, form]);
@@ -92,6 +159,8 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
         Object.entries(values).forEach(([key, value]) => {
             if (key === "specialtyIds" && Array.isArray(value)) {
                 value.forEach(id => formData.append("specialtyIds", id));
+            } else if (key === "practiceAreaIds" && Array.isArray(value)) {
+                value.forEach(id => formData.append("practiceAreaIds", id));
             } else if (value) {
                 formData.append(key, value as string);
             }
@@ -205,62 +274,31 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                                                 options={specialties}
                                                 className="react-select-container"
                                                 classNamePrefix="react-select"
-                                                styles={{
-                                                    control: (base, state) => ({
-                                                        ...base,
-                                                        backgroundColor: "rgba(var(--muted), 0.3)",
-                                                        borderColor: state.isFocused ? "rgba(var(--primary), 0.3)" : "rgba(var(--muted-foreground), 0.1)",
-                                                        borderRadius: "0.5rem",
-                                                        minHeight: "44px",
-                                                        boxShadow: "none",
-                                                        "&:hover": {
-                                                            borderColor: "rgba(var(--primary), 0.3)",
-                                                        }
-                                                    }),
-                                                    menu: (base) => ({
-                                                        ...base,
-                                                        backgroundColor: "white",
-                                                        borderRadius: "0.75rem",
-                                                        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
-                                                        padding: "4px",
-                                                        zIndex: 50,
-                                                    }),
-                                                    option: (base, state) => ({
-                                                        ...base,
-                                                        borderRadius: "0.5rem",
-                                                        backgroundColor: state.isSelected
-                                                            ? "hsl(var(--primary))"
-                                                            : state.isFocused
-                                                                ? "hsl(var(--primary) / 0.1)"
-                                                                : "transparent",
-                                                        color: state.isSelected ? "white" : "inherit",
-                                                        "&:active": {
-                                                            backgroundColor: "hsl(var(--primary) / 0.2)",
-                                                        }
-                                                    }),
-                                                    multiValue: (base) => ({
-                                                        ...base,
-                                                        backgroundColor: "hsl(var(--primary) / 0.1)",
-                                                        borderRadius: "1rem",
-                                                        padding: "2px 8px",
-                                                    }),
-                                                    multiValueLabel: (base) => ({
-                                                        ...base,
-                                                        color: "hsl(var(--primary))",
-                                                        fontWeight: "500",
-                                                        fontSize: "12px",
-                                                    }),
-                                                    multiValueRemove: (base) => ({
-                                                        ...base,
-                                                        color: "hsl(var(--primary))",
-                                                        "&:hover": {
-                                                            backgroundColor: "hsl(var(--primary) / 0.2)",
-                                                            color: "hsl(var(--primary))",
-                                                            borderRadius: "1rem",
-                                                        }
-                                                    })
-                                                }}
+                                                styles={customSelectStyles}
                                                 value={specialties.filter(s => field.value?.includes(s.value))}
+                                                onChange={(val) => field.onChange(val.map(v => v.value))}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="practiceAreaIds"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Áreas de Atuação</FormLabel>
+                                        <FormControl>
+                                            <ReactSelect
+                                                isMulti
+                                                placeholder="Selecione as áreas de atuação..."
+                                                options={practiceAreas}
+                                                className="react-select-container"
+                                                classNamePrefix="react-select"
+                                                styles={customSelectStyles}
+                                                value={practiceAreas.filter(pa => field.value?.includes(pa.value))}
                                                 onChange={(val) => field.onChange(val.map(v => v.value))}
                                             />
                                         </FormControl>

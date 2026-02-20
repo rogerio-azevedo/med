@@ -42,6 +42,7 @@ interface Doctor {
     crmState: string | null
     email: string | null
     specialties: { id: string; name: string }[]
+    practiceAreas: { id: string; name: string }[]
 }
 
 export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
@@ -77,6 +78,7 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
                         <TableRow>
                             <TableHead>Nome</TableHead>
                             <TableHead>Especialidade</TableHead>
+                            <TableHead>Áreas de Atuação</TableHead>
                             <TableHead>CRM / Registro</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead className="text-right">Ações</TableHead>
@@ -85,7 +87,7 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
                     <TableBody>
                         {doctors.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">
+                                <TableCell colSpan={6} className="h-24 text-center">
                                     Nenhum médico encontrado.
                                 </TableCell>
                             </TableRow>
@@ -99,6 +101,19 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
                                                 doctor.specialties.map((s) => (
                                                     <Badge key={s.id} variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-none">
                                                         {s.name}
+                                                    </Badge>
+                                                ))
+                                            ) : (
+                                                <span className="text-muted-foreground/50">-</span>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-wrap gap-1">
+                                            {doctor.practiceAreas && doctor.practiceAreas.length > 0 ? (
+                                                doctor.practiceAreas.map((pa) => (
+                                                    <Badge key={pa.id} variant="secondary" className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-none capitalize">
+                                                        {pa.name}
                                                     </Badge>
                                                 ))
                                             ) : (

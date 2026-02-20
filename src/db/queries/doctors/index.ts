@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { doctors, clinicDoctors, users, doctorSpecialties, specialties } from "@/db/schema";
+import { doctors, clinicDoctors, users, doctorSpecialties, specialties, doctorPracticeAreas, practiceAreas } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export async function getDoctorsByClinic(clinicId: string) {
@@ -12,12 +12,16 @@ export async function getDoctorsByClinic(clinicId: string) {
             email: users.email,
             specialtyId: specialties.id,
             specialtyName: specialties.name,
+            practiceAreaId: practiceAreas.id,
+            practiceAreaName: practiceAreas.name,
         })
         .from(doctors)
         .innerJoin(users, eq(doctors.userId, users.id))
         .innerJoin(clinicDoctors, eq(clinicDoctors.doctorId, doctors.id))
         .leftJoin(doctorSpecialties, eq(doctorSpecialties.doctorId, doctors.id))
         .leftJoin(specialties, eq(doctorSpecialties.specialtyId, specialties.id))
+        .leftJoin(doctorPracticeAreas, eq(doctorPracticeAreas.doctorId, doctors.id))
+        .leftJoin(practiceAreas, eq(doctorPracticeAreas.practiceAreaId, practiceAreas.id))
         .where(
             and(
                 eq(clinicDoctors.clinicId, clinicId),
@@ -29,18 +33,32 @@ export async function getDoctorsByClinic(clinicId: string) {
 
     for (const row of rawResults) {
         if (!doctorsMap.has(row.id)) {
-            const { specialtyId, specialtyName, ...doctorData } = row;
+            const { specialtyId, specialtyName, practiceAreaId, practiceAreaName, ...doctorData } = row;
             doctorsMap.set(row.id, {
                 ...doctorData,
                 specialties: [],
+                practiceAreas: [],
             });
         }
 
         if (row.specialtyId && row.specialtyName) {
-            doctorsMap.get(row.id).specialties.push({
-                id: row.specialtyId,
-                name: row.specialtyName,
-            });
+            const doctor = doctorsMap.get(row.id);
+            if (!doctor.specialties.some((s: any) => s.id === row.specialtyId)) {
+                doctor.specialties.push({
+                    id: row.specialtyId,
+                    name: row.specialtyName,
+                });
+            }
+        }
+
+        if (row.practiceAreaId && row.practiceAreaName) {
+            const doctor = doctorsMap.get(row.id);
+            if (!doctor.practiceAreas.some((p: any) => p.id === row.practiceAreaId)) {
+                doctor.practiceAreas.push({
+                    id: row.practiceAreaId,
+                    name: row.practiceAreaName,
+                });
+            }
         }
     }
 
