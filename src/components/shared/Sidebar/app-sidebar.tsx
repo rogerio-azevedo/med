@@ -104,12 +104,12 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
 
     return (
         <Sidebar collapsible="icon" {...props}>
-            <SidebarHeader>
-                <div className="flex items-center gap-2 px-2 py-4">
-                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <SidebarHeader className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
+                <div className="flex items-center gap-2 py-4">
+                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground group-data-[collapsible=icon]:size-8">
                         <Stethoscope className="size-4" />
                     </div>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
+                    <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                         <span className="truncate font-semibold">med.system</span>
                         <span className="truncate text-xs">Gestão Médica</span>
                     </div>
