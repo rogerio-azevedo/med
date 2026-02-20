@@ -126,11 +126,18 @@ export const clinicPatients = pgTable("clinic_patients", {
     clinicId: uuid("clinic_id")
         .notNull()
         .references(() => clinics.id, { onDelete: "cascade" }),
-    responsibleDoctorId: uuid("responsible_doctor_id").references(
-        () => doctors.id
-    ),
     isActive: boolean("is_active").default(true).notNull(),
     enrolledAt: timestamp("enrolled_at").defaultNow().notNull(),
+});
+
+// 11.a Patient Doctors (N:N)
+export const patientDoctors = pgTable("patient_doctors", {
+    patientId: uuid("patient_id")
+        .notNull()
+        .references(() => patients.id, { onDelete: "cascade" }),
+    doctorId: uuid("doctor_id")
+        .notNull()
+        .references(() => doctors.id, { onDelete: "cascade" }),
 });
 
 // 12. Doctor Schedules

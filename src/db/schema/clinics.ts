@@ -11,7 +11,7 @@ import {
 import { users } from "./auth";
 
 // Enums
-export const roleEnum = pgEnum("role", ["admin", "doctor", "receptionist", "nurse"]);
+export const roleEnum = pgEnum("role", ["admin", "doctor", "receptionist", "nurse", "patient"]);
 export const entityTypeEnum = pgEnum("entity_type", ["clinic", "doctor", "patient"]);
 
 // 1. Clinics (Tenants)

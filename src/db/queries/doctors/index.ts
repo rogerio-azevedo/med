@@ -79,3 +79,21 @@ export async function deleteDoctor(doctorId: string, clinicId: string) {
 
     return { success: true };
 }
+
+export async function getDoctorsSimple(clinicId: string) {
+    return db
+        .select({
+            id: doctors.id,
+            name: users.name,
+        })
+        .from(doctors)
+        .innerJoin(users, eq(doctors.userId, users.id))
+        .innerJoin(clinicDoctors, eq(clinicDoctors.doctorId, doctors.id))
+        .where(
+            and(
+                eq(clinicDoctors.clinicId, clinicId),
+                eq(clinicDoctors.isActive, true)
+            )
+        )
+        .orderBy(users.name);
+}

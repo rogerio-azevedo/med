@@ -24,6 +24,18 @@ import {
 
 // This would ideally come from a central config or session
 const data = {
+    patient: [
+        {
+            title: "Dashboard",
+            url: "/dashboard",
+            icon: LayoutDashboard,
+        },
+        {
+            title: "Minhas Consultas",
+            url: "/schedule",
+            icon: Calendar,
+        },
+    ],
     navMain: [
         {
             title: "Dashboard",
@@ -88,6 +100,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
     const isSuperAdmin = user.role === "super_admin"
+    const isPatient = user.role === "patient"
 
     return (
         <Sidebar collapsible="icon" {...props}>
@@ -103,7 +116,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                 </div>
             </SidebarHeader>
             <SidebarContent>
-                <NavMain items={data.navMain} />
+                <NavMain items={isPatient ? data.patient : data.navMain} />
                 {isSuperAdmin && (
                     <NavMain items={data.admin} label="Administração" />
                 )}

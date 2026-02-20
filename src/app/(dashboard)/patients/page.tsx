@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { getPatientsByClinic } from "@/db/queries/patients";
+import { getDoctorsSimple } from "@/db/queries/doctors";
 import { PatientsTable } from "@/components/patients/PatientsTable";
 import { redirect } from "next/navigation";
 import { AddPatientDialog } from "@/components/patients/AddPatientDialog";
@@ -16,6 +17,7 @@ export default async function PatientsPage() {
     }
 
     const patients = await getPatientsByClinic(clinicId);
+    const doctors = await getDoctorsSimple(clinicId);
 
     return (
         <div className="flex flex-col gap-6 p-8">
@@ -37,11 +39,11 @@ export default async function PatientsPage() {
                             </Button>
                         }
                     />
-                    <AddPatientDialog />
+                    <AddPatientDialog doctors={doctors} />
                 </div>
             </div>
 
-            <PatientsTable patients={patients} />
+            <PatientsTable patients={patients} doctors={doctors} />
         </div>
     );
 }

@@ -29,10 +29,11 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog"
 import { useState } from "react"
 import { deletePatientAction } from "@/app/actions/patients"
+import { EditPatientDialog } from "../EditPatientDialog"
+import { toast } from "sonner"
 
 
 interface Patient {
@@ -43,10 +44,16 @@ interface Patient {
     phone: string | null
 }
 
-export function PatientsTable({ patients }: { patients: Patient[] }) {
+interface PatientsTableProps {
+    patients: Patient[];
+    doctors: { id: string; name: string | null }[];
+}
+
+export function PatientsTable({ patients, doctors }: PatientsTableProps) {
     const [isDeleting, setIsDeleting] = useState(false)
     const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
-    const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
     const handleDelete = async () => {
         if (!selectedPatient) return
@@ -55,13 +62,13 @@ export function PatientsTable({ patients }: { patients: Patient[] }) {
         try {
             const result = await deletePatientAction(selectedPatient.id)
             if (result.success) {
-                setIsDialogOpen(false)
-                // revalidatePath handles the UI update if it's a server component parent
+                setIsDeleteDialogOpen(false)
+                toast.success("Paciente excluído com sucesso")
             } else {
-                alert("Erro ao excluir paciente")
+                toast.error(result.error || "Erro ao excluir paciente")
             }
         } catch (error) {
-            alert("Erro ao excluir paciente")
+            toast.error("Erro ao excluir paciente")
         } finally {
             setIsDeleting(false)
             setSelectedPatient(null)
@@ -105,7 +112,12 @@ export function PatientsTable({ patients }: { patients: Patient[] }) {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                <DropdownMenuItem disabled>
+                                                <DropdownMenuItem
+                                                    onClick={() => {
+                                                        setSelectedPatient(patient)
+                                                        setIsEditDialogOpen(true)
+                                                    }}
+                                                >
                                                     <Pencil className="mr-2 h-4 w-4" />
                                                     Editar
                                                 </DropdownMenuItem>
@@ -114,7 +126,7 @@ export function PatientsTable({ patients }: { patients: Patient[] }) {
                                                     className="text-destructive focus:text-destructive"
                                                     onClick={() => {
                                                         setSelectedPatient(patient)
-                                                        setIsDialogOpen(true)
+                                                        setIsDeleteDialogOpen(true)
                                                     }}
                                                 >
                                                     <Trash2 className="mr-2 h-4 w-4" />
@@ -130,7 +142,7 @@ export function PatientsTable({ patients }: { patients: Patient[] }) {
                 </Table>
             </div>
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Excluir Paciente</DialogTitle>
@@ -143,7 +155,7 @@ export function PatientsTable({ patients }: { patients: Patient[] }) {
                     <DialogFooter>
                         <Button
                             variant="outline"
-                            onClick={() => setIsDialogOpen(false)}
+                            onClick={() => setIsDeleteDialogOpen(false)}
                             disabled={isDeleting}
                         >
                             Cancelar
@@ -158,6 +170,15 @@ export function PatientsTable({ patients }: { patients: Patient[] }) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {selectedPatient && (
+                <EditPatientDialog
+                    patientId={selectedPatient.id}
+                    doctors={doctors}
+                    isOpen={isEditDialogOpen}
+                    onOpenChange={setIsEditDialogOpen}
+                />
+            )}
         </>
     )
 }

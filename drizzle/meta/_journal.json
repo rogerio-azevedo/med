@@ -36,6 +36,20 @@
       "when": 1771553257440,
       "tag": "0004_perfect_wrecking_crew",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1771589983411,
+      "tag": "0005_first_cerise",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1771592013154,
+      "tag": "0006_illegal_hardball",
+      "breakpoints": true
     }
   ]
 }
