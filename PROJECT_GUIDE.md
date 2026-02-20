@@ -1,28 +1,28 @@
 # PROJECT GUIDE — med
 
-> Documento central do projeto. Leia antes de contribuir.
-
----
-
-## Visão Geral
-
-Aplicação web desenvolvida com Next.js (App Router) para [descrever o propósito do sistema med].
+Sistema SaaS de **gestão médica multi-tenant** especializado em tireoide e câncer.  
+Modelo de negócio: venda de **pacotes de acompanhamento** com timeline completa por paciente.
 
 ---
 
 ## Stack
 
-| Categoria | Tecnologia |
-|-----------|-----------|
-| Framework | Next.js 15+ (App Router) |
-| Linguagem | TypeScript (strict) |
-| Estilos | Tailwind CSS v4 |
-| Componentes UI | shadcn/ui |
-| Selects | React-Select |
-| Banco de dados | PostgreSQL |
-| ORM | Drizzle |
-| Validação | Zod |
-| Gerenciador de pacotes | **pnpm** |
+| Categoria | Tecnologia | Versão |
+|-----------|-----------|--------|
+| Framework | Next.js (App Router) | 16.x |
+| Linguagem | TypeScript (strict) | 5.x |
+| Estilos | Tailwind CSS v4 | 4.x |
+| Componentes UI | shadcn/ui | latest |
+| Selects | react-select | 5.x |
+| Banco de dados | PostgreSQL | 15+ |
+| ORM | drizzle-orm | 0.45.x |
+| Migrations | drizzle-kit | 0.31.x |
+| Validação | Zod | 4.x |
+| Autenticação | next-auth | 4.x |
+| Driver PG | postgres | 3.x |
+| Pkg manager | **pnpm** | — |
+
+> **Nunca usar `npm` ou `yarn`** — somente `pnpm`.
 
 ---
 
@@ -37,108 +37,115 @@ Aplicação web desenvolvida com Next.js (App Router) para [descrever o propósi
 ## Instalação
 
 ```bash
-# 1. Instalar dependências
 pnpm install
-
-# 2. Configurar variáveis de ambiente
-cp .env.example .env.local
-# Editar .env.local com as credenciais do banco
-
-# 3. Executar migrations
-pnpm db:migrate
-
-# 4. Iniciar em desenvolvimento
-pnpm dev
+cp .env.example .env.local   # configurar variáveis
+pnpm db:migrate              # rodar migrations
+pnpm dev                     # http://localhost:3000
 ```
-
----
-
-## Estrutura do Projeto
-
-```
-src/
-├── app/                    # Next.js App Router
-│   ├── (auth)/             # Rotas de autenticação (login, registro)
-│   ├── (dashboard)/        # Área protegida (rotas autenticadas)
-│   └── api/                # Route Handlers (API REST interna)
-│
-├── components/             # Componentes React
-│   ├── ui/                 # shadcn/ui (gerado automaticamente)
-│   ├── shared/             # Componentes reutilizáveis entre rotas
-│   └── [rota]/             # Componentes específicos de cada tela
-│
-├── db/                     # Drizzle ORM
-│   ├── schema/             # Definição das tabelas
-│   └── queries/            # Queries organizadas por módulo
-│
-├── hooks/                  # Custom hooks (use-*.ts)
-├── lib/                    # Utilitários e helpers
-│   └── validations/        # Schemas Zod
-└── types/                  # Tipos TypeScript globais
-```
-
----
-
-## Convenção de Componentes
-
-Componentes são agrupados pela **rota em que são usados**:
-
-```
-components/
-  dashboard/
-    MetricCard/
-      index.tsx       ← Componente
-  financeiro/
-    contas-receber/
-      DebtorsTable/
-        index.tsx
-  shared/
-    DateFilter/
-      index.tsx       ← Reutilizado em múltiplas telas
-```
-
-**Regra geral:** `components/[rota]/[NomeComponente]/index.tsx`
-
----
-
-## Scripts Disponíveis
-
-```bash
-pnpm dev          # Servidor de desenvolvimento (http://localhost:3000)
-pnpm build        # Build de produção
-pnpm start        # Servidor de produção
-pnpm lint         # Checar erros de lint
-pnpm db:generate  # Gerar migrations (Drizzle)
-pnpm db:migrate   # Executar migrations
-pnpm db:studio    # Abrir Drizzle Studio (UI do banco)
-```
-
----
-
-## Guias Relacionados
-
-- [**Conventions Skill**](.agent/skills/project-conventions/SKILL.md) — Guia detalhado para LLMs com todas as regras de código
-- [**Vercel React Best Practices**](.agent/skills/vercel-react-best-practices/SKILL.md) — Performance e padrões React/Next.js
-- [**Web Design Guidelines**](.agent/skills/web-design-guidelines/SKILL.md) — Acessibilidade e UI
 
 ---
 
 ## Variáveis de Ambiente
 
 ```env
-# Banco de dados
 DATABASE_URL=postgresql://user:password@localhost:5432/med
-
-# Next.js
-NEXTAUTH_SECRET=
+NEXTAUTH_SECRET=sua-chave-secreta
 NEXTAUTH_URL=http://localhost:3000
 ```
 
 ---
 
-## Contribuição
+## Scripts
 
-1. Antes de criar qualquer arquivo, leia o guia de convenções em `.agent/skills/project-conventions/SKILL.md`
-2. Use `pnpm` exclusivamente para gerenciar pacotes
-3. Todo PR deve passar no `pnpm lint` sem erros
-4. Componentes novos precisam de tipos TypeScript explícitos (sem `any`)
+```bash
+pnpm dev           # Servidor de desenvolvimento
+pnpm build         # Build de produção
+pnpm lint          # ESLint
+pnpm db:generate   # Gerar migrations (Drizzle)
+pnpm db:migrate    # Executar migrations
+pnpm db:studio     # Drizzle Studio (UI do banco)
+```
+
+---
+
+## Estrutura de Pastas
+
+```
+src/
+├── app/
+│   ├── (auth)/             # Login, registro
+│   ├── (dashboard)/        # Área autenticada
+│   └── api/                # Route Handlers
+├── components/
+│   ├── ui/                 # shadcn/ui (gerado)
+│   ├── shared/             # Componentes reutilizáveis
+│   └── [rota]/             # Componentes por tela
+├── db/
+│   ├── index.ts            # Cliente Drizzle
+│   ├── schema/             # Definição das tabelas
+│   └── queries/            # Queries por módulo
+├── hooks/                  # use-*.ts
+├── lib/
+│   ├── utils.ts            # cn() e helpers
+│   └── validations/        # Schemas Zod
+└── types/                  # Tipos globais
+```
+
+### Regra de componentes
+
+```
+components/[rota]/[NomeComponente]/index.tsx
+```
+
+Exemplos:
+- `components/dashboard/MetricCard/index.tsx`
+- `components/patients/PatientForm/index.tsx`
+- `components/shared/DateFilter/index.tsx`
+
+---
+
+## Modelo de Dados (18 entidades)
+
+### Multi-tenant
+> Toda query **deve** filtrar por `clinic_id`. Nunca retornar dados sem escopo de tenant.
+
+### Entidades
+
+| Entidade | Descrição |
+|----------|-----------|
+| `clinics` | Tenant raiz — clínica ou hospital |
+| `users` | Contas de acesso (gerenciadas pelo NextAuth) |
+| `clinic_users` | Vínculo user ↔ clinic + role (`admin`, `doctor`, `receptionist`, `nurse`) |
+| `addresses` | Endereços polimórficos: clínica (1), médico (N), paciente (N) |
+| `specialties` | Especialidades médicas globais |
+| `practice_areas` | Áreas de atuação — **independente** de specialties |
+| `doctors` | Perfil profissional global (pode estar em múltiplas clínicas) |
+| `clinic_doctors` | Vínculo doctor ↔ clinic |
+| `doctor_specialties` | N:N médico ↔ especialidade |
+| `doctor_practice_areas` | N:N médico ↔ área de atuação |
+| `patients` | Paciente global por **CPF único** |
+| `clinic_patients` | Vínculo patient ↔ clinic (deduplicação por CPF) |
+| `doctor_schedules` | Disponibilidade do médico por dia da semana |
+| `appointments` | Agendamentos (presencial, remoto, phone, whatsapp) |
+| `service_records` | **Timeline do paciente** — todo atendimento registrado |
+| `medical_records` | Prontuário eletrônico (1:1 com service_records clínicos) |
+| `care_packages` | Pacotes de acompanhamento oferecidos pela clínica |
+| `patient_packages` | Pacote comprado pelo paciente (controle de uso) |
+
+### Tipos de atendimento (`service_records.type`)
+`consultation` · `remote` · `phone` · `whatsapp` · `exam_review` · `other`
+
+### Fora do MVP
+- Financeiro (invoices, pagamentos)
+- Multi-tenant URL / subdomínio por clínica
+
+---
+
+## Guias
+
+| Guia | Finalidade |
+|------|-----------|
+| [project-conventions](.agent/skills/project-conventions/SKILL.md) | Regras para LLMs — ler antes de criar qualquer arquivo |
+| [vercel-react-best-practices](.agent/skills/vercel-react-best-practices/SKILL.md) | Performance React/Next.js |
+| [web-design-guidelines](.agent/skills/web-design-guidelines/SKILL.md) | Acessibilidade e UI |
+| [entity-proposal](../../.gemini/antigravity/brain/f5bf5ca9-7482-4d8b-9bf1-61351bb60596/entity-proposal.md) | Entidades detalhadas com todos os campos |

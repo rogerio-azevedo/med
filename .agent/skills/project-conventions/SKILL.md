@@ -35,15 +35,16 @@ metadata:
 
 | Camada | Tecnologia | Observações |
 |--------|-----------|-------------|
-| Framework | **Next.js 16+** (App Router) | Sempre usar App Router, nunca Pages Router |
-| Linguagem | **TypeScript** (strict mode) | Proibido usar `any`; prefira tipos explícitos |
+| Framework | **Next.js 16** (App Router) | Sempre usar App Router, nunca Pages Router |
+| Linguagem | **TypeScript 5** (strict mode) | Proibido usar `any`; prefira tipos explícitos |
 | Estilos | **Tailwind CSS v4** | Utility-first; evitar CSS inline ou módulos CSS |
 | Componentes UI | **shadcn/ui** | Instalar via `pnpm dlx shadcn@latest add <component>` |
-| Selects | **React-Select** | Usar para todos os dropdowns/multi-selects complexos |
-| Banco de dados | **PostgreSQL** | Via Drizzle ORM |
-| ORM | **Drizzle** | Schema em `src/db/schema`; queries em `src/db/queries` |
-| Validação | **Zod** | Validar toda entrada de dados: forms, API routes, env |
-| Autenticação | **NextAuth v5 (Auth.js)** | Sessão server-side; roles via JWT/session callback |
+| Selects | **react-select 5** | Usar para todos os dropdowns/multi-selects complexos |
+| Banco de dados | **PostgreSQL 15+** | Via Drizzle ORM |
+| ORM | **drizzle-orm 0.45** | Schema em `src/db/schema`; queries em `src/db/queries` |
+| Driver PG | **postgres 3** | Driver nativo para PostgreSQL |
+| Validação | **Zod 4** | Validar toda entrada de dados: forms, API routes, env |
+| Autenticação | **next-auth v4** | Sessão server-side; roles via JWT/session callback |
 | Gerenciador de pacotes | **pnpm** | **Nunca usar npm ou yarn** |
 
 ---
