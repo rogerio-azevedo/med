@@ -10,7 +10,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { clinics } from "./clinics";
 
-export const inviteRoleEnum = pgEnum("invite_role", ["doctor", "patient"]);
+export const inviteRoleEnum = pgEnum("invite_role", ["admin", "doctor", "patient"]);
+
 
 export const inviteLinks = pgTable("invite_links", {
     id: uuid("id").primaryKey().defaultRandom(),

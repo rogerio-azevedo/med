@@ -1,10 +1,17 @@
 import { signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 
 export function Header() {
     return (
-        <header className="h-16 border-b bg-card flex items-center justify-between px-6">
-            <h2 className="text-lg font-semibold">Dashboard</h2>
+        <header className="h-16 border-b bg-card flex items-center justify-between px-4 shrink-0 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+            <div className="flex items-center gap-2">
+                <SidebarTrigger className="-ml-1" />
+                <Separator orientation="vertical" className="mr-2 h-4" />
+                <h2 className="text-sm font-semibold md:text-lg">Dashboard</h2>
+            </div>
+
             <form
                 action={async () => {
                     "use server";
@@ -18,3 +25,4 @@ export function Header() {
         </header>
     );
 }
+

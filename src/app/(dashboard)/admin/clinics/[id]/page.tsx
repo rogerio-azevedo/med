@@ -43,9 +43,11 @@ export default async function ClinicDashboardPage({ params }: ClinicDashboardPro
                         <CardTitle>Gerar Convites</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <InviteGenerator clinicId={clinic.id} role="admin" />
                         <InviteGenerator clinicId={clinic.id} role="doctor" />
                         <InviteGenerator clinicId={clinic.id} role="patient" />
                     </CardContent>
+
                 </Card>
 
                 <Card>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useActionState } from "react";
 
-export function InviteGenerator({ clinicId, role }: { clinicId: string, role: "doctor" | "patient" }) {
+export function InviteGenerator({ clinicId, role }: { clinicId: string, role: "admin" | "doctor" | "patient" }) {
     const [lastCode, setLastCode] = useState<string | null>(null);
 
     const generate = async () => {
@@ -19,9 +19,16 @@ export function InviteGenerator({ clinicId, role }: { clinicId: string, role: "d
         }
     };
 
+    const roleLabel = {
+        admin: "Administrador da Clínica",
+        doctor: "Médico",
+        patient: "Paciente"
+    }[role];
+
     return (
         <div className="flex flex-col gap-2 p-4 border rounded-lg">
-            <h3 className="font-semibold text-sm">Convite para {role === 'doctor' ? 'Médico' : 'Paciente'}</h3>
+            <h3 className="font-semibold text-sm">Convite para {roleLabel}</h3>
+
             <div className="flex gap-2 items-center">
                 <Button onClick={generate} size="sm" variant="outline">
                     Gerar Novo Link

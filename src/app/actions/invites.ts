@@ -9,18 +9,24 @@ import { z } from "zod";
 
 const generateInviteSchema = z.object({
     clinicId: z.string().uuid(),
-    role: z.enum(["doctor", "patient"]),
+    role: z.enum(["admin", "doctor", "patient"]),
 });
+
 
 export async function generateInvite(formData: FormData) {
     const session = await auth();
 
-    if (session?.user?.role !== "super_admin") { // And later clinic_admin
+    if (session?.user?.role !== "super_admin" && session?.user?.role !== "admin") {
         throw new Error("Unauthorized");
     }
 
     const clinicId = formData.get("clinicId") as string;
-    const role = formData.get("role") as "doctor" | "patient";
+    const role = formData.get("role") as "admin" | "doctor" | "patient";
+
+    if (role === "admin" && session?.user?.role !== "super_admin") {
+        throw new Error("Only super admins can generate admin invites");
+    }
+
 
     const validated = generateInviteSchema.safeParse({ clinicId, role });
 

@@ -196,6 +196,13 @@ export async function register(prevState: any, formData: FormData) {
                     patientId: newPatient.id,
                     clinicId: inviteData.clinicId,
                 });
+            } else if (inviteData.role === 'admin') {
+                // Link to clinicUsers as admin
+                await db.insert(clinicUsers).values({
+                    userId: newUser.id,
+                    clinicId: inviteData.clinicId,
+                    role: 'admin',
+                });
             }
 
             // Save address if present
