@@ -31,7 +31,7 @@ const data = {
             icon: LayoutDashboard,
         },
         {
-            title: "Cadastro",
+            title: "Cadastros",
             url: "#",
             icon: ClipboardList,
             items: [
