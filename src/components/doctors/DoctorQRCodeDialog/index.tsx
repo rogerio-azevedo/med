@@ -38,15 +38,15 @@ export function DoctorQRCodeDialog({
         : null;
 
     const handleCopy = async () => {
-        if (!registerUrl) return;
-        await navigator.clipboard.writeText(registerUrl);
+        if (!inviteCode) return;
+        await navigator.clipboard.writeText(registerUrl!);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md max-w-[calc(100vw-2rem)] overflow-hidden">
                 <DialogHeader>
                     <div className="flex items-center gap-2">
                         <div className="p-2 bg-primary/10 rounded-lg text-primary">
@@ -76,7 +76,7 @@ export function DoctorQRCodeDialog({
                         </p>
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center gap-5 py-2">
+                    <div className="flex flex-col items-center gap-5 py-2 w-full min-w-0">
                         {/* QR Code */}
                         <div className="p-4 bg-white rounded-2xl shadow-sm border border-border">
                             <QRCodeSVG
@@ -98,7 +98,7 @@ export function DoctorQRCodeDialog({
                         </p>
 
                         {/* URL box */}
-                        <div className="w-full rounded-xl border bg-muted/50 px-3 py-2.5 flex items-center gap-2 overflow-hidden">
+                        <div className="w-full min-w-0 rounded-xl border bg-muted/50 px-3 py-2.5 flex items-center gap-2 overflow-hidden">
                             <span className="flex-1 min-w-0 text-xs text-muted-foreground truncate font-mono">
                                 {registerUrl}
                             </span>
