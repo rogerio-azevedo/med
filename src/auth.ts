@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/db";
 import { authConfig } from "./auth.config";
-import { accounts, sessions, users, verificationTokens, clinicUsers } from "@/db/schema";
+import { accounts, sessions, users, verificationTokens, clinicUsers, patients, clinicPatients } from "@/db/schema";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
@@ -37,15 +37,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     const passwordsMatch = await bcrypt.compare(password, user.password);
 
                     if (passwordsMatch) {
-                        const clinicLink = await db.query.clinicUsers.findFirst({
-                            where: eq(clinicUsers.userId, user.id),
-                        });
+                        let clinicId: string | undefined;
+
+                        if (user.role === "patient") {
+                            const patient = await db.query.patients.findFirst({
+                                where: eq(patients.userId, user.id),
+                            });
+                            if (patient) {
+                                const clinicLink = await db.query.clinicPatients.findFirst({
+                                    where: eq(clinicPatients.patientId, patient.id),
+                                });
+                                clinicId = clinicLink?.clinicId;
+                            }
+                        } else {
+                            const clinicLink = await db.query.clinicUsers.findFirst({
+                                where: eq(clinicUsers.userId, user.id),
+                            });
+                            clinicId = clinicLink?.clinicId;
+                        }
+
                         return {
                             id: user.id,
                             name: user.name,
                             email: user.email,
                             role: user.role,
-                            clinicId: clinicLink?.clinicId
+                            clinicId: clinicId
                         };
                     }
                 }
