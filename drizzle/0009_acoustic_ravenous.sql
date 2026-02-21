@@ -1,0 +1,2 @@
+ALTER TABLE "invite_links" ADD COLUMN "doctor_id" uuid;--> statement-breakpoint
+ALTER TABLE "invite_links" ADD CONSTRAINT "invite_links_doctor_id_doctors_id_fk" FOREIGN KEY ("doctor_id") REFERENCES "public"."doctors"("id") ON DELETE cascade ON UPDATE no action;

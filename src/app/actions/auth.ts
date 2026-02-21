@@ -2,7 +2,7 @@
 
 import { signIn } from "@/auth";
 import { db } from "@/db";
-import { users, inviteLinks, clinicUsers, doctors, clinicDoctors, patients, clinicPatients, clinics, addresses } from "@/db/schema";
+import { users, inviteLinks, clinicUsers, doctors, clinicDoctors, patients, clinicPatients, clinics, addresses, patientDoctors } from "@/db/schema";
 import { AuthError } from "next-auth";
 import { eq, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
@@ -182,6 +182,15 @@ export async function register(prevState: any, formData: FormData) {
                     clinicId: inviteData.clinicId,
                 });
 
+                // Auto-generate a patient invite code tied to this doctor
+                const doctorInviteCode = crypto.randomUUID().replace(/-/g, "").substring(0, 12).toUpperCase();
+                await db.insert(inviteLinks).values({
+                    clinicId: inviteData.clinicId,
+                    doctorId: newDoctor.id,
+                    role: "patient",
+                    code: doctorInviteCode,
+                });
+
             } else if (inviteData.role === 'patient') {
                 entityType = "patient";
                 // Create entry in 'patients' table
@@ -201,6 +210,14 @@ export async function register(prevState: any, formData: FormData) {
                     patientId: newPatient.id,
                     clinicId: inviteData.clinicId,
                 });
+
+                // If the invite came from a doctor, link the patient to that doctor
+                if (inviteData.doctorId) {
+                    await db.insert(patientDoctors).values({
+                        patientId: newPatient.id,
+                        doctorId: inviteData.doctorId,
+                    });
+                }
             } else if (inviteData.role === 'admin') {
                 // Link to clinicUsers as admin
                 await db.insert(clinicUsers).values({

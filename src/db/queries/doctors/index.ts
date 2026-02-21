@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { doctors, clinicDoctors, users, doctorSpecialties, specialties, doctorPracticeAreas, practiceAreas, addresses } from "@/db/schema";
+import { doctors, clinicDoctors, users, doctorSpecialties, specialties, doctorPracticeAreas, practiceAreas, addresses, inviteLinks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export async function getDoctorsByClinic(clinicId: string) {
@@ -15,6 +15,7 @@ export async function getDoctorsByClinic(clinicId: string) {
             specialtyName: specialties.name,
             practiceAreaId: practiceAreas.id,
             practiceAreaName: practiceAreas.name,
+            inviteCode: inviteLinks.code,
             address: {
                 id: addresses.id,
                 zipCode: addresses.zipCode,
@@ -42,6 +43,14 @@ export async function getDoctorsByClinic(clinicId: string) {
                 eq(addresses.entityType, "doctor")
             )
         )
+        .leftJoin(
+            inviteLinks,
+            and(
+                eq(inviteLinks.doctorId, doctors.id),
+                eq(inviteLinks.role, "patient"),
+                eq(inviteLinks.isActive, true)
+            )
+        )
         .where(
             and(
                 eq(clinicDoctors.clinicId, clinicId),
@@ -62,6 +71,8 @@ export async function getDoctorsByClinic(clinicId: string) {
                 specialties: [],
                 practiceAreas: [],
             });
+        } else if (row.inviteCode && !doctorsMap.get(row.id).inviteCode) {
+            doctorsMap.get(row.id).inviteCode = row.inviteCode;
         }
 
         if (row.specialtyId && row.specialtyName) {

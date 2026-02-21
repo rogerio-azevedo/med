@@ -4,6 +4,7 @@ import {
     MoreHorizontal,
     Pencil,
     Trash2,
+    QrCode,
 } from "lucide-react"
 import {
     Table,
@@ -34,6 +35,7 @@ import { useState } from "react"
 import { deleteDoctorAction } from "@/app/actions/doctors"
 import { Badge } from "@/components/ui/badge"
 import { EditDoctorDialog } from "../EditDoctorDialog"
+import { DoctorQRCodeDialog } from "../DoctorQRCodeDialog"
 
 interface Doctor {
     id: string
@@ -42,6 +44,7 @@ interface Doctor {
     crmState: string | null
     phone: string | null
     email: string | null
+    inviteCode: string | null
     specialties: { id: string; name: string }[]
     practiceAreas: { id: string; name: string }[]
     address?: {
@@ -60,6 +63,7 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
     const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+    const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
 
     const handleDelete = async () => {
         if (!selectedDoctor) return
@@ -146,6 +150,16 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
                                                 <DropdownMenuItem
                                                     onClick={() => {
                                                         setSelectedDoctor(doctor)
+                                                        setIsQrDialogOpen(true)
+                                                    }}
+                                                >
+                                                    <QrCode className="mr-2 h-4 w-4" />
+                                                    Ver QR Code
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    onClick={() => {
+                                                        setSelectedDoctor(doctor)
                                                         setIsEditDialogOpen(true)
                                                     }}
                                                 >
@@ -180,6 +194,13 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
                     onOpenChange={setIsEditDialogOpen}
                 />
             )}
+
+            <DoctorQRCodeDialog
+                isOpen={isQrDialogOpen}
+                onOpenChange={setIsQrDialogOpen}
+                doctorName={selectedDoctor?.name ?? null}
+                inviteCode={selectedDoctor?.inviteCode ?? null}
+            />
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>
