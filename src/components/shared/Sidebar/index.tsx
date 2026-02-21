@@ -11,11 +11,14 @@ export async function Sidebar() {
     return (
         <aside className="w-64 bg-card border-r flex flex-col h-full">
             <div className="p-6 border-b">
-                <h1 className="text-xl font-bold tracking-tight">med.system</h1>
+                <h1 className="text-xl font-bold tracking-tight">Med</h1>
             </div>
             <nav className="flex-1 p-4 space-y-2">
                 <Button variant="ghost" className="w-full justify-start" asChild>
                     <Link href="/dashboard">Dashboard</Link>
+                </Button>
+                <Button variant="ghost" className="w-full justify-start text-indigo-600" asChild>
+                    <Link href="/maps">🗺️ Mapa de Profissionais</Link>
                 </Button>
 
                 {isSuperAdmin && (

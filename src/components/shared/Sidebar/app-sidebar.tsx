@@ -110,7 +110,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                         <Stethoscope className="size-4" />
                     </div>
                     <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                        <span className="truncate font-semibold">med.system</span>
+                        <span className="truncate font-semibold">Med</span>
                         <span className="truncate text-xs">Gestão Médica</span>
                     </div>
                 </div>

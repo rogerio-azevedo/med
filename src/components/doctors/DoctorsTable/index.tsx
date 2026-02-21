@@ -43,6 +43,15 @@ interface Doctor {
     email: string | null
     specialties: { id: string; name: string }[]
     practiceAreas: { id: string; name: string }[]
+    address?: {
+        zipCode?: string | null;
+        street?: string | null;
+        number?: string | null;
+        complement?: string | null;
+        neighborhood?: string | null;
+        city?: string | null;
+        state?: string | null;
+    } | null;
 }
 
 export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {

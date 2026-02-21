@@ -1,0 +1,22 @@
+/* Custom styles for map filter component */
+
+.filter-panel {
+    transition: box-shadow 0.2s ease-in-out;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+}
+
+.filter-panel:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Dragging state */
+.filter-panel.dragging {
+    user-select: none;
+    pointer-events: none;
+    transform: translate3d(0, 0, 0);
+}
+
+.filter-panel.dragging * {
+    pointer-events: none;
+}

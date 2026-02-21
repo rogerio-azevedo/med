@@ -7,6 +7,7 @@ import {
     jsonb,
     text,
     pgEnum,
+    doublePrecision,
 } from "drizzle-orm/pg-core";
 import { users } from "./auth";
 
@@ -55,5 +56,7 @@ export const addresses = pgTable("addresses", {
     state: varchar("state", { length: 2 }),
     country: varchar("country", { length: 2 }).default("BR"),
     isPrimary: boolean("is_primary").default(false),
+    latitude: doublePrecision("latitude"),
+    longitude: doublePrecision("longitude"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });

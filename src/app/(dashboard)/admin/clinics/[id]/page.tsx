@@ -1,11 +1,12 @@
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { clinics, inviteLinks } from "@/db/schema";
+import { clinics, inviteLinks, addresses } from "@/db/schema";
 import { notFound, redirect } from "next/navigation";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InviteGenerator } from "@/components/dashboard/admin/InviteGenerator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AddressForm } from "@/components/shared/AddressForm";
 
 interface ClinicDashboardProps {
     params: Promise<{ id: string }>;
@@ -32,6 +33,10 @@ export default async function ClinicDashboardPage({ params }: ClinicDashboardPro
         orderBy: [desc(inviteLinks.createdAt)],
     });
 
+    const clinicAddress = await db.query.addresses.findFirst({
+        where: and(eq(addresses.entityId, id), eq(addresses.entityType, "clinic"))
+    });
+
     return (
         <div className="space-y-8">
             <h1 className="text-3xl font-bold">{clinic.name}</h1>
@@ -47,7 +52,6 @@ export default async function ClinicDashboardPage({ params }: ClinicDashboardPro
                         <InviteGenerator clinicId={clinic.id} role="doctor" />
                         <InviteGenerator clinicId={clinic.id} role="patient" />
                     </CardContent>
-
                 </Card>
 
                 <Card>
@@ -82,6 +86,14 @@ export default async function ClinicDashboardPage({ params }: ClinicDashboardPro
                         </Table>
                     </CardContent>
                 </Card>
+            </div>
+
+            <div className="max-w-2xl">
+                <AddressForm
+                    entityType="clinic"
+                    entityId={clinic.id}
+                    initialData={clinicAddress}
+                />
             </div>
         </div>
     );

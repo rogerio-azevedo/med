@@ -3,12 +3,11 @@
 import { auth } from "@/auth";
 import { eq } from "drizzle-orm";
 import { deleteDoctor as deleteDoctorQuery } from "@/db/queries/doctors";
-import { revalidatePath } from "next/cache";
-import { db } from "@/db";
-import { users, doctors, clinicDoctors, clinicUsers, doctorSpecialties, doctorPracticeAreas } from "@/db/schema";
+import { users, doctors, clinicDoctors, clinicUsers, doctorSpecialties, doctorPracticeAreas, addresses } from "@/db/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-
+import { revalidatePath } from "next/cache";
+import { db } from "@/db";
 const createDoctorSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
     email: z.string().email("Email inválido"),
@@ -17,6 +16,15 @@ const createDoctorSchema = z.object({
     crmState: z.string().optional(),
     specialtyIds: z.array(z.string().uuid()).optional(),
     practiceAreaIds: z.array(z.string().uuid()).optional(),
+    addressZipCode: z.string().optional(),
+    addressStreet: z.string().optional(),
+    addressNumber: z.string().optional(),
+    addressComplement: z.string().optional(),
+    addressNeighborhood: z.string().optional(),
+    addressCity: z.string().optional(),
+    addressState: z.string().optional(),
+    addressLatitude: z.coerce.number().optional(),
+    addressLongitude: z.coerce.number().optional(),
 });
 
 export async function createDoctorAction(formData: FormData) {
@@ -41,7 +49,11 @@ export async function createDoctorAction(formData: FormData) {
         return { error: "Dados inválidos", details: parsed.error.flatten() };
     }
 
-    const { name, email, password, crm, crmState, specialtyIds, practiceAreaIds } = parsed.data;
+    const {
+        name, email, password, crm, crmState, specialtyIds, practiceAreaIds,
+        addressZipCode, addressStreet, addressNumber, addressComplement,
+        addressNeighborhood, addressCity, addressState, addressLatitude, addressLongitude
+    } = parsed.data;
 
     try {
         // Check if user exists
@@ -105,6 +117,56 @@ export async function createDoctorAction(formData: FormData) {
             );
         }
 
+        // 7. Create Address if provided
+        if (addressStreet || addressZipCode) {
+            let lat = addressLatitude || null;
+            let lng = addressLongitude || null;
+
+            // Se a latitude e longitude não vieram do form, tenta buscar
+            if (!lat || !lng) {
+                let addressQuery = "";
+                if (addressStreet) addressQuery += addressStreet;
+                if (addressNumber) addressQuery += `, ${addressNumber}`;
+                if (addressNeighborhood) addressQuery += `, ${addressNeighborhood}`;
+                if (addressCity) addressQuery += ` - ${addressCity}`;
+                if (addressState) addressQuery += `, ${addressState}`;
+                if (addressZipCode) addressQuery += `, ${addressZipCode}`;
+
+                if (addressQuery) {
+                    try {
+                        const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/geocode`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ address: addressQuery })
+                        });
+                        if (res.ok) {
+                            const geoData = await res.json();
+                            if (geoData.items && geoData.items.length > 0) {
+                                lat = geoData.items[0].position.lat;
+                                lng = geoData.items[0].position.lng;
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Geocoding failed during doctor creation", e);
+                    }
+                }
+            }
+
+            await db.insert(addresses).values({
+                entityId: newDoctor.id,
+                entityType: "doctor",
+                zipCode: addressZipCode || null,
+                street: addressStreet || null,
+                number: addressNumber || null,
+                complement: addressComplement || null,
+                neighborhood: addressNeighborhood || null,
+                city: addressCity || null,
+                state: addressState || null,
+                latitude: lat,
+                longitude: lng,
+            });
+        }
+
         revalidatePath("/doctors");
         return { success: true };
     } catch (error: any) {
@@ -138,6 +200,15 @@ const updateDoctorSchema = z.object({
     crmState: z.string().optional(),
     specialtyIds: z.array(z.string().uuid()).optional(),
     practiceAreaIds: z.array(z.string().uuid()).optional(),
+    addressZipCode: z.string().optional(),
+    addressStreet: z.string().optional(),
+    addressNumber: z.string().optional(),
+    addressComplement: z.string().optional(),
+    addressNeighborhood: z.string().optional(),
+    addressCity: z.string().optional(),
+    addressState: z.string().optional(),
+    addressLatitude: z.coerce.number().optional(),
+    addressLongitude: z.coerce.number().optional(),
 });
 
 export async function updateDoctorAction(formData: FormData) {
@@ -162,7 +233,11 @@ export async function updateDoctorAction(formData: FormData) {
         return { error: "Dados inválidos", details: parsed.error.flatten() };
     }
 
-    const { id: doctorId, name, email, crm, crmState, specialtyIds, practiceAreaIds } = parsed.data;
+    const {
+        id: doctorId, name, email, crm, crmState, specialtyIds, practiceAreaIds,
+        addressZipCode, addressStreet, addressNumber, addressComplement,
+        addressNeighborhood, addressCity, addressState, addressLatitude, addressLongitude
+    } = parsed.data;
 
     try {
         // 1. Get doctor to find userId
@@ -216,6 +291,80 @@ export async function updateDoctorAction(formData: FormData) {
                         practiceAreaId: id,
                     }))
                 );
+            }
+        }
+
+        // 6. Update Address if provided
+        if (addressStreet || addressZipCode) {
+            let lat = addressLatitude || null;
+            let lng = addressLongitude || null;
+
+            // Se a latitude e longitude não vieram do form, tenta buscar
+            if (!lat || !lng) {
+                let addressQuery = "";
+                if (addressStreet) addressQuery += addressStreet;
+                if (addressNumber) addressQuery += `, ${addressNumber}`;
+                if (addressNeighborhood) addressQuery += `, ${addressNeighborhood}`;
+                if (addressCity) addressQuery += ` - ${addressCity}`;
+                if (addressState) addressQuery += `, ${addressState}`;
+                if (addressZipCode) addressQuery += `, ${addressZipCode}`;
+
+                if (addressQuery) {
+                    try {
+                        const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/geocode`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ address: addressQuery })
+                        });
+                        if (res.ok) {
+                            const geoData = await res.json();
+                            if (geoData.items && geoData.items.length > 0) {
+                                lat = geoData.items[0].position.lat;
+                                lng = geoData.items[0].position.lng;
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Geocoding failed during doctor update", e);
+                    }
+                }
+            }
+
+            const existingAddress = await db.query.addresses.findFirst({
+                where: (addresses, { and, eq }) => and(
+                    eq(addresses.entityId, doctorId),
+                    eq(addresses.entityType, "doctor")
+                )
+            });
+
+            if (existingAddress) {
+                await db.update(addresses)
+                    .set({
+                        zipCode: addressZipCode || null,
+                        street: addressStreet || null,
+                        number: addressNumber || null,
+                        complement: addressComplement || null,
+                        neighborhood: addressNeighborhood || null,
+                        city: addressCity || null,
+                        state: addressState || null,
+                        latitude: lat,
+                        longitude: lng,
+                    })
+                    .where(eq(addresses.id, existingAddress.id));
+            } else {
+                await db.insert(addresses).values({
+                    entityId: doctorId,
+                    entityType: "doctor",
+                    zipCode: addressZipCode || null,
+                    street: addressStreet || null,
+                    number: addressNumber || null,
+                    complement: addressComplement || null,
+                    neighborhood: addressNeighborhood || null,
+                    city: addressCity || null,
+                    state: addressState || null,
+                    latitude: lat,
+                    longitude: lng,
+                    isPrimary: true,
+                });
             }
         }
 

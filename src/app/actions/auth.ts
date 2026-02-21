@@ -63,6 +63,8 @@ const registerSchema = z.object({
     neighborhood: z.string().optional(),
     city: z.string().optional(),
     state: z.string().optional(),
+    latitude: z.coerce.number().optional(),
+    longitude: z.coerce.number().optional(),
 });
 
 export async function getInvite(code: string) {
@@ -109,7 +111,9 @@ export async function register(prevState: any, formData: FormData) {
         complement,
         neighborhood,
         city,
-        state
+        state,
+        latitude,
+        longitude
     } = parsed.data;
 
     // Verificar se usuário já existe
@@ -207,6 +211,38 @@ export async function register(prevState: any, formData: FormData) {
 
             // Save address if present
             if (profileId && entityType && (zipCode || street || city)) {
+                let lat = latitude || null;
+                let lng = longitude || null;
+
+                if (!lat || !lng) {
+                    let addressQuery = "";
+                    if (street) addressQuery += street;
+                    if (number) addressQuery += `, ${number}`;
+                    if (neighborhood) addressQuery += `, ${neighborhood}`;
+                    if (city) addressQuery += ` - ${city}`;
+                    if (state) addressQuery += `, ${state}`;
+                    if (zipCode) addressQuery += `, ${zipCode}`;
+
+                    if (addressQuery) {
+                        try {
+                            const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/geocode`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ address: addressQuery })
+                            });
+                            if (res.ok) {
+                                const geoData = await res.json();
+                                if (geoData.items && geoData.items.length > 0) {
+                                    lat = geoData.items[0].position.lat;
+                                    lng = geoData.items[0].position.lng;
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Geocoding failed during registration", e);
+                        }
+                    }
+                }
+
                 await db.insert(addresses).values({
                     entityType,
                     entityId: profileId,
@@ -217,6 +253,8 @@ export async function register(prevState: any, formData: FormData) {
                     neighborhood: neighborhood || null,
                     city: city || null,
                     state: state || null,
+                    latitude: lat,
+                    longitude: lng,
                     isPrimary: true,
                 });
             }

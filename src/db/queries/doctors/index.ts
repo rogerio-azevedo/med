@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { doctors, clinicDoctors, users, doctorSpecialties, specialties, doctorPracticeAreas, practiceAreas } from "@/db/schema";
+import { doctors, clinicDoctors, users, doctorSpecialties, specialties, doctorPracticeAreas, practiceAreas, addresses } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export async function getDoctorsByClinic(clinicId: string) {
@@ -14,6 +14,18 @@ export async function getDoctorsByClinic(clinicId: string) {
             specialtyName: specialties.name,
             practiceAreaId: practiceAreas.id,
             practiceAreaName: practiceAreas.name,
+            address: {
+                id: addresses.id,
+                zipCode: addresses.zipCode,
+                street: addresses.street,
+                number: addresses.number,
+                complement: addresses.complement,
+                neighborhood: addresses.neighborhood,
+                city: addresses.city,
+                state: addresses.state,
+                latitude: addresses.latitude,
+                longitude: addresses.longitude,
+            }
         })
         .from(doctors)
         .innerJoin(users, eq(doctors.userId, users.id))
@@ -22,6 +34,13 @@ export async function getDoctorsByClinic(clinicId: string) {
         .leftJoin(specialties, eq(doctorSpecialties.specialtyId, specialties.id))
         .leftJoin(doctorPracticeAreas, eq(doctorPracticeAreas.doctorId, doctors.id))
         .leftJoin(practiceAreas, eq(doctorPracticeAreas.practiceAreaId, practiceAreas.id))
+        .leftJoin(
+            addresses,
+            and(
+                eq(addresses.entityId, doctors.id),
+                eq(addresses.entityType, "doctor")
+            )
+        )
         .where(
             and(
                 eq(clinicDoctors.clinicId, clinicId),
@@ -33,9 +52,12 @@ export async function getDoctorsByClinic(clinicId: string) {
 
     for (const row of rawResults) {
         if (!doctorsMap.has(row.id)) {
-            const { specialtyId, specialtyName, practiceAreaId, practiceAreaName, ...doctorData } = row;
+            const { specialtyId, specialtyName, practiceAreaId, practiceAreaName, address, ...doctorData } = row;
+            // The LEFT JOIN addresses will return an address object filled with nulls if no address exists.
+            const hasAddress = address && address.id !== null;
             doctorsMap.set(row.id, {
                 ...doctorData,
+                address: hasAddress ? address : null,
                 specialties: [],
                 practiceAreas: [],
             });

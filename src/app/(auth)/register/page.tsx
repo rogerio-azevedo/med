@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, Suspense, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -91,6 +92,7 @@ function RegisterForm() {
     const [loadingInvite, setLoadingInvite] = useState(!!inviteCode);
     const [loadingCEP, setLoadingCEP] = useState(false);
     const [step, setStep] = useState(1);
+    const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
 
     // Form fields state for validation and masks
     const [formData, setFormData] = useState({
@@ -127,6 +129,26 @@ function RegisterForm() {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    // Geocode helper
+    const geocodeAddress = async (query: string) => {
+        try {
+            const res = await fetch(`/api/geocode`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ address: query }),
+            });
+            if (res.ok) {
+                const geoData = await res.json();
+                if (geoData.items?.length > 0) {
+                    const { lat, lng } = geoData.items[0].position;
+                    setMapCoords({ lat, lng });
+                }
+            }
+        } catch (e) {
+            console.error("Geocoding failed", e);
+        }
+    };
+
     // CEP Lookup Effect
     useEffect(() => {
         const cleanCEP = formData.zipCode.replace(/\D/g, "");
@@ -141,6 +163,8 @@ function RegisterForm() {
                         city: data.city || "",
                         state: data.state || ""
                     }));
+                    // Auto-geocode
+                    geocodeAddress(`${data.street}, ${data.neighborhood}, ${data.city}, ${data.state}, Brasil`);
                 })
                 .catch((err) => {
                     console.error("Erro ao buscar CEP:", err);
@@ -219,7 +243,7 @@ function RegisterForm() {
                                 <Hospital size={28} />}
                     </div>
                     <div>
-                        <CardTitle className="text-2xl font-bold tracking-tight">Bem-vindo ao med.system</CardTitle>
+                        <CardTitle className="text-2xl font-bold tracking-tight">Bem-vindo ao Med</CardTitle>
                         <CardDescription className="flex flex-wrap items-center gap-1.5 font-medium">
                             {inviteData?.clinicName ? (
                                 <>A <span className="text-primary font-bold underline underline-offset-2 decoration-primary/30">{inviteData.clinicName}</span> te convidou.</>
@@ -362,42 +386,52 @@ function RegisterForm() {
                     {/* Step 3: Address */}
                     {step === 3 && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                            {/* Fields on top, map below */}
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="grid gap-2 col-span-1 relative">
                                     <Label htmlFor="zipCode" className="text-sm font-semibold">CEP</Label>
                                     <div className="relative">
-                                        <Input id="zipCode" name="zipCode" placeholder="00000-000" value={formData.zipCode} onChange={handleChange} required className="h-12 rounded-xl border-muted-foreground/20 focus:border-primary transition-all shadow-sm pr-10" />
+                                        <Input id="zipCode" name="zipCode" placeholder="00000-000" value={formData.zipCode} onChange={handleChange} required className="h-12 rounded-xl pr-10" />
                                         {loadingCEP && <Loader2 className="absolute right-3 top-3 h-5 w-5 animate-spin text-primary" />}
                                     </div>
                                 </div>
                                 <div className="grid gap-2 col-span-2">
                                     <Label htmlFor="street" className="text-sm font-semibold">Logradouro</Label>
-                                    <Input id="street" name="street" placeholder="Rua, Avenida..." value={formData.street} onChange={handleChange} required className="h-12 rounded-xl border-muted-foreground/20 focus:border-primary transition-all shadow-sm" />
+                                    <Input id="street" name="street" placeholder="Rua, Avenida..." value={formData.street} onChange={handleChange} required className="h-12 rounded-xl" />
                                 </div>
                             </div>
+
                             <div className="grid grid-cols-4 gap-4">
                                 <div className="grid gap-2 col-span-1">
                                     <Label htmlFor="number" className="text-sm font-semibold">Número</Label>
-                                    <Input id="number" name="number" placeholder="123" value={formData.number} onChange={handleChange} required className="h-12 rounded-xl border-muted-foreground/20 focus:border-primary transition-all shadow-sm" />
+                                    <Input id="number" name="number" placeholder="123" value={formData.number}
+                                        onChange={handleChange}
+                                        onBlur={(e) => {
+                                            if (e.target.value && formData.street && formData.city) {
+                                                geocodeAddress(`${formData.street}, ${e.target.value}, ${formData.city}, Brasil`);
+                                            }
+                                        }}
+                                        required className="h-12 rounded-xl" />
                                 </div>
                                 <div className="grid gap-2 col-span-3">
                                     <Label htmlFor="complement" className="text-sm font-semibold">Complemento</Label>
-                                    <Input id="complement" name="complement" placeholder="Apt, Sala, Bloco..." value={formData.complement} onChange={handleChange} className="h-12 rounded-xl border-muted-foreground/20 focus:border-primary transition-all shadow-sm" />
+                                    <Input id="complement" name="complement" placeholder="Apt, Sala, Bloco..." value={formData.complement} onChange={handleChange} className="h-12 rounded-xl" />
                                 </div>
                             </div>
+
                             <div className="grid grid-cols-12 gap-4">
                                 <div className="grid gap-2 col-span-5">
                                     <Label htmlFor="neighborhood" className="text-sm font-semibold">Bairro</Label>
-                                    <Input id="neighborhood" name="neighborhood" placeholder="Bairro" value={formData.neighborhood} onChange={handleChange} required className="h-12 rounded-xl border-muted-foreground/20 focus:border-primary transition-all shadow-sm" />
+                                    <Input id="neighborhood" name="neighborhood" placeholder="Bairro" value={formData.neighborhood} onChange={handleChange} required className="h-12 rounded-xl" />
                                 </div>
                                 <div className="grid gap-2 col-span-4">
                                     <Label htmlFor="city" className="text-sm font-semibold">Cidade</Label>
-                                    <Input id="city" name="city" placeholder="Cidade" value={formData.city} onChange={handleChange} required className="h-12 rounded-xl border-muted-foreground/20 focus:border-primary transition-all shadow-sm" />
+                                    <Input id="city" name="city" placeholder="Cidade" value={formData.city} onChange={handleChange} required className="h-12 rounded-xl" />
                                 </div>
                                 <div className="grid gap-2 col-span-3">
                                     <Label htmlFor="state" className="text-sm font-semibold">UF</Label>
                                     <Select name="state" value={formData.state} onValueChange={(v) => handleSelectChange("state", v)}>
-                                        <SelectTrigger className="h-12 rounded-xl border-muted-foreground/20 focus:border-primary transition-all shadow-sm">
+                                        <SelectTrigger className="h-12 rounded-xl">
                                             <SelectValue placeholder="UF" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -409,7 +443,14 @@ function RegisterForm() {
                                 </div>
                             </div>
 
-                            {/* Hidden fields for other data to ensure they are submitted in form action */}
+                            {/* Live Map */}
+                            <AddressMap
+                                latitude={mapCoords?.lat}
+                                longitude={mapCoords?.lng}
+                                onCoordinatesChange={(lat, lng) => setMapCoords({ lat, lng })}
+                            />
+
+                            {/* Hidden fields */}
                             <input type="hidden" name="email" value={formData.email} />
                             <input type="hidden" name="password" value={formData.password} />
                             <input type="hidden" name="name" value={formData.name} />
@@ -419,6 +460,8 @@ function RegisterForm() {
                             <input type="hidden" name="crmState" value={formData.crmState} />
                             <input type="hidden" name="birthDate" value={formData.birthDate} />
                             <input type="hidden" name="sex" value={formData.sex} />
+                            {mapCoords && <input type="hidden" name="latitude" value={mapCoords.lat} />}
+                            {mapCoords && <input type="hidden" name="longitude" value={mapCoords.lng} />}
                         </div>
                     )}
 
@@ -480,6 +523,11 @@ function RegisterForm() {
         </Card>
     );
 }
+
+const AddressMap = dynamic(
+    () => import("@/components/maps/SimpleMap").then((m) => m.SimpleMap),
+    { ssr: false, loading: () => <div className="h-[220px] animate-pulse bg-muted rounded-xl" /> }
+);
 
 export default function RegisterPage() {
     return (
