@@ -331,7 +331,7 @@ function RegisterForm() {
 
                             {inviteData?.role === 'doctor' && (
                                 <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="grid gap-2">
                                             <Label htmlFor="crm">CRM</Label>
                                             <Input id="crm" name="crm" placeholder="000000" value={formData.crm} onChange={handleChange} required className="h-11" />
@@ -358,7 +358,7 @@ function RegisterForm() {
                             )}
 
                             {inviteData?.role === 'patient' && (
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="cpf">CPF</Label>
                                         <Input id="cpf" name="cpf" placeholder="000.000.000-00" value={formData.cpf} onChange={handleChange} required className="h-11" />
@@ -393,22 +393,22 @@ function RegisterForm() {
                     {step === 3 && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                             {/* Fields on top, map below */}
-                            <div className="grid grid-cols-3 gap-4">
-                                <div className="grid gap-2 col-span-1 relative">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="grid gap-2 md:col-span-1 relative">
                                     <Label htmlFor="zipCode" className="text-sm font-semibold">CEP</Label>
                                     <div className="relative">
                                         <Input id="zipCode" name="zipCode" placeholder="00000-000" value={formData.zipCode} onChange={handleChange} required className="h-12 rounded-xl pr-10" />
                                         {loadingCEP && <Loader2 className="absolute right-3 top-3 h-5 w-5 animate-spin text-primary" />}
                                     </div>
                                 </div>
-                                <div className="grid gap-2 col-span-2">
+                                <div className="grid gap-2 md:col-span-2">
                                     <Label htmlFor="street" className="text-sm font-semibold">Logradouro</Label>
                                     <Input id="street" name="street" placeholder="Rua, Avenida..." value={formData.street} onChange={handleChange} required className="h-12 rounded-xl" />
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-4 gap-4">
-                                <div className="grid gap-2 col-span-1">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="grid gap-2 md:col-span-1">
                                     <Label htmlFor="number" className="text-sm font-semibold">Número</Label>
                                     <Input id="number" name="number" placeholder="123" value={formData.number}
                                         onChange={handleChange}
@@ -419,22 +419,22 @@ function RegisterForm() {
                                         }}
                                         required className="h-12 rounded-xl" />
                                 </div>
-                                <div className="grid gap-2 col-span-3">
+                                <div className="grid gap-2 md:col-span-3">
                                     <Label htmlFor="complement" className="text-sm font-semibold">Complemento</Label>
                                     <Input id="complement" name="complement" placeholder="Apt, Sala, Bloco..." value={formData.complement} onChange={handleChange} className="h-12 rounded-xl" />
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-12 gap-4">
-                                <div className="grid gap-2 col-span-5">
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                <div className="grid gap-2 md:col-span-5">
                                     <Label htmlFor="neighborhood" className="text-sm font-semibold">Bairro</Label>
                                     <Input id="neighborhood" name="neighborhood" placeholder="Bairro" value={formData.neighborhood} onChange={handleChange} required className="h-12 rounded-xl" />
                                 </div>
-                                <div className="grid gap-2 col-span-4">
+                                <div className="grid gap-2 md:col-span-4">
                                     <Label htmlFor="city" className="text-sm font-semibold">Cidade</Label>
                                     <Input id="city" name="city" placeholder="Cidade" value={formData.city} onChange={handleChange} required className="h-12 rounded-xl" />
                                 </div>
-                                <div className="grid gap-2 col-span-3">
+                                <div className="grid gap-2 md:col-span-3">
                                     <Label htmlFor="state" className="text-sm font-semibold">UF</Label>
                                     <Select name="state" value={formData.state} onValueChange={(v) => handleSelectChange("state", v)}>
                                         <SelectTrigger className="h-12 rounded-xl">
