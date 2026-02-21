@@ -5,8 +5,8 @@ import "./map-styles.css";
 
 import { clsx } from "clsx";
 import { Building2, Stethoscope } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
-import Map, { Marker, Popup, ViewState } from "react-map-gl/mapbox";
+import { useEffect, useState, useMemo, useRef } from "react";
+import Map, { Marker, Popup, ViewState, MapRef } from "react-map-gl/mapbox";
 import { FilterPanel, Filters } from "@/components/maps/FilterPanel";
 import { renderPopupLayout } from "@/components/maps/popup-layout";
 
@@ -54,6 +54,8 @@ export function MapComponent({ clinics, doctors, specialties }: MapComponentProp
         specialtyIds: [],
     });
 
+    const mapRef = useRef<MapRef>(null);
+
     useEffect(() => {
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
@@ -83,6 +85,13 @@ export function MapComponent({ clinics, doctors, specialties }: MapComponentProp
 
     function handleMarkerClick(type: "clinic" | "doctor", data: any, latitude: number, longitude: number) {
         setPopupInfo({ type, data, latitude, longitude });
+        // Pan the map so the popup is fully visible — shift center upward to make room for the card above the marker
+        mapRef.current?.flyTo({
+            center: [longitude, latitude + 0.0015],
+            zoom: Math.max((mapRef.current.getMap().getZoom()), 13),
+            duration: 600,
+            essential: true,
+        });
     }
 
     const filteredDoctors = useMemo(() => {
@@ -98,6 +107,7 @@ export function MapComponent({ clinics, doctors, specialties }: MapComponentProp
     return (
         <div className="relative h-full w-full">
             <Map
+                ref={mapRef}
                 mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
                 mapStyle="mapbox://styles/mapbox/streets-v12"
                 style={{

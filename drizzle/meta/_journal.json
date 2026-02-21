@@ -57,6 +57,13 @@
       "when": 1771622728569,
       "tag": "0007_brown_layla_miller",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1771698770677,
+      "tag": "0008_loud_rafael_vega",
+      "breakpoints": true
     }
   ]
 }

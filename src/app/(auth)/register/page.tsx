@@ -330,23 +330,29 @@ function RegisterForm() {
                             </div>
 
                             {inviteData?.role === 'doctor' && (
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="crm">CRM</Label>
-                                        <Input id="crm" name="crm" placeholder="000000" value={formData.crm} onChange={handleChange} required className="h-11" />
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="crm">CRM</Label>
+                                            <Input id="crm" name="crm" placeholder="000000" value={formData.crm} onChange={handleChange} required className="h-11" />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="crmState">UF</Label>
+                                            <Select name="crmState" value={formData.crmState} onValueChange={(v) => handleSelectChange("crmState", v)}>
+                                                <SelectTrigger className="h-11">
+                                                    <SelectValue placeholder="UF" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {BRAZILIAN_STATES.map((st) => (
+                                                        <SelectItem key={st.value} value={st.value}>{st.value}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="crmState">UF</Label>
-                                        <Select name="crmState" value={formData.crmState} onValueChange={(v) => handleSelectChange("crmState", v)}>
-                                            <SelectTrigger className="h-11">
-                                                <SelectValue placeholder="UF" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {BRAZILIAN_STATES.map((st) => (
-                                                    <SelectItem key={st.value} value={st.value}>{st.value}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <Label htmlFor="phone">Telefone</Label>
+                                        <Input id="phone" name="phone" placeholder="(00) 00000-0000" value={formData.phone} onChange={handleChange} className="h-11" />
                                     </div>
                                 </div>
                             )}

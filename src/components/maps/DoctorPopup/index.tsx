@@ -66,7 +66,7 @@ export function DoctorPopup({ data, onClose }: DoctorPopupProps) {
 
             <div className="mt-4 pt-2">
                 <Button asChild className="w-full" variant="outline" size="sm">
-                    <Link href={`/doctors/${data.id}`}>Ver Detalhes</Link>
+                    <Link href={`/doctors/${data.id}`} target="_blank" rel="noopener noreferrer">Ver Detalhes</Link>
                 </Button>
             </div>
         </div>

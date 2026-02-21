@@ -40,6 +40,7 @@ interface Doctor {
     name: string | null
     crm: string | null
     crmState: string | null
+    phone: string | null
     email: string | null
     specialties: { id: string; name: string }[]
     practiceAreas: { id: string; name: string }[]

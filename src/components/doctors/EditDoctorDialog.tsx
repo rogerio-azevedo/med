@@ -29,6 +29,7 @@ import { getPracticeAreasAction } from "@/app/actions/practice-areas";
 import { toast } from "sonner";
 import ReactSelect from "react-select";
 import cep from "cep-promise";
+import { maskPhone } from "@/lib/masks";
 
 const SimpleMap = dynamic(
     () => import("@/components/maps/SimpleMap").then((m) => m.SimpleMap),
@@ -41,6 +42,7 @@ const doctorFormSchema = z.object({
     email: z.string().email("Email inválido"),
     crm: z.string().optional(),
     crmState: z.string().optional(),
+    phone: z.string().optional(),
     specialtyIds: z.array(z.string()).min(1, "Selecione pelo menos uma especialidade"),
     practiceAreaIds: z.array(z.string()).optional(),
     addressZipCode: z.string().optional(),
@@ -119,6 +121,7 @@ interface EditDoctorDialogProps {
         email: string | null;
         crm: string | null;
         crmState: string | null;
+        phone: string | null;
         specialties: { id: string; name: string }[];
         practiceAreas: { id: string; name: string }[];
         address?: {
@@ -184,6 +187,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                 email: doctor.email || "",
                 crm: doctor.crm || "",
                 crmState: doctor.crmState || "",
+                phone: doctor.phone ? maskPhone(doctor.phone) : "",
                 specialtyIds: doctor.specialties.map(s => s.id),
                 practiceAreaIds: doctor.practiceAreas.map(pa => pa.id),
                 addressZipCode: doctor.address?.zipCode || "",
@@ -324,7 +328,8 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                                         )}
                                     />
 
-                                    <div className="grid grid-cols-3 gap-4">
+                                    {/* CRM / UF / Telefone */}
+                                    <div className="col-span-2 grid grid-cols-4 gap-4">
                                         <FormField
                                             control={form.control}
                                             name="crm"
@@ -351,53 +356,74 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                                                 </FormItem>
                                             )}
                                         />
+                                        <FormField
+                                            control={form.control}
+                                            name="phone"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Telefone</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="(00) 00000-0000"
+                                                            value={field.value}
+                                                            onChange={(e) => field.onChange(maskPhone(e.target.value))}
+                                                            className="h-11 bg-muted/30 border-muted-foreground/10 focus:border-primary/30 transition-all"
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
                                     </div>
 
-                                    <FormField
-                                        control={form.control}
-                                        name="specialtyIds"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Especialidades</FormLabel>
-                                                <FormControl>
-                                                    <ReactSelect
-                                                        isMulti
-                                                        placeholder="Selecione..."
-                                                        options={specialties}
-                                                        className="react-select-container"
-                                                        classNamePrefix="react-select"
-                                                        styles={customSelectStyles}
-                                                        value={specialties.filter(s => field.value?.includes(s.value))}
-                                                        onChange={(val) => field.onChange(val.map(v => v.value))}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
+                                    {/* Especialidades + Áreas de Atuação lado a lado */}
+                                    <div className="col-span-2 grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="specialtyIds"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Especialidades</FormLabel>
+                                                    <FormControl>
+                                                        <ReactSelect
+                                                            isMulti
+                                                            placeholder="Selecione..."
+                                                            options={specialties}
+                                                            className="react-select-container"
+                                                            classNamePrefix="react-select"
+                                                            styles={customSelectStyles}
+                                                            value={specialties.filter(s => field.value?.includes(s.value))}
+                                                            onChange={(val) => field.onChange(val.map(v => v.value))}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
 
-                                    <FormField
-                                        control={form.control}
-                                        name="practiceAreaIds"
-                                        render={({ field }) => (
-                                            <FormItem className="col-span-1 md:col-span-2">
-                                                <FormLabel>Áreas de Atuação</FormLabel>
-                                                <FormControl>
-                                                    <ReactSelect
-                                                        isMulti
-                                                        placeholder="Selecione..."
-                                                        options={practiceAreas}
-                                                        className="react-select-container"
-                                                        classNamePrefix="react-select"
-                                                        styles={customSelectStyles}
-                                                        value={practiceAreas.filter(pa => field.value?.includes(pa.value))}
-                                                        onChange={(val) => field.onChange(val.map(v => v.value))}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
+                                        <FormField
+                                            control={form.control}
+                                            name="practiceAreaIds"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Áreas de Atuação</FormLabel>
+                                                    <FormControl>
+                                                        <ReactSelect
+                                                            isMulti
+                                                            placeholder="Selecione..."
+                                                            options={practiceAreas}
+                                                            className="react-select-container"
+                                                            classNamePrefix="react-select"
+                                                            styles={customSelectStyles}
+                                                            value={practiceAreas.filter(pa => field.value?.includes(pa.value))}
+                                                            onChange={(val) => field.onChange(val.map(v => v.value))}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
 
                                     <div className="col-span-1 md:col-span-2 p-4 bg-primary/5 rounded-xl border border-primary/10 mt-2">
                                         <p className="text-[11px] text-primary/70 font-medium leading-relaxed italic">

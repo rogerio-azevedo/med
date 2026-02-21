@@ -66,6 +66,7 @@ export const doctors = pgTable("doctors", {
         .references(() => users.id, { onDelete: "cascade" }),
     crm: varchar("crm", { length: 20 }),
     crmState: varchar("crm_state", { length: 2 }),
+    phone: varchar("phone", { length: 20 }),
     bio: text("bio"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });

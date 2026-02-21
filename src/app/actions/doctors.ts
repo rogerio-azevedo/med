@@ -8,12 +8,34 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
+
 const createDoctorSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-    email: z.string().email("Email inválido"),
+    email: z.email("Email inválido"),
     password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
     crm: z.string().optional(),
     crmState: z.string().optional(),
+    phone: z.string().optional(),
+    specialtyIds: z.array(z.string().uuid()).optional(),
+    practiceAreaIds: z.array(z.string().uuid()).optional(),
+    addressZipCode: z.string().optional(),
+    addressStreet: z.string().optional(),
+    addressNumber: z.string().optional(),
+    addressComplement: z.string().optional(),
+    addressNeighborhood: z.string().optional(),
+    addressCity: z.string().optional(),
+    addressState: z.string().optional(),
+    addressLatitude: z.coerce.number().optional(),
+    addressLongitude: z.coerce.number().optional(),
+});
+
+const updateDoctorSchema = z.object({
+    id: z.string().uuid(),
+    name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+    email: z.email("Email inválido"),
+    crm: z.string().optional(),
+    crmState: z.string().optional(),
+    phone: z.string().optional(),
     specialtyIds: z.array(z.string().uuid()).optional(),
     practiceAreaIds: z.array(z.string().uuid()).optional(),
     addressZipCode: z.string().optional(),
@@ -50,7 +72,7 @@ export async function createDoctorAction(formData: FormData) {
     }
 
     const {
-        name, email, password, crm, crmState, specialtyIds, practiceAreaIds,
+        name, email, password, crm, crmState, phone, specialtyIds, practiceAreaIds,
         addressZipCode, addressStreet, addressNumber, addressComplement,
         addressNeighborhood, addressCity, addressState, addressLatitude, addressLongitude
     } = parsed.data;
@@ -89,6 +111,7 @@ export async function createDoctorAction(formData: FormData) {
             userId,
             crm: crm || null,
             crmState: crmState || null,
+            phone: phone || null,
         }).returning();
 
         // 4. Link to clinicDoctors
@@ -192,24 +215,6 @@ export async function deleteDoctorAction(doctorId: string) {
         return { success: false, error: "Erro ao excluir médico." };
     }
 }
-const updateDoctorSchema = z.object({
-    id: z.string().uuid(),
-    name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-    email: z.string().email("Email inválido"),
-    crm: z.string().optional(),
-    crmState: z.string().optional(),
-    specialtyIds: z.array(z.string().uuid()).optional(),
-    practiceAreaIds: z.array(z.string().uuid()).optional(),
-    addressZipCode: z.string().optional(),
-    addressStreet: z.string().optional(),
-    addressNumber: z.string().optional(),
-    addressComplement: z.string().optional(),
-    addressNeighborhood: z.string().optional(),
-    addressCity: z.string().optional(),
-    addressState: z.string().optional(),
-    addressLatitude: z.coerce.number().optional(),
-    addressLongitude: z.coerce.number().optional(),
-});
 
 export async function updateDoctorAction(formData: FormData) {
     const session = await auth();
@@ -234,7 +239,7 @@ export async function updateDoctorAction(formData: FormData) {
     }
 
     const {
-        id: doctorId, name, email, crm, crmState, specialtyIds, practiceAreaIds,
+        id: doctorId, name, email, crm, crmState, phone, specialtyIds, practiceAreaIds,
         addressZipCode, addressStreet, addressNumber, addressComplement,
         addressNeighborhood, addressCity, addressState, addressLatitude, addressLongitude
     } = parsed.data;
@@ -261,6 +266,7 @@ export async function updateDoctorAction(formData: FormData) {
             .set({
                 crm: crm || null,
                 crmState: crmState || null,
+                phone: phone || null,
             })
             .where(eq(doctors.id, doctorId));
 

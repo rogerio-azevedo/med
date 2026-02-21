@@ -172,6 +172,7 @@ export async function register(prevState: any, formData: FormData) {
                     userId: newUser.id,
                     crm: crm || null,
                     crmState: crmState || null,
+                    phone: phone?.replace(/\D/g, '') || null,
                 }).returning();
                 profileId = newDoctor.id;
 

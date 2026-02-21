@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq, isNotNull, inArray } from "drizzle-orm";
 import {
     addresses,
     clinics,
@@ -96,14 +96,19 @@ export async function getDoctorsWithAddress(clinicId: string) {
         })
         .from(doctorSpecialties)
         .innerJoin(specialties, eq(doctorSpecialties.specialtyId, specialties.id))
-        // Filtar apenas as dos doctors retornados
-        .where(
-            doctorIds.length > 0
-                // workaround para 'inArray' do drizzle: we can use sql directly or just filter in memory if small
-                ? undefined : undefined
-        ); // Na verdade, eu usaria `inArray`, mas preciso importar. Vou importar acima ou usar.
+        .where(inArray(doctorSpecialties.doctorId, doctorIds));
 
-    // Vou reconstruir a importação do inArray e a consulta
+    // Agrupa especialidades por médico
+    const specialtiesByDoctorId = specialtiesRaw.reduce((acc, curr) => {
+        if (!acc[curr.doctorId]) {
+            acc[curr.doctorId] = [];
+        }
+        acc[curr.doctorId].push({ specialty: curr.specialty });
+        return acc;
+    }, {} as Record<string, any[]>);
 
-    return doctorsRaw; // Placeholder, vou refazer usando inArray melhor no próximo passo
+    return doctorsRaw.map(doctor => ({
+        ...doctor,
+        specialties: specialtiesByDoctorId[doctor.id] || [],
+    }));
 }

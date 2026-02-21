@@ -8,6 +8,7 @@ export async function getDoctorsByClinic(clinicId: string) {
             id: doctors.id,
             crm: doctors.crm,
             crmState: doctors.crmState,
+            phone: doctors.phone,
             name: users.name,
             email: users.email,
             specialtyId: specialties.id,
@@ -117,5 +118,83 @@ export async function getDoctorsSimple(clinicId: string) {
                 eq(clinicDoctors.isActive, true)
             )
         )
-        .orderBy(users.name);
+}
+
+export async function getDoctorDetails(doctorId: string, clinicId: string) {
+    const rawResults = await db
+        .select({
+            id: doctors.id,
+            crm: doctors.crm,
+            crmState: doctors.crmState,
+            phone: doctors.phone,
+            name: users.name,
+            email: users.email,
+            specialtyId: specialties.id,
+            specialtyName: specialties.name,
+            practiceAreaId: practiceAreas.id,
+            practiceAreaName: practiceAreas.name,
+            address: {
+                id: addresses.id,
+                zipCode: addresses.zipCode,
+                street: addresses.street,
+                number: addresses.number,
+                complement: addresses.complement,
+                neighborhood: addresses.neighborhood,
+                city: addresses.city,
+                state: addresses.state,
+                latitude: addresses.latitude,
+                longitude: addresses.longitude,
+            }
+        })
+        .from(doctors)
+        .innerJoin(users, eq(doctors.userId, users.id))
+        .innerJoin(clinicDoctors, eq(clinicDoctors.doctorId, doctors.id))
+        .leftJoin(doctorSpecialties, eq(doctorSpecialties.doctorId, doctors.id))
+        .leftJoin(specialties, eq(doctorSpecialties.specialtyId, specialties.id))
+        .leftJoin(doctorPracticeAreas, eq(doctorPracticeAreas.doctorId, doctors.id))
+        .leftJoin(practiceAreas, eq(doctorPracticeAreas.practiceAreaId, practiceAreas.id))
+        .leftJoin(
+            addresses,
+            and(
+                eq(addresses.entityId, doctors.id),
+                eq(addresses.entityType, "doctor")
+            )
+        )
+        .where(
+            and(
+                eq(doctors.id, doctorId),
+                eq(clinicDoctors.clinicId, clinicId),
+                eq(clinicDoctors.isActive, true)
+            )
+        );
+
+    if (rawResults.length === 0) return null;
+
+    const doctorData = {
+        id: rawResults[0].id,
+        name: rawResults[0].name,
+        email: rawResults[0].email,
+        phone: rawResults[0].phone,
+        crm: rawResults[0].crm,
+        crmState: rawResults[0].crmState,
+        address: rawResults[0].address?.id ? rawResults[0].address : null,
+        specialties: [] as { id: string; name: string }[],
+        practiceAreas: [] as { id: string; name: string }[],
+    };
+
+    const addedSpecialties = new Set<string>();
+    const addedPracticeAreas = new Set<string>();
+
+    for (const row of rawResults) {
+        if (row.specialtyId && row.specialtyName && !addedSpecialties.has(row.specialtyId)) {
+            doctorData.specialties.push({ id: row.specialtyId, name: row.specialtyName });
+            addedSpecialties.add(row.specialtyId);
+        }
+        if (row.practiceAreaId && row.practiceAreaName && !addedPracticeAreas.has(row.practiceAreaId)) {
+            doctorData.practiceAreas.push({ id: row.practiceAreaId, name: row.practiceAreaName });
+            addedPracticeAreas.add(row.practiceAreaId);
+        }
+    }
+
+    return doctorData;
 }

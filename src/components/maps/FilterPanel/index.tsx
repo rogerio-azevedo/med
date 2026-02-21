@@ -167,6 +167,9 @@ export function FilterPanel({
                             noOptionsMessage={() => "Nenhuma especialidade... "}
                             className="text-sm"
                             classNamePrefix="react-select"
+                            menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+                            menuPosition="fixed"
+                            styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                             value={specialtyOptions.filter(o => filters.specialtyIds.includes(o.value))}
                             onChange={(selected) => {
                                 onFiltersChange({
