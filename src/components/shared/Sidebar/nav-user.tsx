@@ -29,6 +29,7 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar"
 import { signOut } from "next-auth/react"
+import Link from "next/link"
 
 export function NavUser({
     user,
@@ -37,9 +38,11 @@ export function NavUser({
         name?: string | null
         email?: string | null
         image?: string | null
+        role?: string | null
     }
 }) {
     const { isMobile } = useSidebar()
+    const isAdmin = user.role === "admin"
 
     return (
         <SidebarMenu>
@@ -92,10 +95,19 @@ export function NavUser({
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
-                            <DropdownMenuItem disabled>
-                                <BadgeCheck className="mr-2 h-4 w-4" />
-                                Conta
-                            </DropdownMenuItem>
+                            {isAdmin ? (
+                                <DropdownMenuItem asChild>
+                                    <Link href="/conta" className="flex items-center cursor-pointer">
+                                        <BadgeCheck className="mr-2 h-4 w-4" />
+                                        Conta
+                                    </Link>
+                                </DropdownMenuItem>
+                            ) : (
+                                <DropdownMenuItem disabled>
+                                    <BadgeCheck className="mr-2 h-4 w-4" />
+                                    Conta
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem disabled>
                                 <Bell className="mr-2 h-4 w-4" />
                                 Notificações
