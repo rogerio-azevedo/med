@@ -43,7 +43,7 @@ const doctorFormSchema = z.object({
     crm: z.string().optional(),
     crmState: z.string().optional(),
     phone: z.string().optional(),
-    specialtyIds: z.array(z.string()).min(1, "Selecione pelo menos uma especialidade"),
+    specialtyIds: z.array(z.string()).optional(),
     practiceAreaIds: z.array(z.string()).optional(),
     addressZipCode: z.string().optional(),
     addressStreet: z.string().optional(),

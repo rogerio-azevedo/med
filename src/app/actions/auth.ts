@@ -2,7 +2,7 @@
 
 import { signIn } from "@/auth";
 import { db } from "@/db";
-import { users, inviteLinks, clinicUsers, doctors, clinicDoctors, patients, clinicPatients, clinics, addresses, patientDoctors } from "@/db/schema";
+import { users, inviteLinks, clinicUsers, doctors, clinicDoctors, patients, clinicPatients, clinics, addresses, patientDoctors, doctorSpecialties } from "@/db/schema";
 import { AuthError } from "next-auth";
 import { eq, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
@@ -65,6 +65,7 @@ const registerSchema = z.object({
     state: z.string().optional(),
     latitude: z.coerce.number().optional(),
     longitude: z.coerce.number().optional(),
+    specialtyIds: z.array(z.string()).optional(),
 });
 
 export async function getInvite(code: string) {
@@ -87,7 +88,11 @@ export async function getInvite(code: string) {
 }
 
 export async function register(prevState: any, formData: FormData) {
-    const data = Object.fromEntries(formData);
+    const specialtyIdsRaw = formData.getAll("specialtyIds");
+    const data = {
+        ...Object.fromEntries(formData),
+        specialtyIds: specialtyIdsRaw.length > 0 ? specialtyIdsRaw : undefined,
+    };
     const parsed = registerSchema.safeParse(data);
 
     if (!parsed.success) {
@@ -113,7 +118,8 @@ export async function register(prevState: any, formData: FormData) {
         city,
         state,
         latitude,
-        longitude
+        longitude,
+        specialtyIds
     } = parsed.data;
 
     // Verificar se usuário já existe
@@ -181,6 +187,16 @@ export async function register(prevState: any, formData: FormData) {
                     doctorId: newDoctor.id,
                     clinicId: inviteData.clinicId,
                 });
+
+                // Link to specialties if provided
+                if (specialtyIds && specialtyIds.length > 0) {
+                    await db.insert(doctorSpecialties).values(
+                        specialtyIds.map(id => ({
+                            doctorId: newDoctor.id,
+                            specialtyId: id,
+                        }))
+                    );
+                }
 
                 // Auto-generate a patient invite code tied to this doctor
                 const doctorInviteCode = crypto.randomUUID().replace(/-/g, "").substring(0, 12).toUpperCase();

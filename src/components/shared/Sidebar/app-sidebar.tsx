@@ -10,6 +10,7 @@ import {
     Calendar,
     ClipboardList,
     Package,
+    Map,
 } from "lucide-react"
 
 import { NavMain } from "@/components/shared/Sidebar/nav-main"
@@ -34,6 +35,11 @@ const data = {
             title: "Minhas Consultas",
             url: "/schedule",
             icon: Calendar,
+        },
+        {
+            title: "Mapa de Profissionais",
+            url: "/maps",
+            icon: Map,
         },
     ],
     navMain: [
@@ -73,6 +79,11 @@ const data = {
             title: "Agenda",
             url: "/schedule",
             icon: Calendar,
+        },
+        {
+            title: "Mapa de Profissionais",
+            url: "/maps",
+            icon: Map,
         },
     ],
     admin: [

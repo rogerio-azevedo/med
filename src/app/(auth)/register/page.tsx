@@ -23,6 +23,8 @@ import {
 import { ChevronRight, ChevronLeft, Check, Hospital, User, ShieldCheck, MapPin, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { register, getInvite } from "../../actions/auth";
+import { getSpecialtiesAction } from "@/app/actions/specialties";
+import ReactSelect from "react-select";
 import { useSearchParams, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import cep from "cep-promise";
@@ -83,6 +85,62 @@ const maskCEP = (value: string) => {
         .replace(/(-\d{3})\d+?$/, "$1");
 };
 
+const customSelectStyles = {
+    control: (base: any, state: any) => ({
+        ...base,
+        backgroundColor: "rgba(var(--muted), 0.3)",
+        borderColor: state.isFocused ? "rgba(var(--primary), 0.3)" : "rgba(var(--muted-foreground), 0.1)",
+        borderRadius: "0.5rem",
+        minHeight: "44px",
+        boxShadow: "none",
+        "&:hover": {
+            borderColor: "rgba(var(--primary), 0.3)",
+        }
+    }),
+    menu: (base: any) => ({
+        ...base,
+        backgroundColor: "white",
+        borderRadius: "0.75rem",
+        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+        padding: "4px",
+        zIndex: 50,
+    }),
+    option: (base: any, state: any) => ({
+        ...base,
+        borderRadius: "0.5rem",
+        backgroundColor: state.isSelected
+            ? "hsl(var(--primary))"
+            : state.isFocused
+                ? "hsl(var(--primary) / 0.1)"
+                : "transparent",
+        color: state.isSelected ? "white" : "inherit",
+        "&:active": {
+            backgroundColor: "hsl(var(--primary) / 0.2)",
+        }
+    }),
+    multiValue: (base: any) => ({
+        ...base,
+        backgroundColor: "hsl(var(--primary) / 0.1)",
+        borderRadius: "1rem",
+        padding: "2px 8px",
+    }),
+    multiValueLabel: (base: any) => ({
+        ...base,
+        color: "hsl(var(--primary))",
+        fontWeight: "500",
+        fontSize: "12px",
+    }),
+    multiValueRemove: (base: any) => ({
+        ...base,
+        color: "hsl(var(--primary))",
+        "&:hover": {
+            backgroundColor: "hsl(var(--primary) / 0.2)",
+            color: "hsl(var(--primary))",
+            borderRadius: "1rem",
+        }
+    })
+};
+
 function RegisterForm() {
     const searchParams = useSearchParams();
     const inviteCode = searchParams.get("invite");
@@ -93,6 +151,7 @@ function RegisterForm() {
     const [loadingCEP, setLoadingCEP] = useState(false);
     const [step, setStep] = useState(1);
     const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
+    const [specialties, setSpecialties] = useState<{ value: string; label: string }[]>([]);
 
     // Form fields state for validation and masks
     const [formData, setFormData] = useState({
@@ -111,7 +170,8 @@ function RegisterForm() {
         neighborhood: "",
         city: "",
         state: "",
-        complement: ""
+        complement: "",
+        specialtyIds: [] as string[]
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -126,6 +186,10 @@ function RegisterForm() {
     };
 
     const handleSelectChange = (name: string, value: string) => {
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleMultiSelectChange = (name: string, value: string[]) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -195,6 +259,9 @@ function RegisterForm() {
                 setLoadingInvite(false);
             });
         }
+        getSpecialtiesAction().then((r) => {
+            if (r.success && r.data) setSpecialties(r.data.map((s) => ({ value: s.id, label: s.name })));
+        });
     }, [inviteCode]);
 
     const nextStep = () => {
@@ -354,6 +421,19 @@ function RegisterForm() {
                                         <Label htmlFor="phone">Telefone</Label>
                                         <Input id="phone" name="phone" placeholder="(00) 00000-0000" value={formData.phone} onChange={handleChange} className="h-11" />
                                     </div>
+                                    <div className="grid gap-2">
+                                        <Label>Especialidades (Opcional)</Label>
+                                        <ReactSelect
+                                            isMulti
+                                            placeholder="Selecione..."
+                                            options={specialties}
+                                            styles={customSelectStyles}
+                                            className="react-select-container h-11"
+                                            classNamePrefix="react-select"
+                                            value={specialties.filter((s) => formData.specialtyIds?.includes(s.value))}
+                                            onChange={(v) => handleMultiSelectChange("specialtyIds", v.map((x) => x.value))}
+                                        />
+                                    </div>
                                 </div>
                             )}
 
@@ -466,6 +546,9 @@ function RegisterForm() {
                             <input type="hidden" name="crmState" value={formData.crmState} />
                             <input type="hidden" name="birthDate" value={formData.birthDate} />
                             <input type="hidden" name="sex" value={formData.sex} />
+                            {formData.specialtyIds.map(id => (
+                                <input key={id} type="hidden" name="specialtyIds" value={id} />
+                            ))}
                             {mapCoords && <input type="hidden" name="latitude" value={mapCoords.lat} />}
                             {mapCoords && <input type="hidden" name="longitude" value={mapCoords.lng} />}
                         </div>
