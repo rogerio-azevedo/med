@@ -47,6 +47,7 @@ export async function getDoctorsByClinic(clinicId: string) {
             inviteLinks,
             and(
                 eq(inviteLinks.doctorId, doctors.id),
+                eq(inviteLinks.clinicId, clinicId),
                 eq(inviteLinks.role, "patient"),
                 eq(inviteLinks.isActive, true)
             )

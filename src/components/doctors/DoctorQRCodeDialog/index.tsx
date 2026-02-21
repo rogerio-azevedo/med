@@ -98,8 +98,8 @@ export function DoctorQRCodeDialog({
                         </p>
 
                         {/* URL box */}
-                        <div className="w-full rounded-xl border bg-muted/50 px-3 py-2.5 flex items-center gap-2">
-                            <span className="flex-1 text-xs text-muted-foreground truncate font-mono">
+                        <div className="w-full rounded-xl border bg-muted/50 px-3 py-2.5 flex items-center gap-2 overflow-hidden">
+                            <span className="flex-1 min-w-0 text-xs text-muted-foreground truncate font-mono">
                                 {registerUrl}
                             </span>
                             <a
