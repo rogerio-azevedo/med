@@ -314,6 +314,8 @@ function RegisterForm() {
                         <CardDescription className="flex flex-wrap items-center gap-1.5 font-medium">
                             {inviteData?.clinicName ? (
                                 <>A <span className="text-primary font-bold underline underline-offset-2 decoration-primary/30">{inviteData.clinicName}</span> te convidou.</>
+                            ) : inviteCode ? (
+                                "Você foi convidado para se registrar na plataforma."
                             ) : (
                                 "Crie sua conta para começar."
                             )}

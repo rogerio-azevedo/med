@@ -18,7 +18,6 @@ export const inviteLinks = pgTable("invite_links", {
     id: uuid("id").primaryKey().defaultRandom(),
     code: varchar("code", { length: 50 }).notNull().unique(),
     clinicId: uuid("clinic_id")
-        .notNull()
         .references(() => clinics.id, { onDelete: "cascade" }),
     doctorId: uuid("doctor_id")
         .references(() => doctors.id, { onDelete: "cascade" }),

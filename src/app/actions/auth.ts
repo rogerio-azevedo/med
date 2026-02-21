@@ -163,15 +163,18 @@ export async function register(prevState: any, formData: FormData) {
         let profileId: string | undefined;
         let entityType: "doctor" | "patient" | undefined;
 
-        if (inviteData && inviteData.role && inviteData.clinicId) {
+        if (inviteData && inviteData.role) {
             if (inviteData.role === 'doctor') {
                 entityType = "doctor";
-                // Add to clinic staff
-                await db.insert(clinicUsers).values({
-                    userId: newUser.id,
-                    clinicId: inviteData.clinicId,
-                    role: 'doctor',
-                });
+
+                if (inviteData.clinicId) {
+                    // Add to clinic staff
+                    await db.insert(clinicUsers).values({
+                        userId: newUser.id,
+                        clinicId: inviteData.clinicId,
+                        role: 'doctor',
+                    });
+                }
 
                 // Create entry in 'doctors' table
                 const [newDoctor] = await db.insert(doctors).values({
@@ -182,11 +185,13 @@ export async function register(prevState: any, formData: FormData) {
                 }).returning();
                 profileId = newDoctor.id;
 
-                // Link to clinicDoctors
-                await db.insert(clinicDoctors).values({
-                    doctorId: newDoctor.id,
-                    clinicId: inviteData.clinicId,
-                });
+                if (inviteData.clinicId) {
+                    // Link to clinicDoctors
+                    await db.insert(clinicDoctors).values({
+                        doctorId: newDoctor.id,
+                        clinicId: inviteData.clinicId,
+                    });
+                }
 
                 // Link to specialties if provided
                 if (specialtyIds && specialtyIds.length > 0) {
@@ -201,7 +206,7 @@ export async function register(prevState: any, formData: FormData) {
                 // Auto-generate a patient invite code tied to this doctor
                 const doctorInviteCode = crypto.randomUUID().replace(/-/g, "").substring(0, 12).toUpperCase();
                 await db.insert(inviteLinks).values({
-                    clinicId: inviteData.clinicId,
+                    clinicId: inviteData.clinicId || null,
                     doctorId: newDoctor.id,
                     role: "patient",
                     code: doctorInviteCode,
@@ -221,11 +226,13 @@ export async function register(prevState: any, formData: FormData) {
                 }).returning();
                 profileId = newPatient.id;
 
-                // Link to clinicPatients
-                await db.insert(clinicPatients).values({
-                    patientId: newPatient.id,
-                    clinicId: inviteData.clinicId,
-                });
+                if (inviteData.clinicId) {
+                    // Link to clinicPatients
+                    await db.insert(clinicPatients).values({
+                        patientId: newPatient.id,
+                        clinicId: inviteData.clinicId,
+                    });
+                }
 
                 // If the invite came from a doctor, link the patient to that doctor
                 if (inviteData.doctorId) {
@@ -235,12 +242,14 @@ export async function register(prevState: any, formData: FormData) {
                     });
                 }
             } else if (inviteData.role === 'admin') {
-                // Link to clinicUsers as admin
-                await db.insert(clinicUsers).values({
-                    userId: newUser.id,
-                    clinicId: inviteData.clinicId,
-                    role: 'admin',
-                });
+                if (inviteData.clinicId) {
+                    // Link to clinicUsers as admin
+                    await db.insert(clinicUsers).values({
+                        userId: newUser.id,
+                        clinicId: inviteData.clinicId,
+                        role: 'admin',
+                    });
+                }
             }
 
             // Save address if present

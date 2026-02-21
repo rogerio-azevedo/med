@@ -93,6 +93,11 @@ const data = {
             icon: Building2,
         },
         {
+            title: "Médicos (Global)",
+            url: "/admin/doctors",
+            icon: Stethoscope,
+        },
+        {
             title: "Configurações",
             url: "/settings",
             icon: Settings,

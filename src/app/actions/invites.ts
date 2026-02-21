@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const generateInviteSchema = z.object({
-    clinicId: z.string().uuid(),
+    clinicId: z.string().uuid().optional(),
     role: z.enum(["admin", "doctor", "patient"]),
 });
 
@@ -20,15 +20,22 @@ export async function generateInvite(formData: FormData) {
         throw new Error("Unauthorized");
     }
 
-    const clinicId = formData.get("clinicId") as string;
+    const clinicId = formData.get("clinicId") as string | null;
     const role = formData.get("role") as "admin" | "doctor" | "patient";
 
     if (role === "admin" && session?.user?.role !== "super_admin") {
         throw new Error("Only super admins can generate admin invites");
     }
 
+    if (!clinicId && session?.user?.role !== "super_admin") {
+        throw new Error("Only super admins can generate global invites");
+    }
 
-    const validated = generateInviteSchema.safeParse({ clinicId, role });
+    if (!clinicId && role !== "doctor") {
+        throw new Error("Global invites are currently only supported for doctors");
+    }
+
+    const validated = generateInviteSchema.safeParse({ clinicId: clinicId || undefined, role });
 
     if (!validated.success) {
         return { error: "Invalid data" };
@@ -39,12 +46,16 @@ export async function generateInvite(formData: FormData) {
 
     try {
         await db.insert(inviteLinks).values({
-            clinicId: validated.data.clinicId,
+            clinicId: validated.data.clinicId || null,
             role: validated.data.role,
             code,
         });
 
-        revalidatePath(`/admin/clinics/${clinicId}`);
+        if (clinicId) {
+            revalidatePath(`/admin/clinics/${clinicId}`);
+        } else {
+            revalidatePath(`/admin/doctors`);
+        }
         return { success: true, code };
     } catch (error) {
         console.error("Failed to generate invite:", error);
