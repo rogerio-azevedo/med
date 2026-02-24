@@ -29,7 +29,7 @@ import { getPracticeAreasAction } from "@/app/actions/practice-areas";
 import { toast } from "sonner";
 import ReactSelect from "react-select";
 import cep from "cep-promise";
-import { maskPhone } from "@/lib/masks";
+import { maskPhone } from "@/utils/masks";
 
 const SimpleMap = dynamic(
     () => import("@/components/maps/SimpleMap").then((m) => m.SimpleMap),

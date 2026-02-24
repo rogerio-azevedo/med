@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         const isString = addressStringSchema.safeParse(data);
 
         if (!isString.success) {
-            const errors = isString.error.flatten().fieldErrors;
+            const errors = z.flattenError(isString.error).fieldErrors;
             return new Response(
                 JSON.stringify({ error: `Geocode validation error ${JSON.stringify(errors)}` }),
                 { status: 400, headers: { 'Content-Type': 'application/json' } }

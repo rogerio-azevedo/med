@@ -4,7 +4,6 @@ import {
     varchar,
     boolean,
     timestamp,
-    jsonb,
     text,
     pgEnum,
     doublePrecision,

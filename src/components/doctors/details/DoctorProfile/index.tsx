@@ -1,5 +1,5 @@
 import { MapPin, Mail, Stethoscope, Briefcase, ChevronLeft } from "lucide-react";
-import { maskPhone } from "@/lib/masks";
+import { maskPhone } from "@/utils/masks";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

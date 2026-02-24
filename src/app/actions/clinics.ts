@@ -1,24 +1,15 @@
 "use server";
 
 import { auth } from "@/auth";
-import { db } from "@/db";
-import { clinics, clinicUsers } from "@/db/schema";
+import { z } from "zod";
+import {
+    createClinic as createClinicService,
+    updateClinicInfo,
+    getClinicIdForAdmin,
+} from "@/services/clinics";
+import { createClinicSchema, updateClinicSchema } from "@/lib/validations/clinic";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { z } from "zod";
-import { eq, and } from "drizzle-orm";
-
-const createClinicSchema = z.object({
-    name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-    slug: z.string().min(3, "Slug deve ter pelo menos 3 caracteres").optional(),
-});
-
-const updateClinicSchema = z.object({
-    name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-    email: z.string().email("E-mail inválido").optional().or(z.literal("")),
-    phone: z.string().optional(),
-    cnpj: z.string().optional(),
-});
 
 export async function createClinic(formData: FormData) {
     const session = await auth();
@@ -29,28 +20,22 @@ export async function createClinic(formData: FormData) {
 
     const name = formData.get("name") as string;
     const rawSlug = formData.get("slug") as string;
-
-    // Simple slug generation if not provided
-    const slug = rawSlug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const slug =
+        rawSlug || name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 
     const validated = createClinicSchema.safeParse({ name, slug });
 
     if (!validated.success) {
-        return { error: validated.error.flatten().fieldErrors };
+        return { error: z.flattenError(validated.error).fieldErrors };
     }
 
-    try {
-        await db.insert(clinics).values({
-            name: validated.data.name,
-            slug: validated.data.slug,
-        }).returning();
+    const result = await createClinicService(validated.data);
 
-        revalidatePath("/admin/clinics");
-    } catch (error) {
-        console.error("Failed to create clinic:", error);
-        return { error: "Failed to create clinic. Slug might be taken." };
+    if (!result.success) {
+        return { error: result.error };
     }
 
+    revalidatePath("/admin/clinics");
     redirect("/admin/clinics");
 }
 
@@ -61,21 +46,15 @@ export async function updateClinicInfoAction(formData: FormData) {
         return { error: "Não autenticado." };
     }
 
-    // Only admins can update clinic info
     if (session.user.role !== "admin") {
-        return { error: "Sem permissão. Apenas administradores podem editar a clínica." };
+        return {
+            error: "Sem permissão. Apenas administradores podem editar a clínica.",
+        };
     }
 
-    // Find the clinic this admin belongs to
-    const clinicUser = await db.query.clinicUsers.findFirst({
-        where: and(
-            eq(clinicUsers.userId, session.user.id),
-            eq(clinicUsers.role, "admin"),
-            eq(clinicUsers.isActive, true),
-        ),
-    });
+    const clinicId = await getClinicIdForAdmin(session.user.id);
 
-    if (!clinicUser) {
+    if (!clinicId) {
         return { error: "Nenhuma clínica associada a este usuário." };
     }
 
@@ -89,26 +68,17 @@ export async function updateClinicInfoAction(formData: FormData) {
     const validated = updateClinicSchema.safeParse(raw);
 
     if (!validated.success) {
-        const errors = validated.error.flatten().fieldErrors;
-        const firstError = Object.values(errors).flat()[0];
+        const flattened = z.flattenError(validated.error);
+        const firstError = Object.values(flattened.fieldErrors).flat()[0];
         return { error: firstError ?? "Dados inválidos." };
     }
 
-    try {
-        await db
-            .update(clinics)
-            .set({
-                name: validated.data.name,
-                email: validated.data.email || null,
-                phone: validated.data.phone || null,
-                cnpj: validated.data.cnpj || null,
-            })
-            .where(eq(clinics.id, clinicUser.clinicId));
+    const result = await updateClinicInfo(clinicId, validated.data);
 
-        revalidatePath("/conta");
-        return { success: true };
-    } catch (error) {
-        console.error("Failed to update clinic:", error);
-        return { error: "Falha ao salvar. Tente novamente." };
+    if (!result.success) {
+        return { error: result.error };
     }
+
+    revalidatePath("/conta");
+    return { success: true };
 }

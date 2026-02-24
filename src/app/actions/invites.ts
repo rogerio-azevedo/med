@@ -1,17 +1,9 @@
 "use server";
 
 import { auth } from "@/auth";
-import { db } from "@/db";
-import { inviteLinks } from "@/db/schema";
-import { inviteRoleEnum } from "@/db/schema/invite-links";
+import { generateInviteCode } from "@/services/invites";
+import { generateInviteSchema } from "@/lib/validations/invite";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
-
-const generateInviteSchema = z.object({
-    clinicId: z.string().uuid().optional(),
-    role: z.enum(["admin", "doctor", "patient"]),
-});
-
 
 export async function generateInvite(formData: FormData) {
     const session = await auth();
@@ -35,30 +27,25 @@ export async function generateInvite(formData: FormData) {
         throw new Error("Global invites are currently only supported for doctors");
     }
 
-    const validated = generateInviteSchema.safeParse({ clinicId: clinicId || undefined, role });
+    const validated = generateInviteSchema.safeParse({
+        clinicId: clinicId || undefined,
+        role,
+    });
 
     if (!validated.success) {
         return { error: "Invalid data" };
     }
 
-    // Generate a simple code (could be better)
-    const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const result = await generateInviteCode(validated.data);
 
-    try {
-        await db.insert(inviteLinks).values({
-            clinicId: validated.data.clinicId || null,
-            role: validated.data.role,
-            code,
-        });
-
-        if (clinicId) {
-            revalidatePath(`/admin/clinics/${clinicId}`);
-        } else {
-            revalidatePath(`/admin/doctors`);
-        }
-        return { success: true, code };
-    } catch (error) {
-        console.error("Failed to generate invite:", error);
-        return { error: "Failed to generate invite" };
+    if (!result.success) {
+        return { error: result.error };
     }
+
+    if (clinicId) {
+        revalidatePath(`/admin/clinics/${clinicId}`);
+    } else {
+        revalidatePath(`/admin/doctors`);
+    }
+    return { success: true, code: result.code };
 }

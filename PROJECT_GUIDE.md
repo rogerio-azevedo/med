@@ -75,6 +75,7 @@ src/
 ├── app/
 │   ├── (auth)/             # Login, registro
 │   ├── (dashboard)/        # Área autenticada
+│   ├── actions/            # Server Actions (thin — orquestram services)
 │   └── api/                # Route Handlers
 ├── components/
 │   ├── ui/                 # shadcn/ui (gerado)
@@ -83,13 +84,22 @@ src/
 ├── db/
 │   ├── index.ts            # Cliente Drizzle
 │   ├── schema/             # Definição das tabelas
-│   └── queries/            # Queries por módulo
+│   └── queries/            # Queries por módulo (data access)
+├── services/               # Lógica de negócio (create, update, delete)
 ├── hooks/                  # use-*.ts
 ├── lib/
 │   ├── utils.ts            # cn() e helpers
+│   ├── geocode.ts          # Geocodificação HERE API (server-side)
 │   └── validations/        # Schemas Zod
+├── utils/                  # Máscaras, formatadores (data, currency)
 └── types/                  # Tipos globais
 ```
+
+### Fluxo backend (Action → Service → Query)
+
+- **Action**: auth, validação, chama service, revalidatePath
+- **Service**: lógica de negócio, orquestra queries e geocode
+- **Query**: apenas SQL com Drizzle
 
 ### Regra de componentes
 
