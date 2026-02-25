@@ -43,6 +43,14 @@ export const packageStatusEnum = pgEnum("package_status", [
     "completed",
     "cancelled",
 ]);
+export const scheduleBlockReasonEnum = pgEnum("schedule_block_reason", [
+    "vacation",
+    "sick_leave",
+    "conference",
+    "personal",
+    "holiday",
+    "other",
+]);
 
 // 4. Specialties
 export const specialties = pgTable("specialties", {
@@ -155,6 +163,22 @@ export const doctorSchedules = pgTable("doctor_schedules", {
     endTime: time("end_time").notNull(),
     slotDurationMin: integer("slot_duration_min").default(30),
     isActive: boolean("is_active").default(true).notNull(),
+});
+
+// 12.a Doctor Schedule Blocks (Bloqueios pontuais de agenda)
+export const doctorScheduleBlocks = pgTable("doctor_schedule_blocks", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    doctorId: uuid("doctor_id")
+        .notNull()
+        .references(() => doctors.id, { onDelete: "cascade" }),
+    clinicId: uuid("clinic_id")
+        .notNull()
+        .references(() => clinics.id, { onDelete: "cascade" }),
+    reason: scheduleBlockReasonEnum("reason").notNull(),
+    note: text("note"),
+    startsAt: timestamp("starts_at").notNull(),
+    endsAt: timestamp("ends_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // 16. Care Packages
