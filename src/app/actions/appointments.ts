@@ -120,12 +120,12 @@ export async function deleteScheduleBlockAction(id: string) {
 
 export async function getAvailableSlotsAction(
     doctorId: string,
-    dateStr: string
+    dateStr: string,
+    timeZone: string
 ) {
     const session = await auth();
     if (!session?.user?.clinicId) return { error: "Não autorizado" };
 
-    const date = new Date(dateStr);
-    const slots = await generateAvailableSlots(doctorId, session.user.clinicId, date);
+    const slots = await generateAvailableSlots(doctorId, session.user.clinicId, dateStr, timeZone);
     return { success: true, slots };
 }

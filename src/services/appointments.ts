@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { eq, and } from "drizzle-orm";
+import { fromZonedTime } from "date-fns-tz";
 import { doctorSchedules } from "@/db/schema/medical";
 import {
     createAppointment as createAppointmentQuery,
@@ -34,9 +35,13 @@ export type TimeSlot = {
 export async function generateAvailableSlots(
     doctorId: string,
     clinicId: string,
-    date: Date
+    dateStr: string,
+    timeZone: string
 ): Promise<TimeSlot[]> {
-    const WEEKDAY = date.getDay(); // 0=Dom, 6=Sab
+    // Pega o número do dia da semana (0=Dom...6=Sab).
+    // Construindo a string como UTC garantimos que não sofra offset do servidor
+    const utcDate = new Date(`${dateStr}T00:00:00Z`);
+    const WEEKDAY = utcDate.getUTCDay();
 
     // 1. Buscar grades do médico para esse dia da semana
     const schedules = await db
@@ -53,11 +58,10 @@ export async function generateAvailableSlots(
 
     if (schedules.length === 0) return [];
 
-    // 2. Calcular início e fim do dia
-    const dayStart = new Date(date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(date);
-    dayEnd.setHours(23, 59, 59, 999);
+    // 2. Calcular início e fim do dia referenciado no fuso especificado!
+    // Usando fromZonedTime do date-fns-tz garantimos não depender do fuso nativo do container
+    const dayStart = fromZonedTime(`${dateStr}T00:00:00`, timeZone);
+    const dayEnd = fromZonedTime(`${dateStr}T23:59:59.999`, timeZone);
 
     // 3. Buscar agendamentos do dia
     const existingAppointments = await getAppointmentsByDoctor(
@@ -76,15 +80,9 @@ export async function generateAvailableSlots(
     for (const schedule of schedules) {
         const slotDuration = schedule.slotDurationMin ?? 30;
 
-        // Parsear horário de início e fim
-        const [startH, startM] = schedule.startTime.split(":").map(Number);
-        const [endH, endM] = schedule.endTime.split(":").map(Number);
-
-        const scheduleStart = new Date(date);
-        scheduleStart.setHours(startH, startM, 0, 0);
-
-        const scheduleEnd = new Date(date);
-        scheduleEnd.setHours(endH, endM, 0, 0);
+        // Construir inícios e fins absolutos considerando o timezone passado
+        const scheduleStart = fromZonedTime(`${dateStr}T${schedule.startTime}`, timeZone);
+        const scheduleEnd = fromZonedTime(`${dateStr}T${schedule.endTime}`, timeZone);
 
         let cursor = new Date(scheduleStart);
         while (cursor < scheduleEnd) {

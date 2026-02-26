@@ -71,13 +71,16 @@ export function NewAppointmentDrawer({
     const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
     const [modality, setModality] = useState<(typeof appointmentModalityValues)[number]>("in_person");
     const [notes, setNotes] = useState("");
+    
+    // timeZone atual do navegador
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     async function handleDateChange(newDate: string) {
         setDate(newDate);
         setSelectedSlot(null);
         if (!doctorId || !newDate) return;
         setLoadingSlots(true);
-        const res = await getAvailableSlotsAction(doctorId, new Date(newDate + "T00:00:00").toISOString());
+        const res = await getAvailableSlotsAction(doctorId, newDate, timeZone);
         setLoadingSlots(false);
         if ("slots" in res && res.slots) {
             // Server returns Date objects serialized as strings via JSON
@@ -94,7 +97,7 @@ export function NewAppointmentDrawer({
         setSelectedSlot(null);
         if (!date || !id) return;
         setLoadingSlots(true);
-        const res = await getAvailableSlotsAction(id, new Date(date + "T00:00:00").toISOString());
+        const res = await getAvailableSlotsAction(id, date, timeZone);
         setLoadingSlots(false);
         if ("slots" in res && res.slots) {
             setSlots(res.slots.map((s) => ({
