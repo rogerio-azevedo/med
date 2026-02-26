@@ -14,6 +14,9 @@ export async function createDoctorAction(formData: FormData) {
         throw new Error("Unauthorized: No clinic association found.");
     }
 
+    const intent = formData.get("intent") as "create" | "reactivate" | "import" | null || "create";
+    const globalId = formData.get("globalId") as string | null;
+
     const specialtyIdsRaw = formData.getAll("specialtyIds");
     const practiceAreaIdsRaw = formData.getAll("practiceAreaIds");
     const data = {
@@ -22,10 +25,49 @@ export async function createDoctorAction(formData: FormData) {
         practiceAreaIds: practiceAreaIdsRaw,
     };
 
+    // se for import/reactivate, senha não é necessária no data payload de create (vazios permitidos)
+    if (intent !== "create") {
+        delete (data as any).password;
+    }
+
     const parsed = createDoctorSchema.safeParse(data);
 
     if (!parsed.success) {
         return { error: "Dados inválidos", details: z.flattenError(parsed.error) };
+    }
+
+    if (intent === "reactivate" && globalId) {
+        const result = await updateDoctor({ ...parsed.data, id: globalId } as any, clinicId);
+        if (result.success) {
+            const { db } = await import("@/db");
+            const { clinicDoctors } = await import("@/db/schema/medical");
+            const { eq, and } = await import("drizzle-orm");
+            await db.update(clinicDoctors).set({ isActive: true }).where(
+                and(
+                    eq(clinicDoctors.doctorId, globalId),
+                    eq(clinicDoctors.clinicId, clinicId)
+                )
+            );
+            revalidatePath("/doctors");
+            return { success: true };
+        }
+        return { error: result.error };
+    }
+
+    if (intent === "import" && globalId) {
+        // Update global details
+        const result = await updateDoctor({ ...parsed.data, id: globalId } as any, clinicId);
+        if (result.success) {
+            const { db } = await import("@/db");
+            const { clinicDoctors } = await import("@/db/schema/medical");
+            await db.insert(clinicDoctors).values({
+                doctorId: globalId,
+                clinicId: clinicId,
+            });
+            revalidatePath("/doctors");
+            return { success: true };
+        }
+        return { error: result.error };
     }
 
     const result = await createDoctor(parsed.data, clinicId);

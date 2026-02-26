@@ -101,16 +101,16 @@ export async function getDoctorsByClinic(clinicId: string) {
 }
 
 export async function deleteDoctor(doctorId: string, clinicId: string) {
-    // In this multi-tenant setup, we "delete" the association for the clinic
-    // We might want to keep the doctor record if they are in other clinics, 
-    // but usually in this simple flow we just remove the link.
-
-    await db.delete(clinicDoctors).where(
-        and(
-            eq(clinicDoctors.doctorId, doctorId),
-            eq(clinicDoctors.clinicId, clinicId)
-        )
-    );
+    // Soft delete: set isActive to false for the clinic association
+    await db
+        .update(clinicDoctors)
+        .set({ isActive: false })
+        .where(
+            and(
+                eq(clinicDoctors.doctorId, doctorId),
+                eq(clinicDoctors.clinicId, clinicId)
+            )
+        );
 
     return { success: true };
 }

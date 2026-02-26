@@ -175,7 +175,7 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
                                                     }}
                                                 >
                                                     <Trash2 className="mr-2 h-4 w-4" />
-                                                    Remover da Clínica
+                                                    Inativar Médico
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -205,11 +205,11 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Remover Médico</DialogTitle>
+                        <DialogTitle>Inativar Médico</DialogTitle>
                         <DialogDescription>
-                            Tem certeza que deseja remover o médico{" "}
+                            Tem certeza que deseja inativar o médico{" "}
                             <span className="font-semibold">{selectedDoctor?.name}</span> da clínica?
-                            O acesso dele será revogado para esta unidade.
+                            O acesso dele será suspenso para esta unidade, mas os dados históricos serão mantidos.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -225,7 +225,7 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
                             onClick={handleDelete}
                             disabled={isDeleting}
                         >
-                            {isDeleting ? "Removendo..." : "Remover"}
+                            {isDeleting ? "Inativando..." : "Inativar"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

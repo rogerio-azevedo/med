@@ -37,9 +37,11 @@ export function AddPatientDialog({ doctors }: AddPatientDialogProps) {
         city: "",
         state: "",
         responsibleDoctorIds: [],
+        originType: undefined,
+        referringDoctorId: undefined,
     };
 
-    async function onSubmit(values: PatientFormValues) {
+    async function onSubmit(values: PatientFormValues, intent: "create" | "reactivate" | "import", globalId?: string) {
         setIsPending(true);
         const formData = new FormData();
         Object.entries(values).forEach(([key, value]) => {
@@ -50,16 +52,19 @@ export function AddPatientDialog({ doctors }: AddPatientDialogProps) {
             }
         });
 
+        formData.append("intent", intent);
+        if (globalId) formData.append("globalId", globalId);
+
         try {
             const result = await createPatientAction(formData);
             if (result.success) {
-                toast.success("Paciente cadastrado com sucesso!");
+                toast.success("Paciente cadastrado/atualizado com sucesso!");
                 setIsOpen(false);
             } else {
-                toast.error(result.error || "Erro ao cadastrar paciente");
+                toast.error(result.error || "Erro ao processar requisição do paciente");
             }
         } catch (error) {
-            toast.error("Erro ao cadastrar paciente");
+            toast.error("Erro interno. Tente novamente.");
         } finally {
             setIsPending(false);
         }

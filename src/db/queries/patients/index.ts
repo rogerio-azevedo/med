@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { patients, clinicPatients, patientDoctors, doctors } from "@/db/schema/medical";
+import { patients, clinicPatients, patientDoctors, patientOrigins, doctors } from "@/db/schema/medical";
 import { addresses } from "@/db/schema/clinics";
 import { users } from "@/db/schema/auth";
 import { eq, and } from "drizzle-orm";
@@ -22,27 +22,16 @@ export async function getPatientsByClinic(clinicId: string) {
 }
 
 export async function deletePatient(patientId: string, clinicId: string) {
-    // First, remove the association with the clinic
+    // Soft delete: set isActive to false for the clinic association
     await db
-        .delete(clinicPatients)
+        .update(clinicPatients)
+        .set({ isActive: false })
         .where(
             and(
                 eq(clinicPatients.patientId, patientId),
                 eq(clinicPatients.clinicId, clinicId)
             )
         );
-
-    // Then check if the patient is associated with any other clinic
-    const otherClinics = await db
-        .select()
-        .from(clinicPatients)
-        .where(eq(clinicPatients.patientId, patientId));
-
-    // If not, we can delete the global patient record (optional, depending on business rules)
-    // For now, let's just keep the association deletion as the primary action for a clinic user
-    if (otherClinics.length === 0) {
-        await db.delete(patients).where(eq(patients.id, patientId));
-    }
 }
 
 export async function getPatientById(patientId: string, clinicId: string) {
@@ -85,9 +74,25 @@ export async function getPatientById(patientId: string, clinicId: string) {
         .innerJoin(users, eq(doctors.userId, users.id))
         .where(eq(patientDoctors.patientId, patientId));
 
+    const origin = await db
+        .select({
+            originType: patientOrigins.originType,
+            referringDoctorId: patientOrigins.referringDoctorId,
+        })
+        .from(patientOrigins)
+        .where(
+            and(
+                eq(patientOrigins.patientId, patientId),
+                eq(patientOrigins.clinicId, clinicId)
+            )
+        )
+        .limit(1);
+
     return {
         ...patientData[0].patient,
         responsibleDoctors,
         address: address[0] || null,
+        originType: origin[0]?.originType ?? null,
+        referringDoctorId: origin[0]?.referringDoctorId ?? null,
     };
 }

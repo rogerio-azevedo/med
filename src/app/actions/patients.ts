@@ -15,16 +15,63 @@ export async function createPatientAction(formData: FormData) {
         throw new Error("Unauthorized: No clinic association found.");
     }
 
+    const intent = formData.get("intent") as "create" | "reactivate" | "import" | null || "create";
+    const globalId = formData.get("globalId") as string | null;
+
     const responsibleDoctorIdsRaw = formData.getAll("responsibleDoctorIds");
-    const data = {
+    const data: Record<string, any> = {
         ...Object.fromEntries(formData),
         responsibleDoctorIds: responsibleDoctorIdsRaw.filter(Boolean),
     };
 
+    if (!data.referringDoctorId || data.referringDoctorId === "null" || data.referringDoctorId === "") {
+        delete data.referringDoctorId;
+    }
+    if (!data.originType || data.originType === "null" || data.originType === "") {
+        delete data.originType;
+    }
+
     const parsed = createPatientSchema.safeParse(data);
 
     if (!parsed.success) {
-        return { error: "Dados inválidos", details: z.flattenError(parsed.error) };
+        const flattened = z.flattenError(parsed.error);
+        const firstError = Object.values(flattened.fieldErrors).flat().find(Boolean);
+        return { error: firstError || "Dados inválidos", details: flattened };
+    }
+
+    if (intent === "reactivate" && globalId) {
+        const result = await updatePatient(globalId, parsed.data, clinicId);
+        // also set isActive = true
+        if (result.success) {
+            const { db } = await import("@/db");
+            const { clinicPatients } = await import("@/db/schema/medical");
+            const { eq, and } = await import("drizzle-orm");
+            await db.update(clinicPatients).set({ isActive: true }).where(
+                and(
+                    eq(clinicPatients.patientId, globalId),
+                    eq(clinicPatients.clinicId, clinicId)
+                )
+            );
+            revalidatePath("/patients");
+            return { success: true };
+        }
+        return { error: result.error };
+    }
+
+    if (intent === "import" && globalId) {
+        // Update the patient details globally, and link them to this clinic.
+        const result = await updatePatient(globalId, parsed.data, clinicId);
+        if (result.success) {
+            const { db } = await import("@/db");
+            const { clinicPatients } = await import("@/db/schema/medical");
+            await db.insert(clinicPatients).values({
+                patientId: globalId,
+                clinicId: clinicId,
+            });
+            revalidatePath("/patients");
+            return { success: true };
+        }
+        return { error: result.error };
     }
 
     const result = await createPatient(parsed.data, clinicId);
@@ -64,17 +111,26 @@ export async function updatePatientAction(patientId: string, formData: FormData)
     }
 
     const responsibleDoctorIdsRaw = formData.getAll("responsibleDoctorIds");
-    const data = {
+    const data: Record<string, any> = {
         ...Object.fromEntries(formData),
         responsibleDoctorIds: responsibleDoctorIdsRaw.filter(
             (id) => id !== "null" && id !== ""
         ),
     };
 
+    if (!data.referringDoctorId || data.referringDoctorId === "null" || data.referringDoctorId === "") {
+        delete data.referringDoctorId;
+    }
+    if (!data.originType || data.originType === "null" || data.originType === "") {
+        delete data.originType;
+    }
+
     const parsed = updatePatientSchema.safeParse(data);
 
     if (!parsed.success) {
-        return { error: "Dados inválidos", details: z.flattenError(parsed.error) };
+        const flattened = z.flattenError(parsed.error);
+        const firstError = Object.values(flattened.fieldErrors).flat().find(Boolean);
+        return { error: firstError || "Dados inválidos", details: flattened };
     }
 
     const result = await updatePatient(patientId, parsed.data, clinicId);

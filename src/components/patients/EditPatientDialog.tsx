@@ -5,23 +5,42 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Pencil, User, Loader2 } from "lucide-react";
+import { Pencil, Loader2 } from "lucide-react";
 import { updatePatientAction, getPatientAction } from "@/app/actions/patients";
 import { toast } from "sonner";
 import { PatientForm, PatientFormValues } from "./PatientForm";
 
+type DoctorRef = { id: string; name: string | null };
+
+interface PatientForEdit {
+    id?: string;
+    name?: string | null;
+    cpf?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    birthDate?: string | Date | null;
+    sex?: string | null;
+    address?: {
+        zipCode?: string | null;
+        street?: string | null;
+        number?: string | null;
+        neighborhood?: string | null;
+        city?: string | null;
+        state?: string | null;
+    } | null;
+    responsibleDoctors?: DoctorRef[];
+    originType?: PatientFormValues["originType"] | null;
+    referringDoctorId?: string | null;
+}
+
 interface EditPatientDialogProps {
     patientId: string;
-    doctors: { id: string; name: string | null }[];
+    doctors: DoctorRef[];
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
-    // We'll use a server action to get the data or pass it if easy
-    // For now, let's assume we might need to fetch it or pass it.
-    // Given the context, let's try to fetch it via a client-side action or prop.
-    initialData?: any;
+    initialData?: PatientForEdit | null;
 }
 
 export function EditPatientDialog({
@@ -33,7 +52,7 @@ export function EditPatientDialog({
 }: EditPatientDialogProps) {
     const [isPending, setIsPending] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [patient, setPatient] = useState<any>(initialData || null);
+    const [patient, setPatient] = useState<PatientForEdit | null>(initialData ?? null);
 
     // If no initialData, we should fetch it. 
     // For simplicity in this edit, let's assume we'll pass enough data or fetch it here.
@@ -45,12 +64,12 @@ export function EditPatientDialog({
                 setIsLoading(true);
                 try {
                     const result = await getPatientAction(patientId);
-                    if (result.success) {
-                        setPatient(result.patient);
+                    if (result.success && result.patient) {
+                        setPatient(result.patient as PatientForEdit);
                     } else {
                         toast.error(result.error || "Erro ao carregar dados do paciente");
                     }
-                } catch (error) {
+                } catch {
                     toast.error("Erro ao carregar dados do paciente");
                 } finally {
                     setIsLoading(false);
@@ -72,7 +91,7 @@ export function EditPatientDialog({
         email: patient.email || "",
         cpf: patient.cpf || "",
         phone: patient.phone || "",
-        birthDate: patient.birthDate || "",
+        birthDate: patient.birthDate ? (typeof patient.birthDate === "string" ? patient.birthDate : new Date(patient.birthDate).toISOString().split("T")[0]) : "",
         sex: (patient.sex as "M" | "F" | "other") || "M",
         zipCode: patient.address?.zipCode || "",
         street: patient.address?.street || "",
@@ -80,7 +99,9 @@ export function EditPatientDialog({
         neighborhood: patient.address?.neighborhood || "",
         city: patient.address?.city || "",
         state: patient.address?.state || "",
-        responsibleDoctorIds: patient.responsibleDoctors?.map((d: any) => d.id) || [],
+        responsibleDoctorIds: patient.responsibleDoctors?.map((d: DoctorRef) => d.id) ?? [],
+        originType: patient.originType ?? undefined,
+        referringDoctorId: patient.referringDoctorId ?? undefined,
     } : {
         name: "",
         email: "",
@@ -118,7 +139,7 @@ export function EditPatientDialog({
             } else {
                 toast.error(result.error || "Erro ao atualizar paciente");
             }
-        } catch (error) {
+        } catch {
             toast.error("Erro ao atualizar paciente");
         } finally {
             setIsPending(false);
@@ -152,10 +173,11 @@ export function EditPatientDialog({
                         <PatientForm
                             key={patient?.id || "form"}
                             defaultValues={defaultValues}
-                            onSubmit={onSubmit}
+                            onSubmit={(values) => onSubmit(values)}
                             isPending={isPending}
                             doctors={doctors}
                             onCancel={() => onOpenChange(false)}
+                            mode="edit"
                         />
                     )}
                 </div>

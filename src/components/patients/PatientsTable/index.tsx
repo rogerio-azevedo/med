@@ -130,7 +130,7 @@ export function PatientsTable({ patients, doctors }: PatientsTableProps) {
                                                     }}
                                                 >
                                                     <Trash2 className="mr-2 h-4 w-4" />
-                                                    Excluir
+                                                    Inativar Paciente
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -145,11 +145,11 @@ export function PatientsTable({ patients, doctors }: PatientsTableProps) {
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Excluir Paciente</DialogTitle>
+                        <DialogTitle>Inativar Paciente</DialogTitle>
                         <DialogDescription>
-                            Tem certeza que deseja excluir o paciente{" "}
+                            Tem certeza que deseja inativar o paciente{" "}
                             <span className="font-semibold">{selectedPatient?.name}</span>? Esta
-                            ação não pode ser desfeita.
+                            ação suspende o acesso ao prontuário deste paciente temporariamente mas pode ser reativado a qualquer momento.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -165,7 +165,7 @@ export function PatientsTable({ patients, doctors }: PatientsTableProps) {
                             onClick={handleDelete}
                             disabled={isDeleting}
                         >
-                            {isDeleting ? "Excluindo..." : "Excluir"}
+                            {isDeleting ? "Inativando..." : "Inativar"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

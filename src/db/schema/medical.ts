@@ -51,6 +51,13 @@ export const scheduleBlockReasonEnum = pgEnum("schedule_block_reason", [
     "holiday",
     "other",
 ]);
+export const patientOriginTypeEnum = pgEnum("patient_origin_type", [
+    "instagram",
+    "google",
+    "facebook",
+    "friends_family",
+    "medical_referral",
+]);
 
 // 4. Specialties
 export const specialties = pgTable("specialties", {
@@ -147,6 +154,20 @@ export const patientDoctors = pgTable("patient_doctors", {
     doctorId: uuid("doctor_id")
         .notNull()
         .references(() => doctors.id, { onDelete: "cascade" }),
+});
+
+// 11.b Patient Origins
+export const patientOrigins = pgTable("patient_origins", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    patientId: uuid("patient_id")
+        .notNull()
+        .references(() => patients.id, { onDelete: "cascade" }),
+    clinicId: uuid("clinic_id")
+        .notNull()
+        .references(() => clinics.id, { onDelete: "cascade" }),
+    originType: patientOriginTypeEnum("origin_type").notNull(),
+    referringDoctorId: uuid("referring_doctor_id").references(() => doctors.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // 12. Doctor Schedules

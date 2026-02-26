@@ -1,9 +1,17 @@
 import { z } from "zod";
 
+const cpfClean = (v: string) => v?.replace(/\D/g, "") ?? "";
+
 export const createPatientSchema = z.object({
-    name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-    cpf: z.string().optional(),
-    email: z.email("Email inválido").optional().or(z.literal("")),
+    name: z
+        .string()
+        .min(2, "Nome deve ter pelo menos 2 caracteres")
+        .refine((v) => /[a-zA-ZÀ-ÿ]/.test(v), "Nome deve conter ao menos uma letra"),
+    cpf: z
+        .string()
+        .optional()
+        .refine((v) => !v || cpfClean(v).length === 11, "CPF deve ter 11 dígitos"),
+    email: z.string().email("Email inválido").optional().or(z.literal("")),
     phone: z.string().optional(),
     birthDate: z.string().optional(),
     sex: z.enum(["M", "F", "other"]).optional(),
@@ -15,7 +23,16 @@ export const createPatientSchema = z.object({
     city: z.string().optional(),
     state: z.string().optional(),
     responsibleDoctorIds: z.array(z.string().uuid()).optional(),
-});
+    originType: z.enum(["instagram", "google", "facebook", "friends_family", "medical_referral"]).optional(),
+    referringDoctorId: z.string().uuid().optional(),
+}).refine(
+    (data) => {
+        const hasEmail = data.email && data.email.trim().length > 0;
+        const hasPhone = data.phone && data.phone.replace(/\D/g, "").length >= 10;
+        return hasEmail || hasPhone;
+    },
+    { message: "Informe ao menos um contato: email ou telefone", path: ["email"] }
+);
 
 export const updatePatientSchema = createPatientSchema;
 

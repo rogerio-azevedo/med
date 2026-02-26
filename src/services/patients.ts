@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
-import { patients, clinicPatients, addresses, patientDoctors } from "@/db/schema";
+import { patients, clinicPatients, addresses, patientDoctors, patientOrigins } from "@/db/schema";
 import { deletePatient as deletePatientQuery } from "@/db/queries/patients";
 import type { CreatePatientInput, UpdatePatientInput } from "@/lib/validations/patient";
 
@@ -23,7 +23,11 @@ export async function createPatient(
         city,
         state,
         responsibleDoctorIds,
+        originType,
+        referringDoctorId,
     } = data;
+
+    let insertedPatientId: string | null = null;
 
     try {
         const [newPatient] = await db
@@ -38,6 +42,8 @@ export async function createPatient(
             })
             .returning();
 
+        insertedPatientId = newPatient.id;
+
         await db.insert(clinicPatients).values({
             patientId: newPatient.id,
             clinicId,
@@ -50,6 +56,15 @@ export async function createPatient(
                     doctorId,
                 }))
             );
+        }
+
+        if (originType) {
+            await db.insert(patientOrigins).values({
+                patientId: newPatient.id,
+                clinicId,
+                originType,
+                referringDoctorId: referringDoctorId || null,
+            });
         }
 
         if (zipCode || street || city) {
@@ -69,6 +84,17 @@ export async function createPatient(
 
         return { success: true };
     } catch (err: unknown) {
+        if (insertedPatientId) {
+            try {
+                await db.delete(addresses).where(and(eq(addresses.entityType, "patient"), eq(addresses.entityId, insertedPatientId)));
+                await db.delete(patientOrigins).where(eq(patientOrigins.patientId, insertedPatientId));
+                await db.delete(patientDoctors).where(eq(patientDoctors.patientId, insertedPatientId));
+                await db.delete(clinicPatients).where(eq(clinicPatients.patientId, insertedPatientId));
+                await db.delete(patients).where(eq(patients.id, insertedPatientId));
+            } catch (_rollbackErr) {
+                console.error("Falha ao reverter cadastro após erro:", _rollbackErr);
+            }
+        }
         const error = err as { code?: string; detail?: string };
         if (error.code === "23505" && error.detail?.includes("cpf")) {
             return { success: false, error: "Este CPF já está cadastrado." };
@@ -97,6 +123,8 @@ export async function updatePatient(
         city,
         state,
         responsibleDoctorIds,
+        originType,
+        referringDoctorId,
     } = data;
 
     try {
@@ -121,6 +149,36 @@ export async function updatePatient(
                         doctorId,
                     }))
                 );
+            }
+        }
+
+        if (originType) {
+            const existingOrigin = await db
+                .select()
+                .from(patientOrigins)
+                .where(
+                    and(
+                        eq(patientOrigins.patientId, patientId),
+                        eq(patientOrigins.clinicId, clinicId)
+                    )
+                )
+                .limit(1);
+
+            if (existingOrigin.length > 0) {
+                await db
+                    .update(patientOrigins)
+                    .set({
+                        originType,
+                        referringDoctorId: referringDoctorId || null,
+                    })
+                    .where(eq(patientOrigins.id, existingOrigin[0].id));
+            } else {
+                await db.insert(patientOrigins).values({
+                    patientId,
+                    clinicId,
+                    originType,
+                    referringDoctorId: referringDoctorId || null,
+                });
             }
         }
 
