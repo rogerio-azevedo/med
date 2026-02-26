@@ -117,7 +117,7 @@ const AddressMap = dynamic(
     { ssr: false, loading: () => <div className="h-[220px] animate-pulse bg-muted rounded-xl" /> }
 );
 
-export function RegisterForm() {
+export default function RegisterForm() {
     const searchParams = useSearchParams();
     const inviteCode = searchParams.get("invite");
     const [state, action, isPending] = useActionState(register, null);
@@ -503,7 +503,7 @@ export function RegisterForm() {
                                                 <SelectItem key={st.value} value={st.value}>{st.value}</SelectItem>
                                             ))}
                                         </SelectContent>
-                                            </Select>
+                                    </Select>
                                 </div>
                             </div>
 
