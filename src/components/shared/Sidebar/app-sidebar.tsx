@@ -3,6 +3,7 @@
 import * as React from "react"
 import {
     LayoutDashboard,
+    KanbanSquare,
     Users,
     Stethoscope,
     Settings,
@@ -47,6 +48,11 @@ const data = {
             title: "Dashboard",
             url: "/dashboard",
             icon: LayoutDashboard,
+        },
+        {
+            title: "Tarefas",
+            url: "/tarefas",
+            icon: KanbanSquare,
         },
         {
             title: "Cadastros",
