@@ -1,23 +1,26 @@
-import { signOut } from "@/auth";
+"use client";
+
+import { signOutAction } from "@/app/actions/auth-client";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
+import { useHeaderStore } from "@/store/header";
 
 export function Header() {
+    const { title, description } = useHeaderStore();
+
     return (
         <header className="h-16 border-b bg-card flex items-center justify-between px-4 shrink-0 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
             <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
-                <Separator orientation="vertical" className="mr-2 h-4" />
-                <h2 className="text-sm font-semibold md:text-lg">Dashboard</h2>
+                {title && (
+                    <div className="ml-2 pr-4 border-l pl-4 border-border/50">
+                        <h2 className="text-sm font-semibold md:text-lg">{title}</h2>
+                        {description && <p className="text-xs text-muted-foreground hidden md:block">{description}</p>}
+                    </div>
+                )}
             </div>
 
-            <form
-                action={async () => {
-                    "use server";
-                    await signOut();
-                }}
-            >
+            <form action={signOutAction}>
                 <Button variant="outline" size="sm">
                     Sair
                 </Button>

@@ -15,6 +15,7 @@ import { Calendar, Clock, Trash2, MessageSquare, Send, Settings2, CalendarCheck,
 import { createCommentAction, deleteCardAction, getCardCommentsAction } from "@/app/actions/kanban";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ConfirmModal } from "@/components/shared/ConfirmModal";
 
 function formatDate(value: string | null | undefined) {
     if (!value) return null;
@@ -26,10 +27,11 @@ function formatDateTime(value: string | null | undefined) {
     return new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
-export function CardDetailsModal({ isOpen, onClose, card, onEdit }: any) {
+export function CardDetailsModal({ isOpen, onClose, card, onEdit, onDeleted }: any) {
     const [comment, setComment] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [localComments, setLocalComments] = useState<any[]>([]);
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
     // Sync localComments whenever the card changes or the modal opens
     useEffect(() => {
@@ -68,13 +70,20 @@ export function CardDetailsModal({ isOpen, onClose, card, onEdit }: any) {
         }
     }
 
-    async function handleDelete() {
-        if (!confirm("Deseja realmente excluir esta tarefa?")) return;
+    function requestDelete() {
+        setIsDeleteConfirmOpen(true);
+    }
+
+    async function executeDelete() {
         try {
             const result = await deleteCardAction(card.id);
             if (result.success) {
                 toast.success("Tarefa excluída");
-                onClose();
+                if (onDeleted) {
+                    onDeleted(card.id);
+                } else {
+                    onClose();
+                }
             }
         } catch (e) {
             toast.error("Erro ao excluir tarefa");
@@ -117,7 +126,7 @@ export function CardDetailsModal({ isOpen, onClose, card, onEdit }: any) {
                             <Button variant="ghost" size="icon" onClick={() => onEdit(card)} className="rounded-full hover:bg-background">
                                 <Settings2 className="size-5" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={handleDelete} className="rounded-full hover:bg-red-50 hover:text-red-500">
+                            <Button variant="ghost" size="icon" onClick={requestDelete} className="rounded-full hover:bg-red-50 hover:text-red-500">
                                 <Trash2 className="size-5" />
                             </Button>
                         </div>
@@ -226,6 +235,16 @@ export function CardDetailsModal({ isOpen, onClose, card, onEdit }: any) {
                     </div>
                 </div>
             </DialogContent>
+
+            <ConfirmModal
+                isOpen={isDeleteConfirmOpen}
+                onClose={() => setIsDeleteConfirmOpen(false)}
+                onConfirm={executeDelete}
+                title="Excluir Tarefa"
+                description={`Tem certeza que deseja excluir "${card.title}"? Esta ação não pode ser desfeita e todo o progresso será perdido.`}
+                confirmText="Excluir"
+                variant="destructive"
+            />
         </Dialog>
     );
 }

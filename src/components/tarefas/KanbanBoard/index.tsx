@@ -30,10 +30,14 @@ import { CardDetailsModal } from "../CardDetailsModal";
 import { CategoryManager } from "../CategoryManager";
 import { CreateColumnModal } from "../CreateColumnModal";
 import { CreateBoardModal } from "../CreateBoardModal";
+import { EditBoardModal } from "../EditBoardModal";
+import { DeleteBoardModal } from "../DeleteBoardModal";
 import { BoardFlowConfig } from "../BoardFlowConfig";
 import { moveCardAction, reorderColumnsAction } from "@/app/actions/kanban";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useHeaderStore } from "@/store/header";
+import { useEffect } from "react";
 
 export function KanbanBoard({ initialData, clinicId, userId }: any) {
     const router = useRouter();
@@ -59,9 +63,20 @@ export function KanbanBoard({ initialData, clinicId, userId }: any) {
     const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
     const [isCreateColumnOpen, setIsCreateColumnOpen] = useState(false);
     const [isCreateBoardOpen, setIsCreateBoardOpen] = useState(false);
+    const [isEditBoardOpen, setIsEditBoardOpen] = useState(false);
+    const [isDeleteBoardOpen, setIsDeleteBoardOpen] = useState(false);
     const [isFlowConfigOpen, setIsFlowConfigOpen] = useState(false);
     const [selectedCard, setSelectedCard] = useState<any>(null);
     const [selectedColumnId, setSelectedColumnId] = useState<string | null>(null);
+    const [boardToEdit, setBoardToEdit] = useState<any>(null);
+    const [boardToDelete, setBoardToDelete] = useState<any>(null);
+
+    const setHeader = useHeaderStore((state) => state.setHeader);
+    
+    useEffect(() => {
+        setHeader("Gestão de Tarefas", "Visualize e gerencie as etapas de cada processo da sua clínica.");
+        return () => useHeaderStore.getState().clearHeader();
+    }, [setHeader]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -226,6 +241,34 @@ export function KanbanBoard({ initialData, clinicId, userId }: any) {
         setBoards((prev: any[]) => [...prev, board]);
     }
 
+    function handleBoardUpdated(updatedBoard: any) {
+        setBoards((prev: any[]) =>
+            prev.map((b: any) => (b.id === updatedBoard.id ? { ...b, ...updatedBoard } : b))
+        );
+        if (activeBoard?.id === updatedBoard.id) {
+            router.refresh();
+        }
+    }
+
+    function handleBoardDeleted(deletedId: string, targetId: string) {
+        setBoards((prev: any[]) => prev.filter((b: any) => b.id !== deletedId));
+        if (activeBoard?.id === deletedId) {
+            router.push(`/tarefas?boardId=${targetId}`);
+        } else {
+            router.refresh(); // Just in case cards were moved to the active board
+        }
+    }
+
+    const openEditBoard = (board: any) => {
+        setBoardToEdit(board);
+        setIsEditBoardOpen(true);
+    };
+
+    const openDeleteBoard = (board: any) => {
+        setBoardToDelete(board);
+        setIsDeleteBoardOpen(true);
+    };
+
     /** Called by CreateCardModal after a new card is saved — adds it to local state immediately */
     function handleCardCreated(newCard: any) {
         if (!newCard) return;
@@ -240,19 +283,22 @@ export function KanbanBoard({ initialData, clinicId, userId }: any) {
         );
     }
 
+    /** Called by CardDetailsModal after deleting — removes the card from local state */
+    function handleCardDeleted(cardId: string) {
+        setCards((prev: any[]) => prev.filter((c: any) => c.id !== cardId));
+        setIsDetailsOpen(false);
+    }
+
     return (
         <div className="flex flex-col h-full bg-background gap-2 overflow-hidden px-4 py-2">
             <header className="flex flex-col gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground">Gestão de Tarefas</h1>
-                    <p className="text-muted-foreground text-sm font-medium">Visualize e gerencie as etapas de cada processo da sua clínica.</p>
-                </div>
-
                 <BoardSelector
                     boards={boards}
                     activeBoardId={activeBoard?.id}
                     onNewBoard={() => setIsCreateBoardOpen(true)}
                     onConfigFlow={() => setIsFlowConfigOpen(true)}
+                    onEditBoard={openEditBoard}
+                    onDeleteBoard={openDeleteBoard}
                 />
 
                 <KanbanHeader
@@ -336,6 +382,7 @@ export function KanbanBoard({ initialData, clinicId, userId }: any) {
                 onClose={() => setIsDetailsOpen(false)}
                 card={selectedCard}
                 onEdit={openEditCard}
+                onDeleted={handleCardDeleted}
             />
 
             <CategoryManager
@@ -357,6 +404,21 @@ export function KanbanBoard({ initialData, clinicId, userId }: any) {
                 isOpen={isCreateBoardOpen}
                 onClose={() => setIsCreateBoardOpen(false)}
                 onCreated={handleBoardCreated}
+            />
+
+            <EditBoardModal
+                isOpen={isEditBoardOpen}
+                onClose={() => setIsEditBoardOpen(false)}
+                onUpdated={handleBoardUpdated}
+                boardToEdit={boardToEdit}
+            />
+
+            <DeleteBoardModal
+                isOpen={isDeleteBoardOpen}
+                onClose={() => setIsDeleteBoardOpen(false)}
+                onDeleted={handleBoardDeleted}
+                boardToDelete={boardToDelete}
+                allBoards={boards}
             />
 
             <BoardFlowConfig

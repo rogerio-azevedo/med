@@ -22,6 +22,11 @@ export const createBoardSchema = z.object({
 
 export const updateBoardSchema = createBoardSchema.partial();
 
+export const deleteBoardSchema = z.object({
+    boardId: z.string().uuid(),
+    targetBoardId: z.string().uuid(),
+});
+
 export const createBoardFlowSchema = z.object({
     sourceBoardId: z.string().uuid(),
     targetBoardId: z.string().uuid(),

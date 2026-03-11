@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, Tag } from "lucide-react";
 import { createCategoryAction, deleteCategoryAction } from "@/app/actions/kanban";
 import { toast } from "sonner";
+import { ConfirmModal } from "@/components/shared/ConfirmModal";
 
 const PRESET_COLORS = [
     "#ef4444", "#f97316", "#eab308", "#22c55e",
@@ -23,6 +24,12 @@ export function CategoryManager({ isOpen, onClose, categories, onUpdate }: any) 
     const [name, setName] = useState("");
     const [color, setColor] = useState(PRESET_COLORS[0]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    const [confirmState, setConfirmState] = useState<{ isOpen: boolean; categoryId: string | null; categoryName: string }>({
+        isOpen: false,
+        categoryId: null,
+        categoryName: ""
+    });
 
     async function handleCreate() {
         if (!name.trim()) return;
@@ -41,8 +48,14 @@ export function CategoryManager({ isOpen, onClose, categories, onUpdate }: any) 
         }
     }
 
-    async function handleDelete(id: string) {
-        if (!confirm("Excluir esta categoria?")) return;
+    function requestDelete(cat: any) {
+        setConfirmState({ isOpen: true, categoryId: cat.id, categoryName: cat.name });
+    }
+
+    async function executeDelete() {
+        const id = confirmState.categoryId;
+        if (!id) return;
+
         const result = await deleteCategoryAction(id);
         if (result.success) {
             toast.success("Categoria excluída");
@@ -116,7 +129,7 @@ export function CategoryManager({ isOpen, onClose, categories, onUpdate }: any) 
                                 variant="ghost"
                                 size="icon"
                                 className="size-7 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => handleDelete(cat.id)}
+                                onClick={() => requestDelete(cat)}
                             >
                                 <Trash2 className="size-3.5" />
                             </Button>
@@ -128,6 +141,16 @@ export function CategoryManager({ isOpen, onClose, categories, onUpdate }: any) 
                     Fechar
                 </Button>
             </DialogContent>
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={executeDelete}
+                title="Excluir Categoria"
+                description={`Tem certeza que deseja excluir a categoria "${confirmState.categoryName}"? O efeito será removido de todas as tarefas associadas.`}
+                confirmText="Excluir"
+                variant="destructive"
+            />
         </Dialog>
     );
 }

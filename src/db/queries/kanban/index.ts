@@ -51,6 +51,53 @@ export async function updateBoard(id: string, data: any, clinicId: string) {
     return results[0];
 }
 
+export async function deleteBoardTransferTasks(boardId: string, targetBoardId: string, clinicId: string) {
+    // 1. Get the first column of the target board
+    const targetColumns = await db
+        .select()
+        .from(kanbanColumns)
+        .where(and(eq(kanbanColumns.boardId, targetBoardId), eq(kanbanColumns.clinicId, clinicId)))
+        .orderBy(asc(kanbanColumns.position))
+        .limit(1);
+
+    if (targetColumns.length === 0) {
+        throw new Error("O quadro de destino não possui colunas para receber as tarefas.");
+    }
+    const firstTargetColumn = targetColumns[0];
+
+    // 2. Get all columns of the current board
+    const currentColumns = await db
+        .select({ id: kanbanColumns.id })
+        .from(kanbanColumns)
+        .where(and(eq(kanbanColumns.boardId, boardId), eq(kanbanColumns.clinicId, clinicId)));
+
+    const currentColumnIds = currentColumns.map((c) => c.id);
+
+    // 3. Move all cards from current columns to the first target column
+    if (currentColumnIds.length > 0) {
+        await db
+            .update(kanbanCards)
+            .set({ 
+                kanbanColumnId: firstTargetColumn.id,
+                updatedAt: new Date()
+            })
+            .where(
+                and(
+                    eq(kanbanCards.clinicId, clinicId),
+                    inArray(kanbanCards.kanbanColumnId, currentColumnIds)
+                )
+            );
+    }
+
+    // 4. Delete the board (cascades should delete the old columns)
+    const results = await db
+        .delete(kanbanBoards)
+        .where(and(eq(kanbanBoards.id, boardId), eq(kanbanBoards.clinicId, clinicId)))
+        .returning();
+
+    return results[0];
+}
+
 // Flows
 export async function getBoardFlows(sourceBoardId: string) {
     return db

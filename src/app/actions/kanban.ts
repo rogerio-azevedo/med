@@ -14,6 +14,8 @@ import {
     createBoardFlowSchema,
     createColumnSchema,
     updateColumnSchema,
+    updateBoardSchema,
+    deleteBoardSchema,
 } from "@/lib/validations/kanban";
 
 async function getSession() {
@@ -37,6 +39,34 @@ export async function createBoardAction(data: any) {
         });
         revalidatePath("/tarefas");
         return { success: true, data: board };
+    } catch (e: any) {
+        return { error: e.message };
+    }
+}
+
+export async function updateBoardAction(id: string, data: any) {
+    const session = await getSession();
+    const parsed = updateBoardSchema.safeParse(data);
+    if (!parsed.success) return { error: "Dados inválidos", details: parsed.error.flatten() };
+
+    try {
+        const board = await kanbanQueries.updateBoard(id, parsed.data, session.user.clinicId);
+        revalidatePath("/tarefas");
+        return { success: true, data: board };
+    } catch (e: any) {
+        return { error: e.message };
+    }
+}
+
+export async function deleteBoardAction(boardId: string, targetBoardId: string) {
+    const session = await getSession();
+    const parsed = deleteBoardSchema.safeParse({ boardId, targetBoardId });
+    if (!parsed.success) return { error: "Dados inválidos", details: parsed.error.flatten() };
+
+    try {
+        await kanbanQueries.deleteBoardTransferTasks(boardId, targetBoardId, session.user.clinicId);
+        revalidatePath("/tarefas");
+        return { success: true };
     } catch (e: any) {
         return { error: e.message };
     }
