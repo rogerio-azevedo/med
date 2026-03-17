@@ -1,22 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
 import { login } from "../../actions/auth";
 
 export default function LoginPage() {
     const [state, action, isPending] = useActionState(login, null);
+    const [showPassword, setShowPassword] = useState(false);
 
     return (
         <div className="flex h-screen items-center justify-center bg-gray-50">
@@ -36,12 +37,32 @@ export default function LoginPage() {
                                 name="email"
                                 type="email"
                                 placeholder="m@example.com"
+                                defaultValue={state?.email}
                                 required
                             />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="password">Senha</Label>
-                            <Input id="password" name="password" type="password" required />
+                            <div className="relative">
+                                <Input 
+                                    id="password" 
+                                    name="password" 
+                                    type={showPassword ? "text" : "password"} 
+                                    defaultValue={state?.password}
+                                    required 
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                        <Eye className="h-4 w-4" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
                         {state?.error && (
                             <div className="text-red-500 text-sm">{state.error}</div>
@@ -51,14 +72,6 @@ export default function LoginPage() {
                         </Button>
                     </form>
                 </CardContent>
-                <CardFooter>
-                    <div className="text-sm text-muted-foreground text-center w-full">
-                        Não tem uma conta?{" "}
-                        <Link href="/register" className="underline hover:text-primary">
-                            Registre-se
-                        </Link>
-                    </div>
-                </CardFooter>
             </Card>
         </div>
     );

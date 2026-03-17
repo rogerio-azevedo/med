@@ -5,6 +5,8 @@ import {
     primaryKey,
     integer,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { doctors, patients } from "./medical";
 import { type AdapterAccount } from "next-auth/adapters";
 
 export const users = pgTable("user", {
@@ -64,3 +66,11 @@ export const verificationTokens = pgTable(
         }),
     })
 );
+
+export const usersRelations = relations(users, ({ one, many }) => ({
+    doctor: one(doctors, {
+        fields: [users.id],
+        references: [doctors.userId],
+    }),
+    patients: many(patients), 
+}));

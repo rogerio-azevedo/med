@@ -29,9 +29,17 @@ export async function login(prevState: unknown, formData: FormData) {
         if (error instanceof AuthError) {
             switch (error.type) {
                 case "CredentialsSignin":
-                    return { error: "Credenciais inválidas." };
+                    return { 
+                        error: "Credenciais inválidas.",
+                        email,
+                        password
+                    };
                 default:
-                    return { error: "Algo deu errado." };
+                    return { 
+                        error: "Algo deu errado.",
+                        email,
+                        password
+                    };
             }
         }
         throw error;

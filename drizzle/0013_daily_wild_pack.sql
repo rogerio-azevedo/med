@@ -1,0 +1,1 @@
+ALTER TABLE "consultation_soap" ADD CONSTRAINT "consultation_soap_consultation_id_unique" UNIQUE("consultation_id");

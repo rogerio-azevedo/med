@@ -88,7 +88,7 @@ const customSelectStyles = {
         boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
         padding: "4px",
     }),
-    menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+    menuPortal: (base: any) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
     option: (base: any, state: any) => ({
         ...base,
         borderRadius: "0.5rem",
@@ -331,7 +331,16 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-5xl p-0 border-none shadow-2xl bg-white/95 backdrop-blur-md max-h-[92vh] flex flex-col">
+            <DialogContent 
+                className="sm:max-w-5xl p-0 border-none shadow-2xl bg-white/95 backdrop-blur-md max-h-[92vh] flex flex-col"
+                onInteractOutside={(e) => {
+                    // Prevent closing when clicking on the portal menu of react-select
+                    const target = e.target as HTMLElement;
+                    if (target?.closest?.('.react-select__menu')) {
+                        e.preventDefault();
+                    }
+                }}
+            >
                 {/* Header */}
                 <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 pb-4 border-b shrink-0">
                     <div className="flex items-center gap-4">
@@ -509,7 +518,7 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                                                             menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                                             menuPosition="fixed"
                                                             value={specialties.filter((s) => field.value?.includes(s.value))}
-                                                            onChange={(v) => field.onChange(v.map((x) => x.value))} />
+                                                            onChange={(v) => field.onChange(v ? v.map((x: any) => x.value) : [])} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -526,7 +535,7 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                                                             menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                                             menuPosition="fixed"
                                                             value={practiceAreas.filter((p) => field.value?.includes(p.value))}
-                                                            onChange={(v) => field.onChange(v.map((x) => x.value))} />
+                                                            onChange={(v) => field.onChange(v ? v.map((x: any) => x.value) : [])} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>

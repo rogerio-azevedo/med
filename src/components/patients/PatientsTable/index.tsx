@@ -4,6 +4,7 @@ import {
     MoreHorizontal,
     Pencil,
     Trash2,
+    FileText,
 } from "lucide-react"
 import {
     Table,
@@ -103,37 +104,49 @@ export function PatientsTable({ patients, doctors }: PatientsTableProps) {
                                     <TableCell>{patient.email || "-"}</TableCell>
                                     <TableCell>{patient.phone || "-"}</TableCell>
                                     <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                    <span className="sr-only">Abrir menu</span>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                <DropdownMenuItem
-                                                    onClick={() => {
-                                                        setSelectedPatient(patient)
-                                                        setIsEditDialogOpen(true)
-                                                    }}
-                                                >
-                                                    <Pencil className="mr-2 h-4 w-4" />
-                                                    Editar
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem
-                                                    className="text-destructive focus:text-destructive"
-                                                    onClick={() => {
-                                                        setSelectedPatient(patient)
-                                                        setIsDeleteDialogOpen(true)
-                                                    }}
-                                                >
-                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                    Inativar Paciente
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <div className="flex justify-end items-center gap-2">
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                className="gap-2"
+                                                onClick={() => window.location.href = `/medical-records/${patient.id}`}
+                                            >
+                                                <FileText className="h-4 w-4" />
+                                                Prontuário
+                                            </Button>
+                                            
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <span className="sr-only">Abrir menu</span>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                                    <DropdownMenuItem
+                                                        onClick={() => {
+                                                            setSelectedPatient(patient)
+                                                            setIsEditDialogOpen(true)
+                                                        }}
+                                                    >
+                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                        Editar Cadastro
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        className="text-destructive focus:text-destructive"
+                                                        onClick={() => {
+                                                            setSelectedPatient(patient)
+                                                            setIsDeleteDialogOpen(true)
+                                                        }}
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Inativar Paciente
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))

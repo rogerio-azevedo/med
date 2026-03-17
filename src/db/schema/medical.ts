@@ -11,6 +11,7 @@ import {
     time,
     pgEnum,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { users } from "./auth";
 import { clinics } from "./clinics";
 
@@ -57,6 +58,50 @@ export const patientOriginTypeEnum = pgEnum("patient_origin_type", [
     "facebook",
     "friends_family",
     "medical_referral",
+]);
+
+export const consultationTypeEnum = pgEnum("consultation_type", [
+    "consultation",
+    "return",
+    "emergency",
+    "procedure",
+    "remote",
+    "phone",
+]);
+
+export const prescriptionRouteEnum = pgEnum("prescription_route", [
+    "oral",
+    "iv",
+    "im",
+    "sc",
+    "topical",
+    "inhaled",
+    "ophthalmic",
+    "otic",
+    "rectal",
+    "vaginal",
+    "other",
+]);
+
+export const examRequestTypeEnum = pgEnum("exam_request_type", [
+    "lab",
+    "imaging",
+    "ecg",
+    "biopsy",
+    "other",
+]);
+
+export const referralUrgencyEnum = pgEnum("referral_urgency", [
+    "routine",
+    "priority",
+    "urgent",
+]);
+
+export const patientAlertTypeEnum = pgEnum("patient_alert_type", [
+    "allergy",
+    "comorbidity",
+    "chronic_medication",
+    "important_note",
 ]);
 
 // 4. Specialties
@@ -307,3 +352,17 @@ export const medicalRecords = pgTable("medical_records", {
     observations: text("observations"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const doctorsRelations = relations(doctors, ({ one }) => ({
+    user: one(users, {
+        fields: [doctors.userId],
+        references: [users.id],
+    }),
+}));
+
+export const patientsRelations = relations(patients, ({ one }) => ({
+    user: one(users, {
+        fields: [patients.userId],
+        references: [users.id],
+    }),
+}));

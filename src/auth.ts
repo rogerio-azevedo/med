@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/db";
 import { authConfig } from "./auth.config";
-import { accounts, sessions, users, verificationTokens, clinicUsers, patients, clinicPatients } from "@/db/schema";
+import { accounts, sessions, users, verificationTokens, clinicUsers, patients, clinicPatients, doctors } from "@/db/schema";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
@@ -38,6 +38,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
                     if (passwordsMatch) {
                         let clinicId: string | undefined;
+                        let doctorId: string | undefined;
 
                         if (user.role === "patient") {
                             const patient = await db.query.patients.findFirst({
@@ -54,6 +55,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                                 where: eq(clinicUsers.userId, user.id),
                             });
                             clinicId = clinicLink?.clinicId;
+
+                            if (user.role === "doctor") {
+                                const doctor = await db.query.doctors.findFirst({
+                                    where: eq(doctors.userId, user.id),
+                                });
+                                doctorId = doctor?.id;
+                            }
                         }
 
                         return {
@@ -61,7 +69,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                             name: user.name,
                             email: user.email,
                             role: user.role,
-                            clinicId: clinicId
+                            clinicId: clinicId,
+                            doctorId: doctorId
                         };
                     }
                 }
@@ -76,7 +85,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         async jwt({ token, user }) {
             if (user) {
                 token.role = user.role;
-                token.clinicId = user.clinicId;
+                token.clinicId = (user as any).clinicId;
+                token.doctorId = (user as any).doctorId;
             }
             return token;
         },
@@ -87,6 +97,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             if (token && session.user) {
                 session.user.role = token.role as string | undefined;
                 session.user.clinicId = token.clinicId as string | undefined;
+                (session.user as any).doctorId = token.doctorId as string | undefined;
             }
             return session;
         },
