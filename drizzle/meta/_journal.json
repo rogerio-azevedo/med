@@ -99,6 +99,13 @@
       "when": 1773752961650,
       "tag": "0013_daily_wild_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1773756565000,
+      "tag": "0014_sturdy_health_insurances",
+      "breakpoints": true
     }
   ]
 }

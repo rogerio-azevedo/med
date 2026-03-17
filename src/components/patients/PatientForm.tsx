@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useState, useEffect, useRef } from "react";
@@ -21,7 +21,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2, Contact, MapPin, Calendar, Check, Hospital, ArrowRight } from "lucide-react";
+import { Loader2, Contact, MapPin, Calendar, Check, Hospital, ArrowRight, Plus, Trash2, ShieldCheck } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import cep from "cep-promise";
 import { toast } from "sonner";
@@ -35,9 +35,10 @@ import { AddDoctorDialog } from "@/components/doctors/AddDoctorDialog";
 import { maskCPF, maskPhone } from "@/utils/masks";
 import { BRAZILIAN_STATES } from "@/utils/states";
 import { createPatientSchema } from "@/lib/validations/patient";
+import { getActiveHealthInsurancesAction } from "@/app/actions/health-insurances";
 
 export const patientFormSchema = createPatientSchema;
-export type PatientFormValues = z.infer<typeof patientFormSchema>;
+export type PatientFormValues = z.input<typeof patientFormSchema>;
 
 interface PatientFormProps {
     defaultValues: PatientFormValues;
@@ -57,15 +58,24 @@ export function PatientForm({
     mode = "create",
 }: PatientFormProps) {
     const [loadingCEP, setLoadingCEP] = useState(false);
-    const [step, setStep] = useState<"cpf" | 1 | 2 | 3 | 4>(mode === "edit" ? 1 : "cpf");
+    const [step, setStep] = useState<"cpf" | 1 | 2 | 3 | 4 | 5>(mode === "edit" ? 1 : "cpf");
     const [checkingCpf, setCheckingCpf] = useState(false);
     const [patientIntent, setPatientIntent] = useState<"create" | "reactivate" | "import">("create");
     const [existingPatientId, setExistingPatientId] = useState<string | undefined>();
     const [infoMessage, setInfoMessage] = useState<{ title: string; desc: string } | null>(null);
+    const [healthInsuranceOptions, setHealthInsuranceOptions] = useState<{ value: string; label: string }[]>([]);
 
     const form = useForm<PatientFormValues>({
         resolver: zodResolver(patientFormSchema),
-        defaultValues,
+        defaultValues: {
+            ...defaultValues,
+            patientHealthInsurances: defaultValues.patientHealthInsurances ?? [],
+        },
+    });
+    const { fields: insuranceFields, append, remove, update } = useFieldArray({
+        control: form.control,
+        name: "patientHealthInsurances",
+        keyName: "fieldId",
     });
 
     const zipCode = form.watch("zipCode");
@@ -94,6 +104,35 @@ export function PatientForm({
                     setLoadingCEP(false);
                 });
     }, [zipCode, form, mode]);
+
+    useEffect(() => {
+        getActiveHealthInsurancesAction().then((result) => {
+            if (result.success && result.data) {
+                setHealthInsuranceOptions(
+                    result.data.map((item) => ({ value: item.id, label: item.name }))
+                );
+            }
+        });
+    }, []);
+
+    const markInsuranceAsPrimary = (selectedIndex: number) => {
+        insuranceFields.forEach((_, index) => {
+            const currentValue = form.getValues(`patientHealthInsurances.${index}`);
+            update(index, {
+                healthInsuranceId: currentValue?.healthInsuranceId || "",
+                cardNumber: currentValue?.cardNumber || "",
+                planName: currentValue?.planName || "",
+                planCode: currentValue?.planCode || "",
+                holderName: currentValue?.holderName || "",
+                holderCpf: currentValue?.holderCpf || "",
+                validUntil: currentValue?.validUntil || "",
+                id: currentValue?.id,
+                isActive: currentValue?.isActive ?? true,
+                ...currentValue,
+                isPrimary: index === selectedIndex,
+            });
+        });
+    };
 
     const handleCpfCheck = async () => {
         const cpfVal = form.getValues("cpf");
@@ -556,8 +595,148 @@ export function PatientForm({
                             </div>
                         )}
 
-                        {/* Passo 4: Vínculo na Clínica */}
+                        {/* Passo 4: Convênios */}
                         {(mode === "edit" || step === 4) && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                                <div className="flex items-center gap-2 pb-2 border-b border-muted/50">
+                                    <ShieldCheck className="h-4 w-4 text-primary" />
+                                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Convênios do Paciente</h4>
+                                </div>
+                                <div className="space-y-4">
+                                    {insuranceFields.length === 0 ? (
+                                        <div className="rounded-xl border border-dashed border-muted-foreground/20 p-6 text-center text-sm text-muted-foreground">
+                                            Nenhum convênio vinculado ainda.
+                                        </div>
+                                    ) : (
+                                        insuranceFields.map((field, index) => (
+                                            <div key={field.fieldId} className="space-y-4 rounded-xl border bg-muted/20 p-4">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div>
+                                                        <p className="font-medium">Convênio {index + 1}</p>
+                                                        <p className="text-xs text-muted-foreground">Dados do convênio e da carteirinha do paciente.</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                            <input
+                                                                type="radio"
+                                                                name="primary-insurance"
+                                                                checked={Boolean(form.watch(`patientHealthInsurances.${index}.isPrimary`))}
+                                                                onChange={() => markInsuranceAsPrimary(index)}
+                                                            />
+                                                            Principal
+                                                        </label>
+                                                        <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`patientHealthInsurances.${index}.healthInsuranceId`}
+                                                        render={({ field }) => {
+                                                            const selectedOption = healthInsuranceOptions.find((option) => option.value === field.value) ?? null;
+                                                            return (
+                                                                <FormItem className="md:col-span-2">
+                                                                    <FormLabel>Convênio</FormLabel>
+                                                                    <FormControl>
+                                                                        <ReactSelect
+                                                                            options={healthInsuranceOptions}
+                                                                            value={selectedOption}
+                                                                            onChange={(val: { value: string; label: string } | null) => field.onChange(val?.value)}
+                                                                            placeholder="Selecione o convênio..."
+                                                                            menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+                                                                            menuPosition="fixed"
+                                                                            styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: "auto" }) }}
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            );
+                                                        }}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`patientHealthInsurances.${index}.cardNumber`}
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Número da Carteirinha</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...field} value={field.value || ""} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`patientHealthInsurances.${index}.planName`}
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Nome do Plano</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...field} value={field.value || ""} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`patientHealthInsurances.${index}.planCode`}
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Código do Plano</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...field} value={field.value || ""} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`patientHealthInsurances.${index}.validUntil`}
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Validade</FormLabel>
+                                                                <FormControl>
+                                                                    <Input type="date" {...field} value={field.value || ""} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() =>
+                                            append({
+                                                healthInsuranceId: "",
+                                                cardNumber: "",
+                                                planName: "",
+                                                planCode: "",
+                                                validUntil: "",
+                                                isPrimary: insuranceFields.length === 0,
+                                                isActive: true,
+                                            })
+                                        }
+                                    >
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Adicionar Convênio
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Passo 5: Vínculo na Clínica */}
+                        {(mode === "edit" || step === 5) && (
                             <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
                                 <div className="flex items-center gap-2 pb-2 border-b border-muted/50">
                                     <Hospital className="h-4 w-4 text-primary" />
@@ -599,16 +778,16 @@ export function PatientForm({
                     <Button
                         type="button"
                         variant="ghost"
-                        onClick={() => mode === "edit" ? onCancel() : (step === 1 ? onCancel() : (typeof step === "number" ? setStep((step - 1) as 1 | 2 | 3 | 4) : onCancel()))}
+                        onClick={() => mode === "edit" ? onCancel() : (step === 1 ? onCancel() : (typeof step === "number" ? setStep((step - 1) as 1 | 2 | 3 | 4 | 5) : onCancel()))}
                         className="hover:bg-muted/50 transition-all"
                     >
                         {mode === "edit" || step === 1 ? "Cancelar" : "Voltar"}
                     </Button>
                     <Button
-                        type={mode === "edit" || step === 4 ? "submit" : "button"}
+                        type={mode === "edit" || step === 5 ? "submit" : "button"}
                         disabled={isPending}
                         onClick={mode === "edit" ? undefined : async (e) => {
-                            if (step !== 4) {
+                            if (step !== 5) {
                                 e.preventDefault();
                                 if (step === 1) {
                                     const isValid = await form.trigger(["name", "email", "phone", "birthDate", "sex"]);
@@ -619,6 +798,9 @@ export function PatientForm({
                                 } else if (step === 3) {
                                     const isValid = await form.trigger(["originType", "referringDoctorId"]);
                                     if (isValid) setStep(4);
+                                } else if (step === 4) {
+                                    const isValid = await form.trigger("patientHealthInsurances");
+                                    if (isValid) setStep(5);
                                 }
                             }
                         }}
@@ -626,7 +808,7 @@ export function PatientForm({
                     >
                         {isPending ? (
                             <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</>
-                        ) : mode === "edit" || step === 4 ? (
+                        ) : mode === "edit" || step === 5 ? (
                             <><Check className="mr-2 h-4 w-4" /> {mode === "edit" ? "Salvar Alterações" : patientIntent === "create" ? "Salvar Paciente" : patientIntent === "reactivate" ? "Reativar Paciente" : "Vincular Paciente"}</>
                         ) : (
                             <>Próximo <ArrowRight className="ml-2 h-4 w-4" /></>

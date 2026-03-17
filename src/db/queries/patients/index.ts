@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { patients, clinicPatients, patientDoctors, patientOrigins, doctors } from "@/db/schema/medical";
 import { addresses } from "@/db/schema/clinics";
 import { users } from "@/db/schema/auth";
+import { getPatientHealthInsurances } from "@/db/queries/health-insurances";
 import { eq, and } from "drizzle-orm";
 
 export async function getPatientsByClinic(clinicId: string) {
@@ -88,9 +89,12 @@ export async function getPatientById(patientId: string, clinicId: string) {
         )
         .limit(1);
 
+    const healthInsurances = await getPatientHealthInsurances(patientId);
+
     return {
         ...patientData[0].patient,
         responsibleDoctors,
+        patientHealthInsurances: healthInsurances,
         address: address[0] || null,
         originType: origin[0]?.originType ?? null,
         referringDoctorId: origin[0]?.referringDoctorId ?? null,

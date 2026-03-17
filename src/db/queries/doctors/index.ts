@@ -1,5 +1,17 @@
 import { db } from "@/db";
-import { doctors, clinicDoctors, users, doctorSpecialties, specialties, doctorPracticeAreas, practiceAreas, addresses, inviteLinks } from "@/db/schema";
+import {
+    doctors,
+    clinicDoctors,
+    users,
+    doctorSpecialties,
+    specialties,
+    doctorPracticeAreas,
+    practiceAreas,
+    doctorHealthInsurances,
+    healthInsurances,
+    addresses,
+    inviteLinks,
+} from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export async function getDoctorsByClinic(clinicId: string) {
@@ -15,6 +27,8 @@ export async function getDoctorsByClinic(clinicId: string) {
             specialtyName: specialties.name,
             practiceAreaId: practiceAreas.id,
             practiceAreaName: practiceAreas.name,
+            healthInsuranceId: healthInsurances.id,
+            healthInsuranceName: healthInsurances.name,
             inviteCode: inviteLinks.code,
             address: {
                 id: addresses.id,
@@ -36,6 +50,20 @@ export async function getDoctorsByClinic(clinicId: string) {
         .leftJoin(specialties, eq(doctorSpecialties.specialtyId, specialties.id))
         .leftJoin(doctorPracticeAreas, eq(doctorPracticeAreas.doctorId, doctors.id))
         .leftJoin(practiceAreas, eq(doctorPracticeAreas.practiceAreaId, practiceAreas.id))
+        .leftJoin(
+            doctorHealthInsurances,
+            and(
+                eq(doctorHealthInsurances.doctorId, doctors.id),
+                eq(doctorHealthInsurances.isActive, true)
+            )
+        )
+        .leftJoin(
+            healthInsurances,
+            and(
+                eq(doctorHealthInsurances.healthInsuranceId, healthInsurances.id),
+                eq(healthInsurances.isActive, true)
+            )
+        )
         .leftJoin(
             addresses,
             and(
@@ -63,7 +91,16 @@ export async function getDoctorsByClinic(clinicId: string) {
 
     for (const row of rawResults) {
         if (!doctorsMap.has(row.id)) {
-            const { specialtyId, specialtyName, practiceAreaId, practiceAreaName, address, ...doctorData } = row;
+            const {
+                specialtyId,
+                specialtyName,
+                practiceAreaId,
+                practiceAreaName,
+                healthInsuranceId,
+                healthInsuranceName,
+                address,
+                ...doctorData
+            } = row;
             // The LEFT JOIN addresses will return an address object filled with nulls if no address exists.
             const hasAddress = address && address.id !== null;
             doctorsMap.set(row.id, {
@@ -71,6 +108,7 @@ export async function getDoctorsByClinic(clinicId: string) {
                 address: hasAddress ? address : null,
                 specialties: [],
                 practiceAreas: [],
+                healthInsurances: [],
             });
         } else if (row.inviteCode && !doctorsMap.get(row.id).inviteCode) {
             doctorsMap.get(row.id).inviteCode = row.inviteCode;
@@ -92,6 +130,16 @@ export async function getDoctorsByClinic(clinicId: string) {
                 doctor.practiceAreas.push({
                     id: row.practiceAreaId,
                     name: row.practiceAreaName,
+                });
+            }
+        }
+
+        if (row.healthInsuranceId && row.healthInsuranceName) {
+            const doctor = doctorsMap.get(row.id);
+            if (!doctor.healthInsurances.some((item: any) => item.id === row.healthInsuranceId)) {
+                doctor.healthInsurances.push({
+                    id: row.healthInsuranceId,
+                    name: row.healthInsuranceName,
                 });
             }
         }
@@ -145,6 +193,8 @@ export async function getDoctorDetails(doctorId: string, clinicId: string) {
             specialtyName: specialties.name,
             practiceAreaId: practiceAreas.id,
             practiceAreaName: practiceAreas.name,
+            healthInsuranceId: healthInsurances.id,
+            healthInsuranceName: healthInsurances.name,
             address: {
                 id: addresses.id,
                 zipCode: addresses.zipCode,
@@ -165,6 +215,20 @@ export async function getDoctorDetails(doctorId: string, clinicId: string) {
         .leftJoin(specialties, eq(doctorSpecialties.specialtyId, specialties.id))
         .leftJoin(doctorPracticeAreas, eq(doctorPracticeAreas.doctorId, doctors.id))
         .leftJoin(practiceAreas, eq(doctorPracticeAreas.practiceAreaId, practiceAreas.id))
+        .leftJoin(
+            doctorHealthInsurances,
+            and(
+                eq(doctorHealthInsurances.doctorId, doctors.id),
+                eq(doctorHealthInsurances.isActive, true)
+            )
+        )
+        .leftJoin(
+            healthInsurances,
+            and(
+                eq(doctorHealthInsurances.healthInsuranceId, healthInsurances.id),
+                eq(healthInsurances.isActive, true)
+            )
+        )
         .leftJoin(
             addresses,
             and(
@@ -192,10 +256,12 @@ export async function getDoctorDetails(doctorId: string, clinicId: string) {
         address: rawResults[0].address?.id ? rawResults[0].address : null,
         specialties: [] as { id: string; name: string }[],
         practiceAreas: [] as { id: string; name: string }[],
+        healthInsurances: [] as { id: string; name: string }[],
     };
 
     const addedSpecialties = new Set<string>();
     const addedPracticeAreas = new Set<string>();
+    const addedHealthInsurances = new Set<string>();
 
     for (const row of rawResults) {
         if (row.specialtyId && row.specialtyName && !addedSpecialties.has(row.specialtyId)) {
@@ -205,6 +271,10 @@ export async function getDoctorDetails(doctorId: string, clinicId: string) {
         if (row.practiceAreaId && row.practiceAreaName && !addedPracticeAreas.has(row.practiceAreaId)) {
             doctorData.practiceAreas.push({ id: row.practiceAreaId, name: row.practiceAreaName });
             addedPracticeAreas.add(row.practiceAreaId);
+        }
+        if (row.healthInsuranceId && row.healthInsuranceName && !addedHealthInsurances.has(row.healthInsuranceId)) {
+            doctorData.healthInsurances.push({ id: row.healthInsuranceId, name: row.healthInsuranceName });
+            addedHealthInsurances.add(row.healthInsuranceId);
         }
     }
 

@@ -26,6 +26,7 @@ import { Loader2, Mail, Check, Pencil } from "lucide-react";
 import { updateDoctorAction } from "@/app/actions/doctors";
 import { getSpecialtiesAction } from "@/app/actions/specialties";
 import { getPracticeAreasAction } from "@/app/actions/practice-areas";
+import { getActiveHealthInsurancesAction } from "@/app/actions/health-insurances";
 import { toast } from "sonner";
 import ReactSelect from "react-select";
 import cep from "cep-promise";
@@ -45,6 +46,7 @@ const doctorFormSchema = z.object({
     phone: z.string().optional(),
     specialtyIds: z.array(z.string()).optional(),
     practiceAreaIds: z.array(z.string()).optional(),
+    healthInsuranceIds: z.array(z.string()).optional(),
     addressZipCode: z.string().optional(),
     addressStreet: z.string().optional(),
     addressNumber: z.string().optional(),
@@ -124,6 +126,7 @@ interface EditDoctorDialogProps {
         phone: string | null;
         specialties: { id: string; name: string }[];
         practiceAreas: { id: string; name: string }[];
+        healthInsurances: { id: string; name: string }[];
         address?: {
             zipCode?: string | null;
             street?: string | null;
@@ -145,6 +148,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
     const [isFetchingCep, setIsFetchingCep] = useState(false);
     const [specialties, setSpecialties] = useState<{ value: string; label: string }[]>([]);
     const [practiceAreas, setPracticeAreas] = useState<{ value: string; label: string }[]>([]);
+    const [healthInsurances, setHealthInsurances] = useState<{ value: string; label: string }[]>([]);
 
     const form = useForm<DoctorFormValues>({
         resolver: zodResolver(doctorFormSchema),
@@ -156,6 +160,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
             crmState: doctor.crmState || "",
             specialtyIds: [],
             practiceAreaIds: [],
+            healthInsuranceIds: [],
             addressZipCode: "",
             addressStreet: "",
             addressNumber: "",
@@ -181,6 +186,11 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                     setPracticeAreas(result.data.map(pa => ({ value: pa.id, label: pa.name })));
                 }
             });
+            getActiveHealthInsurancesAction().then((result) => {
+                if (result.success && result.data) {
+                    setHealthInsurances(result.data.map((item) => ({ value: item.id, label: item.name })));
+                }
+            });
             form.reset({
                 id: doctor.id,
                 name: doctor.name || "",
@@ -190,6 +200,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                 phone: doctor.phone ? maskPhone(doctor.phone) : "",
                 specialtyIds: doctor.specialties.map(s => s.id),
                 practiceAreaIds: doctor.practiceAreas.map(pa => pa.id),
+                healthInsuranceIds: doctor.healthInsurances.map((item) => item.id),
                 addressZipCode: doctor.address?.zipCode || "",
                 addressStreet: doctor.address?.street || "",
                 addressNumber: doctor.address?.number || "",
@@ -252,6 +263,8 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                 value.forEach(id => formData.append("specialtyIds", id));
             } else if (key === "practiceAreaIds" && Array.isArray(value)) {
                 value.forEach(id => formData.append("practiceAreaIds", id));
+            } else if (key === "healthInsuranceIds" && Array.isArray(value)) {
+                value.forEach(id => formData.append("healthInsuranceIds", id));
             } else if (value !== undefined && value !== null && value !== "") {
                 formData.append(key, value.toString());
             }
@@ -424,6 +437,29 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                                             )}
                                         />
                                     </div>
+
+                                    <FormField
+                                        control={form.control}
+                                        name="healthInsuranceIds"
+                                        render={({ field }) => (
+                                            <FormItem className="col-span-2">
+                                                <FormLabel>Convênios Aceitos</FormLabel>
+                                                <FormControl>
+                                                    <ReactSelect
+                                                        isMulti
+                                                        placeholder="Selecione..."
+                                                        options={healthInsurances}
+                                                        className="react-select-container"
+                                                        classNamePrefix="react-select"
+                                                        styles={customSelectStyles}
+                                                        value={healthInsurances.filter((item) => field.value?.includes(item.value))}
+                                                        onChange={(val) => field.onChange(val.map(v => v.value))}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
 
                                     <div className="col-span-1 md:col-span-2 p-4 bg-primary/5 rounded-xl border border-primary/10 mt-2">
                                         <p className="text-[11px] text-primary/70 font-medium leading-relaxed italic">

@@ -17,6 +17,13 @@ export function PatientContextPanel({ patient, latestVitals, alerts = [] }: Pati
     const age = patient.birthDate
         ? Math.floor((new Date().getTime() - new Date(patient.birthDate).getTime()) / 31536000000)
         : null;
+    const primaryHealthInsurance =
+        patient.patientHealthInsurances?.find((item: any) => item.isPrimary) ||
+        patient.patientHealthInsurances?.[0] ||
+        null;
+    const healthInsuranceLabel = primaryHealthInsurance
+        ? [primaryHealthInsurance.name, primaryHealthInsurance.planName].filter(Boolean).join(" • ")
+        : patient.healthInsurance?.company || "Particular";
 
     return (
         <div className="flex flex-col gap-6 h-full p-4 border-r bg-muted/30">
@@ -105,7 +112,7 @@ export function PatientContextPanel({ patient, latestVitals, alerts = [] }: Pati
                             <CardContent className="p-4 flex flex-col gap-4 text-sm">
                                 <div>
                                     <p className="text-muted-foreground mb-1">Convênio</p>
-                                    <p className="font-medium">{patient.healthInsurance?.company || "Particular"}</p>
+                                    <p className="font-medium">{healthInsuranceLabel}</p>
                                 </div>
                                 <Separator />
                                 <div>

@@ -72,6 +72,10 @@ const data = {
                     url: "/specialties",
                 },
                 {
+                    title: "Convênios",
+                    url: "/health-insurances",
+                },
+                {
                     title: "Áreas de Atuação",
                     url: "/practice-areas",
                 },

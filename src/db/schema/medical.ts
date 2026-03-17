@@ -118,6 +118,31 @@ export const practiceAreas = pgTable("practice_areas", {
     code: varchar("code", { length: 20 }),
 });
 
+// 5.a Health Insurances (Global Catalog)
+export const healthInsurances = pgTable("health_insurances", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: varchar("name", { length: 150 }).notNull(),
+    code: varchar("code", { length: 50 }),
+    ansCode: varchar("ans_code", { length: 30 }),
+    notes: text("notes"),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// 5.b Clinic Health Insurances (Clinic <-> Health Insurance)
+export const clinicHealthInsurances = pgTable("clinic_health_insurances", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clinicId: uuid("clinic_id")
+        .notNull()
+        .references(() => clinics.id, { onDelete: "cascade" }),
+    healthInsuranceId: uuid("health_insurance_id")
+        .notNull()
+        .references(() => healthInsurances.id, { onDelete: "cascade" }),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // 6. Doctors (Global Profile)
 export const doctors = pgTable("doctors", {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -128,6 +153,19 @@ export const doctors = pgTable("doctors", {
     crmState: varchar("crm_state", { length: 2 }),
     phone: varchar("phone", { length: 20 }),
     bio: text("bio"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 6.a Doctor Health Insurances (Doctor <-> Health Insurance)
+export const doctorHealthInsurances = pgTable("doctor_health_insurances", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    doctorId: uuid("doctor_id")
+        .notNull()
+        .references(() => doctors.id, { onDelete: "cascade" }),
+    healthInsuranceId: uuid("health_insurance_id")
+        .notNull()
+        .references(() => healthInsurances.id, { onDelete: "cascade" }),
+    isActive: boolean("is_active").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -176,6 +214,27 @@ export const patients = pgTable("patients", {
     email: varchar("email", { length: 255 }),
     healthInsurance: jsonb("health_insurance"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 10.a Patient Health Insurances (Patient <-> Health Insurance)
+export const patientHealthInsurances = pgTable("patient_health_insurances", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    patientId: uuid("patient_id")
+        .notNull()
+        .references(() => patients.id, { onDelete: "cascade" }),
+    healthInsuranceId: uuid("health_insurance_id")
+        .notNull()
+        .references(() => healthInsurances.id, { onDelete: "cascade" }),
+    cardNumber: varchar("card_number", { length: 100 }),
+    planName: varchar("plan_name", { length: 150 }),
+    planCode: varchar("plan_code", { length: 50 }),
+    holderName: varchar("holder_name", { length: 255 }),
+    holderCpf: varchar("holder_cpf", { length: 14 }),
+    validUntil: date("valid_until"),
+    isPrimary: boolean("is_primary").default(false).notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // 11. Clinic Patients (Patient <-> Clinic)

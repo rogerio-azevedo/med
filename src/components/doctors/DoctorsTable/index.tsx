@@ -47,6 +47,7 @@ interface Doctor {
     inviteCode: string | null
     specialties: { id: string; name: string }[]
     practiceAreas: { id: string; name: string }[]
+    healthInsurances: { id: string; name: string }[]
     address?: {
         zipCode?: string | null;
         street?: string | null;
@@ -93,6 +94,7 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
                             <TableHead>Nome</TableHead>
                             <TableHead>Especialidade</TableHead>
                             <TableHead>Áreas de Atuação</TableHead>
+                            <TableHead>Convênios</TableHead>
                             <TableHead>CRM / Registro</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead className="text-right">Ações</TableHead>
@@ -101,7 +103,7 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
                     <TableBody>
                         {doctors.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center">
+                                <TableCell colSpan={7} className="h-24 text-center">
                                     Nenhum médico encontrado.
                                 </TableCell>
                             </TableRow>
@@ -128,6 +130,19 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
                                                 doctor.practiceAreas.map((pa) => (
                                                     <Badge key={pa.id} variant="secondary" className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-none capitalize">
                                                         {pa.name}
+                                                    </Badge>
+                                                ))
+                                            ) : (
+                                                <span className="text-muted-foreground/50">-</span>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-wrap gap-1">
+                                            {doctor.healthInsurances.length > 0 ? (
+                                                doctor.healthInsurances.map((item) => (
+                                                    <Badge key={item.id} variant="outline" className="border-blue-200 bg-blue-50/50 text-blue-700">
+                                                        {item.name}
                                                     </Badge>
                                                 ))
                                             ) : (

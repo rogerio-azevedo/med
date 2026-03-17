@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { patientHealthInsurancesSchema } from "./health-insurance";
 
 const cpfClean = (v: string) => v?.replace(/\D/g, "") ?? "";
 
@@ -25,6 +26,7 @@ export const createPatientSchema = z.object({
     responsibleDoctorIds: z.array(z.string().uuid()).optional(),
     originType: z.enum(["instagram", "google", "facebook", "friends_family", "medical_referral"]).optional(),
     referringDoctorId: z.string().uuid().optional(),
+    patientHealthInsurances: patientHealthInsurancesSchema.optional(),
 }).refine(
     (data) => {
         const hasEmail = data.email && data.email.trim().length > 0;

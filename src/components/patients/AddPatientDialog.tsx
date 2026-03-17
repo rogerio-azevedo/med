@@ -39,18 +39,36 @@ export function AddPatientDialog({ doctors }: AddPatientDialogProps) {
         responsibleDoctorIds: [],
         originType: undefined,
         referringDoctorId: undefined,
+        patientHealthInsurances: [],
     };
 
     async function onSubmit(values: PatientFormValues, intent: "create" | "reactivate" | "import", globalId?: string) {
         setIsPending(true);
         const formData = new FormData();
-        Object.entries(values).forEach(([key, value]) => {
-            if (key === "responsibleDoctorIds" && Array.isArray(value)) {
-                value.forEach(id => formData.append("responsibleDoctorIds", id));
-            } else if (value !== undefined && value !== null && value !== "") {
-                formData.append(key, value as string);
+        const appendScalar = (key: string, value: string | undefined) => {
+            if (value !== undefined && value !== null && value !== "") {
+                formData.append(key, value);
             }
-        });
+        };
+
+        appendScalar("name", values.name);
+        appendScalar("email", values.email);
+        appendScalar("cpf", values.cpf);
+        appendScalar("phone", values.phone);
+        appendScalar("birthDate", values.birthDate);
+        appendScalar("sex", values.sex);
+        appendScalar("zipCode", values.zipCode);
+        appendScalar("street", values.street);
+        appendScalar("number", values.number);
+        appendScalar("complement", values.complement);
+        appendScalar("neighborhood", values.neighborhood);
+        appendScalar("city", values.city);
+        appendScalar("state", values.state);
+        appendScalar("originType", values.originType);
+        appendScalar("referringDoctorId", values.referringDoctorId);
+
+        values.responsibleDoctorIds?.forEach((id) => formData.append("responsibleDoctorIds", id));
+        formData.append("patientHealthInsurances", JSON.stringify(values.patientHealthInsurances ?? []));
 
         formData.append("intent", intent);
         if (globalId) formData.append("globalId", globalId);

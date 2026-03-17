@@ -19,10 +19,12 @@ export async function createDoctorAction(formData: FormData) {
 
     const specialtyIdsRaw = formData.getAll("specialtyIds");
     const practiceAreaIdsRaw = formData.getAll("practiceAreaIds");
+    const healthInsuranceIdsRaw = formData.getAll("healthInsuranceIds");
     const data = {
         ...Object.fromEntries(formData),
         specialtyIds: specialtyIdsRaw,
         practiceAreaIds: practiceAreaIdsRaw,
+        healthInsuranceIds: healthInsuranceIdsRaw,
     };
 
     // se for import/reactivate, senha não é necessária no data payload de create (vazios permitidos)
@@ -34,6 +36,10 @@ export async function createDoctorAction(formData: FormData) {
 
     if (!parsed.success) {
         return { error: "Dados inválidos", details: z.flattenError(parsed.error) };
+    }
+
+    if (intent === "create" && !parsed.data.password) {
+        return { error: "Senha é obrigatória para novo cadastro." };
     }
 
     if (intent === "reactivate" && globalId) {
@@ -108,10 +114,12 @@ export async function updateDoctorAction(formData: FormData) {
 
     const specialtyIdsRaw = formData.getAll("specialtyIds");
     const practiceAreaIdsRaw = formData.getAll("practiceAreaIds");
+    const healthInsuranceIdsRaw = formData.getAll("healthInsuranceIds");
     const data = {
         ...Object.fromEntries(formData),
         specialtyIds: specialtyIdsRaw,
         practiceAreaIds: practiceAreaIdsRaw,
+        healthInsuranceIds: healthInsuranceIdsRaw,
     };
 
     const parsed = updateDoctorSchema.safeParse(data);

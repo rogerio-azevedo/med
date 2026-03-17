@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { patients, clinicPatients, addresses, patientDoctors, patientOrigins } from "@/db/schema";
 import { deletePatient as deletePatientQuery } from "@/db/queries/patients";
 import type { CreatePatientInput, UpdatePatientInput } from "@/lib/validations/patient";
+import { syncPatientHealthInsurances } from "@/services/health-insurances";
 
 export async function createPatient(
     data: CreatePatientInput,
@@ -25,6 +26,7 @@ export async function createPatient(
         responsibleDoctorIds,
         originType,
         referringDoctorId,
+        patientHealthInsurances,
     } = data;
 
     let insertedPatientId: string | null = null;
@@ -66,6 +68,8 @@ export async function createPatient(
                 referringDoctorId: referringDoctorId || null,
             });
         }
+
+        await syncPatientHealthInsurances(newPatient.id, patientHealthInsurances);
 
         if (zipCode || street || city) {
             await db.insert(addresses).values({
@@ -125,6 +129,7 @@ export async function updatePatient(
         responsibleDoctorIds,
         originType,
         referringDoctorId,
+        patientHealthInsurances,
     } = data;
 
     try {
@@ -181,6 +186,8 @@ export async function updatePatient(
                 });
             }
         }
+
+        await syncPatientHealthInsurances(patientId, patientHealthInsurances);
 
         if (zipCode || street || city) {
             const existingAddress = await db

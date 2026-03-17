@@ -34,6 +34,7 @@ import { Stethoscope, Loader2, Mail, Lock, ShieldCheck, Check, ArrowRight, UserP
 import { createDoctorAction } from "@/app/actions/doctors";
 import { getSpecialtiesAction } from "@/app/actions/specialties";
 import { getPracticeAreasAction } from "@/app/actions/practice-areas";
+import { getActiveHealthInsurancesAction } from "@/app/actions/health-insurances";
 import { checkDoctorEligibilityAction } from "@/app/actions/doctors/eligibility";
 import { toast } from "sonner";
 import ReactSelect from "react-select";
@@ -56,6 +57,7 @@ const doctorFormSchema = z.object({
     phone: z.string().optional(),
     specialtyIds: z.array(z.string()).optional(),
     practiceAreaIds: z.array(z.string()).optional(),
+    healthInsuranceIds: z.array(z.string()).optional(),
     addressZipCode: z.string().optional(),
     addressStreet: z.string().optional(),
     addressNumber: z.string().optional(),
@@ -131,6 +133,7 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
     const [isFetchingCep, setIsFetchingCep] = useState(false);
     const [specialties, setSpecialties] = useState<{ value: string; label: string }[]>([]);
     const [practiceAreas, setPracticeAreas] = useState<{ value: string; label: string }[]>([]);
+    const [healthInsurances, setHealthInsurances] = useState<{ value: string; label: string }[]>([]);
 
     const [step, setStep] = useState<"crm" | "details">("crm");
     const [checkingCrm, setCheckingCrm] = useState(false);
@@ -142,7 +145,7 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
         resolver: zodResolver(doctorFormSchema),
         defaultValues: {
             name: "", email: "", password: "", crm: "", crmState: "", phone: "",
-            specialtyIds: [], practiceAreaIds: [],
+            specialtyIds: [], practiceAreaIds: [], healthInsuranceIds: [],
             addressZipCode: "", addressStreet: "", addressNumber: "",
             addressComplement: "", addressNeighborhood: "", addressCity: "", addressState: "",
         },
@@ -163,6 +166,9 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
         });
         getPracticeAreasAction().then((r) => {
             if (r.success && r.data) setPracticeAreas(r.data.map((p) => ({ value: p.id, label: p.name })));
+        });
+        getActiveHealthInsurancesAction().then((r) => {
+            if (r.success && r.data) setHealthInsurances(r.data.map((item) => ({ value: item.id, label: item.name })));
         });
     }, [isOpen]);
 
@@ -294,6 +300,8 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                 value.forEach((id) => formData.append("specialtyIds", id));
             } else if (key === "practiceAreaIds" && Array.isArray(value)) {
                 value.forEach((id) => formData.append("practiceAreaIds", id));
+            } else if (key === "healthInsuranceIds" && Array.isArray(value)) {
+                value.forEach((id) => formData.append("healthInsuranceIds", id));
             } else if (value !== undefined && value !== null && value !== "" && key !== 'password') {
                 formData.append(key, value.toString());
             } else if (key === 'password' && doctorIntent === 'create') {
@@ -541,6 +549,30 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                                                 </FormItem>
                                             )} />
                                         </div>
+
+                                        <FormField control={form.control} name="healthInsuranceIds" render={({ field }) => (
+                                            <FormItem className="col-span-2">
+                                                <FormLabel>Convênios Aceitos</FormLabel>
+                                                <FormControl>
+                                                    <ReactSelect
+                                                        isMulti
+                                                        placeholder="Selecione os convênios aceitos..."
+                                                        options={healthInsurances}
+                                                        styles={customSelectStyles}
+                                                        className="react-select-container"
+                                                        classNamePrefix="react-select"
+                                                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                                        menuPosition="fixed"
+                                                        value={healthInsurances.filter((item) => field.value?.includes(item.value))}
+                                                        onChange={(v) => field.onChange(v ? v.map((x: any) => x.value) : [])}
+                                                    />
+                                                </FormControl>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Use esta lista para indicar quais convênios este médico realmente aceita.
+                                                </p>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
 
                                     </div>
                                 </div>

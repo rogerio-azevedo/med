@@ -17,11 +17,15 @@ export async function createPatientAction(formData: FormData) {
 
     const intent = formData.get("intent") as "create" | "reactivate" | "import" | null || "create";
     const globalId = formData.get("globalId") as string | null;
+    const patientHealthInsurancesRaw = formData.get("patientHealthInsurances");
 
     const responsibleDoctorIdsRaw = formData.getAll("responsibleDoctorIds");
     const data: Record<string, any> = {
         ...Object.fromEntries(formData),
         responsibleDoctorIds: responsibleDoctorIdsRaw.filter(Boolean),
+        patientHealthInsurances: patientHealthInsurancesRaw
+            ? JSON.parse(patientHealthInsurancesRaw.toString())
+            : [],
     };
 
     if (!data.referringDoctorId || data.referringDoctorId === "null" || data.referringDoctorId === "") {
@@ -110,12 +114,16 @@ export async function updatePatientAction(patientId: string, formData: FormData)
         throw new Error("Unauthorized: No clinic association found.");
     }
 
+    const patientHealthInsurancesRaw = formData.get("patientHealthInsurances");
     const responsibleDoctorIdsRaw = formData.getAll("responsibleDoctorIds");
     const data: Record<string, any> = {
         ...Object.fromEntries(formData),
         responsibleDoctorIds: responsibleDoctorIdsRaw.filter(
             (id) => id !== "null" && id !== ""
         ),
+        patientHealthInsurances: patientHealthInsurancesRaw
+            ? JSON.parse(patientHealthInsurancesRaw.toString())
+            : [],
     };
 
     if (!data.referringDoctorId || data.referringDoctorId === "null" || data.referringDoctorId === "") {

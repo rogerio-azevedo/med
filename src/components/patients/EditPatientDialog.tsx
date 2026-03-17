@@ -31,6 +31,7 @@ interface PatientForEdit {
         state?: string | null;
     } | null;
     responsibleDoctors?: DoctorRef[];
+    patientHealthInsurances?: PatientFormValues["patientHealthInsurances"];
     originType?: PatientFormValues["originType"] | null;
     referringDoctorId?: string | null;
 }
@@ -100,6 +101,7 @@ export function EditPatientDialog({
         city: patient.address?.city || "",
         state: patient.address?.state || "",
         responsibleDoctorIds: patient.responsibleDoctors?.map((d: DoctorRef) => d.id) ?? [],
+        patientHealthInsurances: patient.patientHealthInsurances ?? [],
         originType: patient.originType ?? undefined,
         referringDoctorId: patient.referringDoctorId ?? undefined,
     } : {
@@ -116,20 +118,36 @@ export function EditPatientDialog({
         city: "",
         state: "",
         responsibleDoctorIds: [],
+        patientHealthInsurances: [],
     };
 
     async function onSubmit(values: PatientFormValues) {
         setIsPending(true);
         const formData = new FormData();
-        Object.entries(values).forEach(([key, value]) => {
-            if (key === "responsibleDoctorIds" && Array.isArray(value)) {
-                value.forEach(id => formData.append("responsibleDoctorIds", id));
-            } else if (value !== undefined && value !== null && value !== "") {
-                formData.append(key, value as string);
-            } else if (value === null) {
-                formData.append(key, "null");
+        const appendScalar = (key: string, value: string | undefined) => {
+            if (value !== undefined && value !== null && value !== "") {
+                formData.append(key, value);
             }
-        });
+        };
+
+        appendScalar("name", values.name);
+        appendScalar("email", values.email);
+        appendScalar("cpf", values.cpf);
+        appendScalar("phone", values.phone);
+        appendScalar("birthDate", values.birthDate);
+        appendScalar("sex", values.sex);
+        appendScalar("zipCode", values.zipCode);
+        appendScalar("street", values.street);
+        appendScalar("number", values.number);
+        appendScalar("complement", values.complement);
+        appendScalar("neighborhood", values.neighborhood);
+        appendScalar("city", values.city);
+        appendScalar("state", values.state);
+        appendScalar("originType", values.originType);
+        appendScalar("referringDoctorId", values.referringDoctorId);
+
+        values.responsibleDoctorIds?.forEach((id) => formData.append("responsibleDoctorIds", id));
+        formData.append("patientHealthInsurances", JSON.stringify(values.patientHealthInsurances ?? []));
 
         try {
             const result = await updatePatientAction(patientId, formData);

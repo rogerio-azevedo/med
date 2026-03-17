@@ -12,6 +12,7 @@ import {
 import { deleteDoctor as deleteDoctorQuery } from "@/db/queries/doctors";
 import { geocodeAddress } from "@/lib/geocode";
 import type { CreateDoctorInput, UpdateDoctorInput } from "@/lib/validations/doctor";
+import { syncDoctorHealthInsurances } from "@/services/health-insurances";
 import bcrypt from "bcryptjs";
 
 export async function createDoctor(
@@ -27,6 +28,7 @@ export async function createDoctor(
         phone,
         specialtyIds,
         practiceAreaIds,
+        healthInsuranceIds,
         addressZipCode,
         addressStreet,
         addressNumber,
@@ -44,6 +46,10 @@ export async function createDoctor(
 
     if (existingUser) {
         return { success: false, error: "Email já cadastrado." };
+    }
+
+    if (!password) {
+        return { success: false, error: "Senha é obrigatória para criar um médico." };
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -92,6 +98,8 @@ export async function createDoctor(
             }))
         );
     }
+
+    await syncDoctorHealthInsurances(newDoctor.id, healthInsuranceIds ?? []);
 
     if (addressStreet || addressZipCode) {
         let lat = addressLatitude ?? null;
@@ -143,6 +151,7 @@ export async function updateDoctor(
         phone,
         specialtyIds,
         practiceAreaIds,
+        healthInsuranceIds,
         addressZipCode,
         addressStreet,
         addressNumber,
@@ -197,6 +206,10 @@ export async function updateDoctor(
                 }))
             );
         }
+    }
+
+    if (healthInsuranceIds !== undefined) {
+        await syncDoctorHealthInsurances(doctorId, healthInsuranceIds);
     }
 
     if (addressStreet || addressZipCode) {

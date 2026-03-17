@@ -1,4 +1,4 @@
-import { MapPin, Mail, Stethoscope, Briefcase, ChevronLeft } from "lucide-react";
+import { MapPin, Mail, Stethoscope, Briefcase, ChevronLeft, ShieldCheck } from "lucide-react";
 import { maskPhone } from "@/utils/masks";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ interface DoctorProfileProps {
         } | null;
         specialties: { id: string; name: string }[];
         practiceAreas: { id: string; name: string }[];
+        healthInsurances: { id: string; name: string }[];
     };
 }
 
@@ -162,6 +163,28 @@ export function DoctorProfile({ doctor }: DoctorProfileProps) {
                             </div>
                         ) : (
                             <p className="text-sm text-muted-foreground">Nenhuma área de atuação cadastrada.</p>
+                        )}
+                    </div>
+
+                    <div className="border-t pt-4">
+                        <h3 className="text-lg font-semibold flex items-center gap-2 mb-3">
+                            <ShieldCheck className="h-5 w-5 text-blue-500" />
+                            Convênios Aceitos
+                        </h3>
+                        {doctor.healthInsurances.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                                {doctor.healthInsurances.map((item) => (
+                                    <Badge
+                                        key={item.id}
+                                        variant="outline"
+                                        className="border-blue-200 bg-blue-50/50 px-3 py-1 text-sm text-blue-700"
+                                    >
+                                        {item.name}
+                                    </Badge>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">Nenhum convênio informado.</p>
                         )}
                     </div>
                 </div>
