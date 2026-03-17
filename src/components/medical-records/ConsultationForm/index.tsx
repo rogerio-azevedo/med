@@ -122,7 +122,7 @@ export function ConsultationForm({ patient, isOpen, onClose, onSubmit }: Consult
                         </TabsContent>
 
                         <TabsContent value="objective" className="mt-0 space-y-6">
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                                 <div className="space-y-2">
                                     <Label>Peso (kg)</Label>
                                     <Input placeholder="70.5" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} />
@@ -134,6 +134,10 @@ export function ConsultationForm({ patient, isOpen, onClose, onSubmit }: Consult
                                 <div className="space-y-2">
                                     <Label>PA (mmHg)</Label>
                                     <Input placeholder="120/80" value={vitals.bloodPressure} onChange={e => setVitals({...vitals, bloodPressure: e.target.value})} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>FC (bpm)</Label>
+                                    <Input placeholder="72" value={vitals.heartRate} onChange={e => setVitals({...vitals, heartRate: e.target.value})} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Temp (°C)</Label>

@@ -3,8 +3,8 @@
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { startConsultation, finishConsultation } from "@/services/consultations";
-import { consultationSchema } from "@/lib/validations/medical-records";
-import { upsertConsultationSoapQuery } from "@/db/queries/consultations";
+import { consultationSchema, vitalSignsSchema } from "@/lib/validations/medical-records";
+import { upsertConsultationSoapQuery, upsertVitalSignsQuery } from "@/db/queries/consultations";
 
 export async function startConsultationAction(data: any) {
     const session = await auth();
@@ -41,6 +41,32 @@ export async function saveSoapAction(consultationId: string, patientId: string, 
             consultationId,
         });
         
+        revalidatePath(`/medical-records/${patientId}`);
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
+export async function saveVitalSignsAction(consultationId: string, patientId: string, data: any) {
+    const session = await auth();
+    if (!session?.user?.clinicId) return { success: false, error: "Não autorizado" };
+
+    try {
+        const normalizedData = {
+            consultationId,
+            weight: data.weight?.trim() || null,
+            height: data.height?.trim() || null,
+            bloodPressure: data.bloodPressure?.trim() || null,
+            heartRate: data.heartRate ? Number(data.heartRate) : null,
+            respiratoryRate: data.respiratoryRate ? Number(data.respiratoryRate) : null,
+            temperature: data.temperature?.trim() || null,
+            oxygenSaturation: data.oxygenSaturation ? Number(data.oxygenSaturation) : null,
+        };
+
+        const validated = vitalSignsSchema.parse(normalizedData);
+        await upsertVitalSignsQuery(validated);
+
         revalidatePath(`/medical-records/${patientId}`);
         return { success: true };
     } catch (error: any) {

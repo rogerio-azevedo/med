@@ -60,6 +60,37 @@ export async function getPatientConsultationsTimeline(
 }
 
 /**
+ * Retorna os sinais vitais mais recentes do paciente
+ */
+export async function getPatientLatestVitals(patientId: string, clinicId: string) {
+    const [latestVitals] = await db
+        .select({
+            id: vitalSigns.id,
+            consultationId: vitalSigns.consultationId,
+            weight: vitalSigns.weight,
+            height: vitalSigns.height,
+            bloodPressure: vitalSigns.bloodPressure,
+            heartRate: vitalSigns.heartRate,
+            respiratoryRate: vitalSigns.respiratoryRate,
+            temperature: vitalSigns.temperature,
+            oxygenSaturation: vitalSigns.oxygenSaturation,
+            createdAt: vitalSigns.createdAt,
+        })
+        .from(vitalSigns)
+        .innerJoin(consultations, eq(vitalSigns.consultationId, consultations.id))
+        .where(
+            and(
+                eq(consultations.patientId, patientId),
+                eq(consultations.clinicId, clinicId)
+            )
+        )
+        .orderBy(desc(consultations.startTime), desc(vitalSigns.createdAt))
+        .limit(1);
+
+    return latestVitals ?? null;
+}
+
+/**
  * Retorna os detalhes completos de uma consulta específica
  */
 export async function getConsultationDetails(consultationId: string, clinicId: string) {
@@ -145,5 +176,37 @@ export async function upsertConsultationSoapQuery(data: any) {
                 updatedAt: new Date(),
             }
         })
+        .returning();
+}
+
+/**
+ * Salva/Atualiza os sinais vitais de uma consulta
+ */
+export async function upsertVitalSignsQuery(data: any) {
+    const [existingVitals] = await db
+        .select({ id: vitalSigns.id })
+        .from(vitalSigns)
+        .where(eq(vitalSigns.consultationId, data.consultationId))
+        .limit(1);
+
+    if (existingVitals) {
+        return db
+            .update(vitalSigns)
+            .set({
+                weight: data.weight,
+                height: data.height,
+                bloodPressure: data.bloodPressure,
+                heartRate: data.heartRate,
+                respiratoryRate: data.respiratoryRate,
+                temperature: data.temperature,
+                oxygenSaturation: data.oxygenSaturation,
+            })
+            .where(eq(vitalSigns.id, existingVitals.id))
+            .returning();
+    }
+
+    return db
+        .insert(vitalSigns)
+        .values(data)
         .returning();
 }

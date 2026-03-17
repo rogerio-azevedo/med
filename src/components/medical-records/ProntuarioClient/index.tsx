@@ -8,17 +8,18 @@ import { ConsultationForm } from "../ConsultationForm";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Plus } from "lucide-react";
-import { startConsultationAction, saveSoapAction } from "@/app/actions/consultations";
+import { startConsultationAction, saveSoapAction, saveVitalSignsAction } from "@/app/actions/consultations";
 import { toast } from "sonner";
 import { ConsultationDetailSheet } from "../ConsultationDetailSheet";
 
 interface ProntuarioClientProps {
     patient: any;
     consultations: any[];
+    latestVitals?: any;
     isDoctor?: boolean;
 }
 
-export function ProntuarioClient({ patient, consultations, isDoctor }: ProntuarioClientProps) {
+export function ProntuarioClient({ patient, consultations, latestVitals, isDoctor }: ProntuarioClientProps) {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedConsultationId, setSelectedConsultationId] = useState<string | null>(null);
@@ -54,6 +55,16 @@ export function ProntuarioClient({ patient, consultations, isDoctor }: Prontuari
                 return;
             }
 
+            const hasAnyVital = Object.values(data.vitals ?? {}).some(value => String(value ?? "").trim() !== "");
+            if (hasAnyVital) {
+                const vitalsResult = await saveVitalSignsAction(consultationId, patient.id, data.vitals);
+
+                if (!vitalsResult.success) {
+                    toast.error("Prontuário salvo, mas houve erro ao salvar sinais vitais: " + vitalsResult.error);
+                    return;
+                }
+            }
+
             toast.success("Prontuário salvo com sucesso!");
             setIsFormOpen(false);
         } catch (error: any) {
@@ -68,6 +79,7 @@ export function ProntuarioClient({ patient, consultations, isDoctor }: Prontuari
             <aside className="w-80 flex-shrink-0 border-r bg-background">
                 <PatientContextPanel 
                     patient={patient} 
+                    latestVitals={latestVitals}
                     alerts={[]} 
                 />
             </aside>
