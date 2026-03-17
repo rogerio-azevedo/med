@@ -82,20 +82,20 @@ export function AppointmentCard({
                 onClick(appointment);
             }}
             style={style}
-            className={`group w-full text-left rounded-md border-l-4 pr-3 py-2 transition-all cursor-pointer shadow-sm hover:shadow-md ${statusColor.replace("bg-", "border-")} ${modStyle.bg}`}
+            className={`group w-full text-left rounded-md border-l-4 transition-all cursor-pointer shadow-sm hover:shadow-md ${compact ? "p-0" : "pr-3 py-2"} ${statusColor.replace("bg-", "border-")} ${modStyle.bg}`}
         >
             {compact ? (
                 /* Compact (calendar view) */
-                <div className="flex flex-col h-full overflow-hidden absolute inset-0 p-1.5 px-2">
-                    <div className={`flex items-start justify-between gap-1`}>
-                        <div className={`text-[10px] sm:text-xs font-bold leading-none ${modStyle.text}`}>
+                <div className="relative flex h-full min-h-0 flex-col overflow-hidden px-2 py-1.5">
+                    <div className="flex items-start justify-between gap-1">
+                        <div className={`truncate text-[10px] font-bold leading-none sm:text-xs ${modStyle.text}`}>
                             {format(start, "HH:mm")}
                         </div>
-                        <div className="text-[10px] leading-none shrink-0 opacity-80">
+                        <div className="shrink-0 text-[10px] leading-none opacity-80">
                             {modStyle.icon}
                         </div>
                     </div>
-                    <div className="text-[10px] sm:text-xs font-semibold leading-tight mt-1 truncate text-foreground/90">
+                    <div className="mt-1 truncate text-[10px] font-semibold leading-tight text-foreground/90 sm:text-xs">
                         {appointment.patient.name}
                     </div>
                 </div>
@@ -105,7 +105,7 @@ export function AppointmentCard({
                     <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                             <span className={`text-sm font-bold ${modStyle.text}`}>
-                                {format(start, "HH:mm")}
+                            {format(start, "HH:mm")}
                             </span>
                             <span className="text-xs font-normal text-muted-foreground bg-background/50 px-1.5 rounded-sm">
                                 {appointment.durationMinutes} min
