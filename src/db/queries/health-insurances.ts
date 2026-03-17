@@ -135,7 +135,7 @@ export async function getDoctorHealthInsuranceIds(doctorId: string) {
 }
 
 export async function getPatientHealthInsurances(patientId: string) {
-    return db
+    const rows = await db
         .select({
             id: patientHealthInsurances.id,
             healthInsuranceId: patientHealthInsurances.healthInsuranceId,
@@ -162,4 +162,16 @@ export async function getPatientHealthInsurances(patientId: string) {
             )
         )
         .orderBy(asc(healthInsurances.name));
+
+    return rows.map((row) => ({
+        ...row,
+        cardNumber: row.cardNumber ?? "",
+        planName: row.planName ?? "",
+        planCode: row.planCode ?? "",
+        holderName: row.holderName ?? "",
+        holderCpf: row.holderCpf ?? "",
+        validUntil: row.validUntil
+            ? new Date(row.validUntil).toISOString().split("T")[0]
+            : "",
+    }));
 }
