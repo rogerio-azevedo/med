@@ -34,7 +34,7 @@ export async function createDoctorAction(formData: FormData) {
     };
 
     // se for import/reactivate, senha não é necessária no data payload de create (vazios permitidos)
-    const createDoctorPayload = { ...data };
+    const createDoctorPayload: Record<string, FormDataEntryValue | FormDataEntryValue[]> = { ...data };
 
     if (intent !== "create") {
         delete createDoctorPayload.password;
