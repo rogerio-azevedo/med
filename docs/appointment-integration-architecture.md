@@ -13,7 +13,6 @@ Expor uma API externa para criação, edição e cancelamento de agendamentos a 
 ## Fora de escopo nesta fase
 - Leitura ampla da agenda.
 - Criação automática de pacientes.
-- Resolução de médico por CRM.
 - Exclusão física de agendamento.
 - Idempotência persistida por `externalRequestId`.
 
@@ -48,8 +47,11 @@ Expor uma API externa para criação, edição e cancelamento de agendamentos a 
 - “Excluir” = cancelar via status `cancelled`.
 - O médico pode ser enviado por `doctorId` interno ou por `doctorCrm` + `doctorCrmState`, e precisa pertencer à clínica do token.
 - O paciente pode ser informado por `patientId` ou CPF.
+- `scheduledAt` deve ser enviado em ISO 8601 com timezone explícito, por exemplo `2026-03-19T16:30:00-04:00` ou `2026-03-19T20:30:00Z`.
 - Se o paciente for enviado por CPF, o CPF é normalizado e procurado apenas dentro da clínica.
+- Se o médico for enviado por CRM/UF, a combinação é normalizada e procurada apenas dentro da clínica.
 - Se não existir paciente na clínica, a API retorna `404`.
+- Se não existir médico na clínica, a API retorna `404`.
 - Se houver conflito de horário, a API retorna `409`.
 - `specialtyId` é opcional.
 - `externalRequestId` é aceito para rastreabilidade documental, mas não evita duplicidade nesta v1.
@@ -64,7 +66,7 @@ Expor uma API externa para criação, edição e cancelamento de agendamentos a 
   - `durationMinutes`
   - `modality`
   - `notes`
-  - `doctorId`
+  - `doctorId` ou `doctorCrm` + `doctorCrmState`
   - `patientId` ou `patientCpf`
   - `specialtyId`
 
@@ -84,5 +86,7 @@ Expor uma API externa para criação, edição e cancelamento de agendamentos a 
   - listar credenciais;
   - revogar credencial;
   - rotacionar token.
+- O nome da credencial é persistido no banco e serve para identificação administrativa da integração.
+- Revogação deve ser lógica, preservando histórico e rastreabilidade da credencial.
 - O token deve ser exibido apenas no momento da emissão/rotação.
 - O integrador deve armazená-lo em cofre seguro.

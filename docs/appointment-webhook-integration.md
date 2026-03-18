@@ -8,17 +8,18 @@ Você pode integrar uma ferramenta externa de automação ao Med enviando requis
 - Token Bearer da integração.
 - CRM + UF do médico ou `doctorId` interno.
 - CPF do paciente ou `patientId` interno.
-- Data/hora no formato ISO 8601 com fuso explícito.
+- Data/hora no formato ISO 8601 com timezone explícito.
 
 ## Variáveis de ambiente do Med
 - `DATABASE_URL`: conexão com o banco.
 - `APPOINTMENT_INTEGRATION_JWT_SECRET`: segredo recomendado para assinar os tokens da integração.
 - `NEXTAUTH_SECRET`: pode ser usado como fallback, mas o ideal é manter um segredo separado para integrações.
 
-Exemplo:
+Exemplos válidos:
 
 ```txt
 2026-03-18T14:30:00-04:00
+2026-03-18T18:30:00Z
 ```
 
 ## Autenticação
@@ -52,6 +53,11 @@ O comando imprime:
 - `scope`
 - o JWT Bearer para usar no Insomnia
 
+Observação:
+- o nome informado no comando, por exemplo `Zarpo - Produção`, é persistido no banco para identificação administrativa da credencial;
+- esse nome não vai no header do webhook, ele serve apenas para gestão interna;
+- para revogar uma credencial, o recomendado é desativá-la logicamente, e não apagar o registro do banco.
+
 ### 2. Configurar o webhook da ferramenta externa
 - Método HTTP: `POST`, `PATCH` ou `DELETE`
 - URL:
@@ -64,10 +70,9 @@ O comando imprime:
 
 ### 3. Enviar os dados do agendamento
 Campos suportados na criação:
-- `doctorId` obrigatório
-  - alternativa: `doctorCrm` + `doctorCrmState`
+- `doctorId` ou `doctorCrm` + `doctorCrmState`
 - `patientId` ou `patientCpf` obrigatório
-- `scheduledAt` obrigatório
+- `scheduledAt` obrigatório em ISO 8601 com timezone explícito
 - `durationMinutes` obrigatório
 - `modality` obrigatório
 - `specialtyId` opcional
@@ -88,7 +93,7 @@ Campos suportados na criação:
 - `doctorCrmState`: UF do CRM, por exemplo `MT`, `SP`, `GO`.
 - `patientId`: ID interno do paciente no Med.
 - `patientCpf`: use quando você não tiver o `patientId`.
-- `scheduledAt`: data/hora da consulta em ISO 8601.
+- `scheduledAt`: data/hora da consulta em ISO 8601 com timezone obrigatório.
 - `durationMinutes`: duração em minutos.
 - `modality`:
   - `in_person`
@@ -103,7 +108,6 @@ curl -X POST "https://seu-dominio.com/api/integrations/appointments" \
   -H "Authorization: Bearer SEU_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "doctorId": "2d9fe4d0-c4df-4937-95a0-fec2a5181d10",
     "doctorCrm": "12345",
     "doctorCrmState": "MT",
     "patientCpf": "12345678901",
@@ -140,6 +144,12 @@ curl -X PATCH "https://seu-dominio.com/api/integrations/appointments/a4a9f138-d1
     "notes": "Horário ajustado pela automação"
   }'
 ```
+
+Observação:
+- na edição, se for trocar o médico sem `doctorId`, envie `doctorCrm` e `doctorCrmState` juntos;
+- se for trocar o paciente sem `patientId`, envie `patientCpf`;
+- não envie `doctorId` junto com `doctorCrm` + `doctorCrmState`;
+- não envie `patientId` junto com `patientCpf`.
 
 ## Exemplo de cancelamento
 ```bash
@@ -178,8 +188,9 @@ Resposta esperada:
 ```
 
 ## Boas práticas
-- Envie sempre `scheduledAt` com fuso explícito.
+- Envie sempre `scheduledAt` com timezone explícito, por exemplo `-04:00` ou `Z`.
 - Armazene o token em local seguro.
+- Gere credenciais com nomes claros, por exemplo `Zarpo - Produção`, `Zarpo - Homologação`, `Zarpo - Teste`.
 - Trate `409` como conflito real de agenda.
 - Trate `422` como erro de payload ou de regra de entrada.
 - Reenvios podem gerar duplicidade nesta versão, porque `externalRequestId` ainda não é idempotente.
