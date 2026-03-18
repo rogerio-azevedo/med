@@ -48,9 +48,10 @@ interface Patient {
 interface PatientsTableProps {
     patients: Patient[];
     doctors: { id: string; name: string | null }[];
+    emptyMessage?: string;
 }
 
-export function PatientsTable({ patients, doctors }: PatientsTableProps) {
+export function PatientsTable({ patients, doctors, emptyMessage = "Nenhum paciente encontrado." }: PatientsTableProps) {
     const [isDeleting, setIsDeleting] = useState(false)
     const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -68,7 +69,7 @@ export function PatientsTable({ patients, doctors }: PatientsTableProps) {
             } else {
                 toast.error(result.error || "Erro ao excluir paciente")
             }
-        } catch (error) {
+        } catch {
             toast.error("Erro ao excluir paciente")
         } finally {
             setIsDeleting(false)
@@ -93,7 +94,7 @@ export function PatientsTable({ patients, doctors }: PatientsTableProps) {
                         {patients.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="h-24 text-center">
-                                    Nenhum paciente encontrado.
+                                    {emptyMessage}
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -104,17 +105,7 @@ export function PatientsTable({ patients, doctors }: PatientsTableProps) {
                                     <TableCell>{patient.email || "-"}</TableCell>
                                     <TableCell>{patient.phone || "-"}</TableCell>
                                     <TableCell className="text-right">
-                                        <div className="flex justify-end items-center gap-2">
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                className="gap-2"
-                                                onClick={() => window.location.href = `/medical-records/${patient.id}`}
-                                            >
-                                                <FileText className="h-4 w-4" />
-                                                Prontuário
-                                            </Button>
-                                            
+                                        <div className="flex justify-end items-center">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" className="h-8 w-8 p-0">
@@ -126,6 +117,15 @@ export function PatientsTable({ patients, doctors }: PatientsTableProps) {
                                                     <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                                     <DropdownMenuItem
                                                         onClick={() => {
+                                                            window.location.href = `/medical-records/${patient.id}`
+                                                        }}
+                                                    >
+                                                        <FileText className="mr-2 h-4 w-4" />
+                                                        Prontuário
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        onClick={() => {
                                                             setSelectedPatient(patient)
                                                             setIsEditDialogOpen(true)
                                                         }}
@@ -133,7 +133,6 @@ export function PatientsTable({ patients, doctors }: PatientsTableProps) {
                                                         <Pencil className="mr-2 h-4 w-4" />
                                                         Editar Cadastro
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
                                                     <DropdownMenuItem
                                                         className="text-destructive focus:text-destructive"
                                                         onClick={() => {
