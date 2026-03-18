@@ -106,6 +106,13 @@
       "when": 1773756565000,
       "tag": "0014_sturdy_health_insurances",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1773861164578,
+      "tag": "0015_appointment_integration_credentials",
+      "breakpoints": true
     }
   ]
 }

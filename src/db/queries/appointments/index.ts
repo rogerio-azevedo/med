@@ -165,6 +165,43 @@ export async function createAppointment(data: {
     return result[0];
 }
 
+export async function updateAppointment(
+    id: string,
+    clinicId: string,
+    data: {
+        doctorId: string;
+        patientId: string;
+        specialtyId?: string;
+        scheduledAt: Date;
+        durationMinutes: number;
+        modality: "in_person" | "remote" | "phone" | "whatsapp";
+        notes?: string;
+    }
+) {
+    const result = await db
+        .update(appointments)
+        .set({
+            doctorId: data.doctorId,
+            patientId: data.patientId,
+            specialtyId: data.specialtyId ?? null,
+            scheduledAt: data.scheduledAt,
+            durationMinutes: data.durationMinutes,
+            modality: data.modality,
+            notes: data.notes ?? null,
+        })
+        .where(and(eq(appointments.id, id), eq(appointments.clinicId, clinicId)))
+        .returning({
+            id: appointments.id,
+            status: appointments.status,
+            scheduledAt: appointments.scheduledAt,
+            durationMinutes: appointments.durationMinutes,
+            doctorId: appointments.doctorId,
+            patientId: appointments.patientId,
+        });
+
+    return result[0] ?? null;
+}
+
 export async function updateAppointmentStatus(
     id: string,
     status: "scheduled" | "confirmed" | "in_progress" | "done" | "cancelled" | "no_show",

@@ -4,6 +4,7 @@ import { fromZonedTime } from "date-fns-tz";
 import { doctorSchedules } from "@/db/schema/medical";
 import {
     createAppointment as createAppointmentQuery,
+    updateAppointment as updateAppointmentQuery,
     updateAppointmentStatus as updateAppointmentStatusQuery,
     checkConflict,
     getAppointmentsByClinic,
@@ -18,6 +19,7 @@ import {
 } from "@/db/queries/schedule-blocks";
 import type { CreateAppointmentInput } from "@/lib/validations/appointments";
 import type { CreateScheduleBlockInput } from "@/lib/validations/schedule-blocks";
+import type { UpdateIntegrationAppointmentInput } from "@/lib/validations/integration-appointments";
 
 export type TimeSlot = {
     startsAt: Date;
@@ -171,6 +173,61 @@ export async function updateAppointmentStatus(
         return { success: true };
     } catch {
         return { success: false, error: "Erro ao atualizar status do agendamento." };
+    }
+}
+
+export async function updateAppointment(
+    id: string,
+    data: UpdateIntegrationAppointmentInput,
+    clinicId: string
+): Promise<
+    | {
+          success: true;
+          appointment: {
+              id: string;
+              status: string | null;
+              scheduledAt: Date;
+              durationMinutes: number;
+              doctorId: string;
+              patientId: string;
+          };
+      }
+    | { success: false; error: string }
+> {
+    try {
+        const startsAt = new Date(data.scheduledAt);
+        const hasConflict = await checkConflict(
+            data.doctorId,
+            clinicId,
+            startsAt,
+            data.durationMinutes,
+            id
+        );
+
+        if (hasConflict) {
+            return {
+                success: false,
+                error: "Este horário já está ocupado. Por favor, escolha outro slot.",
+            };
+        }
+
+        const result = await updateAppointmentQuery(id, clinicId, {
+            doctorId: data.doctorId,
+            patientId: data.patientId,
+            specialtyId: data.specialtyId,
+            scheduledAt: startsAt,
+            durationMinutes: data.durationMinutes,
+            modality: data.modality,
+            notes: data.notes,
+        });
+
+        if (!result) {
+            return { success: false, error: "Agendamento não encontrado." };
+        }
+
+        return { success: true, appointment: result };
+    } catch {
+        return { success: false, error: "Erro ao atualizar agendamento." };
     }
 }
 
