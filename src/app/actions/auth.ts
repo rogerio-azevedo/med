@@ -1,13 +1,13 @@
 "use server";
 
-import { signIn } from "@/auth";
+import { auth, signIn } from "@/auth";
 import { db } from "@/db";
 import { inviteLinks } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { AuthError } from "next-auth";
 import { z } from "zod";
-import { registerUser } from "@/services/auth";
-import { loginSchema, registerSchema } from "@/lib/validations/auth";
+import { changeOwnPassword, registerUser } from "@/services/auth";
+import { changeOwnPasswordSchema, loginSchema, registerSchema } from "@/lib/validations/auth";
 
 export async function login(prevState: unknown, formData: FormData) {
     const data = Object.fromEntries(formData);
@@ -78,6 +78,28 @@ export async function register(prevState: unknown, formData: FormData) {
     }
 
     const result = await registerUser(parsed.data);
+
+    if (!result.success) {
+        return { error: result.error };
+    }
+
+    return { success: true };
+}
+
+export async function changeOwnPasswordAction(formData: FormData) {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+        throw new Error("Unauthorized");
+    }
+
+    const parsed = changeOwnPasswordSchema.safeParse(Object.fromEntries(formData));
+
+    if (!parsed.success) {
+        return { error: "Dados inválidos", details: z.flattenError(parsed.error) };
+    }
+
+    const result = await changeOwnPassword(session.user.id, parsed.data);
 
     if (!result.success) {
         return { error: result.error };

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
     users,
@@ -13,7 +13,11 @@ import {
     doctorSpecialties,
 } from "@/db/schema";
 import { geocodeAddress } from "@/lib/geocode";
-import type { RegisterInput } from "@/lib/validations/auth";
+import type {
+    AdminSetDoctorPasswordInput,
+    ChangeOwnPasswordInput,
+    RegisterInput,
+} from "@/lib/validations/auth";
 import bcrypt from "bcryptjs";
 
 export async function registerUser(
@@ -235,4 +239,70 @@ export async function registerUser(
             error: "Erro ao processar o cadastro. Verifique os dados e tente novamente.",
         };
     }
+}
+
+export async function adminSetDoctorPassword(
+    data: AdminSetDoctorPasswordInput,
+    clinicId: string
+): Promise<{ success: true } | { success: false; error: string }> {
+    const doctor = await db.query.doctors.findFirst({
+        where: eq(doctors.id, data.doctorId),
+        with: { user: true },
+    });
+
+    if (!doctor?.user) {
+        return { success: false, error: "Médico não encontrado." };
+    }
+
+    const clinicLink = await db.query.clinicDoctors.findFirst({
+        where: and(
+            eq(clinicDoctors.doctorId, data.doctorId),
+            eq(clinicDoctors.clinicId, clinicId),
+            eq(clinicDoctors.isActive, true)
+        ),
+    });
+
+    if (!clinicLink) {
+        return {
+            success: false,
+            error: "Este médico não está ativo na sua clínica.",
+        };
+    }
+
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
+    await db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, doctor.userId));
+
+    return { success: true };
+}
+
+export async function changeOwnPassword(
+    userId: string,
+    data: ChangeOwnPasswordInput
+): Promise<{ success: true } | { success: false; error: string }> {
+    const user = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+    });
+
+    if (!user?.password) {
+        return { success: false, error: "Usuário não possui senha configurada." };
+    }
+
+    const passwordMatches = await bcrypt.compare(data.currentPassword, user.password);
+
+    if (!passwordMatches) {
+        return { success: false, error: "A senha atual está incorreta." };
+    }
+
+    const hashedPassword = await bcrypt.hash(data.newPassword, 10);
+
+    await db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, userId));
+
+    return { success: true };
 }

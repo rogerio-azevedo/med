@@ -42,8 +42,6 @@ export function NavUser({
     }
 }) {
     const { isMobile } = useSidebar()
-    const isAdmin = user.role === "admin"
-
     return (
         <SidebarMenu>
             <SidebarMenuItem>
@@ -95,19 +93,12 @@ export function NavUser({
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
-                            {isAdmin ? (
-                                <DropdownMenuItem asChild>
-                                    <Link href="/conta" className="flex items-center cursor-pointer">
-                                        <BadgeCheck className="mr-2 h-4 w-4" />
-                                        Conta
-                                    </Link>
-                                </DropdownMenuItem>
-                            ) : (
-                                <DropdownMenuItem disabled>
+                            <DropdownMenuItem asChild>
+                                <Link href="/conta" className="flex items-center cursor-pointer">
                                     <BadgeCheck className="mr-2 h-4 w-4" />
                                     Conta
-                                </DropdownMenuItem>
-                            )}
+                                </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem disabled>
                                 <Bell className="mr-2 h-4 w-4" />
                                 Notificações

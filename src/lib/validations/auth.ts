@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const passwordSchema = z.string().min(6, "Senha deve ter pelo menos 6 caracteres");
+
 export const loginSchema = z.object({
     email: z.email(),
     password: z.string().min(1, "Senha obrigatória"),
@@ -8,7 +10,7 @@ export const loginSchema = z.object({
 export const registerSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
     email: z.email("Email inválido"),
-    password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+    password: passwordSchema,
     invite: z.string().optional(),
     crm: z.string().optional(),
     crmState: z.string().optional(),
@@ -28,5 +30,33 @@ export const registerSchema = z.object({
     specialtyIds: z.array(z.string()).optional(),
 });
 
+export const adminSetDoctorPasswordSchema = z
+    .object({
+        doctorId: z.string().min(1, "Médico inválido"),
+        password: passwordSchema,
+        confirmPassword: z.string().min(1, "Confirme a senha"),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+        message: "As senhas não coincidem",
+        path: ["confirmPassword"],
+    });
+
+export const changeOwnPasswordSchema = z
+    .object({
+        currentPassword: z.string().min(1, "Informe a senha atual"),
+        newPassword: passwordSchema,
+        confirmPassword: z.string().min(1, "Confirme a nova senha"),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+        message: "As senhas não coincidem",
+        path: ["confirmPassword"],
+    })
+    .refine((data) => data.currentPassword !== data.newPassword, {
+        message: "A nova senha precisa ser diferente da atual",
+        path: ["newPassword"],
+    });
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type AdminSetDoctorPasswordInput = z.infer<typeof adminSetDoctorPasswordSchema>;
+export type ChangeOwnPasswordInput = z.infer<typeof changeOwnPasswordSchema>;

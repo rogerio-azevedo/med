@@ -1,8 +1,8 @@
 "use client";
 
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Clock, User } from "lucide-react";
+import { User } from "lucide-react";
+import Link from "next/link";
 
 type AppointmentStatus =
     | "scheduled"
@@ -72,14 +72,23 @@ export function AppointmentCard({
     const modStyle = modalityStyles[appointment.modality] || modalityStyles.in_person;
     const statusColor = statusColors[appointment.status] || "bg-border";
     const start = new Date(appointment.scheduledAt);
+    const medicalRecordHref = `/medical-records/${appointment.patient.id}`;
 
     return (
-        <button
-            type="button"
+        <div
+            role="button"
+            tabIndex={0}
             onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 onClick(appointment);
+            }}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onClick(appointment);
+                }
             }}
             style={style}
             className={`group w-full text-left rounded-md border-l-4 transition-all cursor-pointer shadow-sm hover:shadow-md ${compact ? "p-0" : "pr-3 py-2"} ${statusColor.replace("bg-", "border-")} ${modStyle.bg}`}
@@ -95,9 +104,13 @@ export function AppointmentCard({
                             {modStyle.icon}
                         </div>
                     </div>
-                    <div className="mt-1 truncate text-[10px] font-semibold leading-tight text-foreground/90 sm:text-xs">
+                    <Link
+                        href={medicalRecordHref}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-1 truncate text-[10px] font-semibold leading-tight text-foreground/90 transition hover:underline focus-visible:underline sm:text-xs"
+                    >
                         {appointment.patient.name}
-                    </div>
+                    </Link>
                 </div>
             ) : (
                 /* Full (list view) */
@@ -119,7 +132,13 @@ export function AppointmentCard({
                     <div className="pt-1 flex flex-col gap-1">
                         <div className="flex items-center gap-1.5 text-sm">
                             <User className="size-3.5 text-muted-foreground shrink-0" />
-                            <span className="truncate font-semibold text-foreground/90">{appointment.patient.name}</span>
+                            <Link
+                                href={medicalRecordHref}
+                                onClick={(e) => e.stopPropagation()}
+                                className="truncate font-semibold text-foreground/90 transition hover:underline focus-visible:underline"
+                            >
+                                {appointment.patient.name}
+                            </Link>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <span className="size-3.5 flex items-center justify-center shrink-0">👨‍⚕️</span>
@@ -134,6 +153,6 @@ export function AppointmentCard({
                     </div>
                 </div>
             )}
-        </button>
+        </div>
     );
 }

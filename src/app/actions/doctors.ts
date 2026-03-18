@@ -3,8 +3,14 @@
 import { auth } from "@/auth";
 import { deleteDoctor, createDoctor, updateDoctor } from "@/services/doctors";
 import { z } from "zod";
-import { createDoctorSchema, updateDoctorSchema } from "@/lib/validations/doctor";
+import {
+    createDoctorSchema,
+    updateDoctorSchema,
+    type UpdateDoctorInput,
+} from "@/lib/validations/doctor";
 import { revalidatePath } from "next/cache";
+import { adminSetDoctorPasswordSchema } from "@/lib/validations/auth";
+import { adminSetDoctorPassword } from "@/services/auth";
 
 export async function createDoctorAction(formData: FormData) {
     const session = await auth();
@@ -28,11 +34,13 @@ export async function createDoctorAction(formData: FormData) {
     };
 
     // se for import/reactivate, senha não é necessária no data payload de create (vazios permitidos)
+    const createDoctorPayload = { ...data };
+
     if (intent !== "create") {
-        delete (data as any).password;
+        delete createDoctorPayload.password;
     }
 
-    const parsed = createDoctorSchema.safeParse(data);
+    const parsed = createDoctorSchema.safeParse(createDoctorPayload);
 
     if (!parsed.success) {
         return { error: "Dados inválidos", details: z.flattenError(parsed.error) };
@@ -43,7 +51,8 @@ export async function createDoctorAction(formData: FormData) {
     }
 
     if (intent === "reactivate" && globalId) {
-        const result = await updateDoctor({ ...parsed.data, id: globalId } as any, clinicId);
+        const updatePayload: UpdateDoctorInput = { ...parsed.data, id: globalId };
+        const result = await updateDoctor(updatePayload, clinicId);
         if (result.success) {
             const { db } = await import("@/db");
             const { clinicDoctors } = await import("@/db/schema/medical");
@@ -62,7 +71,8 @@ export async function createDoctorAction(formData: FormData) {
 
     if (intent === "import" && globalId) {
         // Update global details
-        const result = await updateDoctor({ ...parsed.data, id: globalId } as any, clinicId);
+        const updatePayload: UpdateDoctorInput = { ...parsed.data, id: globalId };
+        const result = await updateDoctor(updatePayload, clinicId);
         if (result.success) {
             const { db } = await import("@/db");
             const { clinicDoctors } = await import("@/db/schema/medical");
@@ -129,6 +139,30 @@ export async function updateDoctorAction(formData: FormData) {
     }
 
     const result = await updateDoctor(parsed.data, clinicId);
+
+    if (!result.success) {
+        return { error: result.error };
+    }
+
+    revalidatePath("/doctors");
+    return { success: true };
+}
+
+export async function setDoctorPasswordAction(formData: FormData) {
+    const session = await auth();
+    const clinicId = session?.user?.clinicId;
+
+    if (!clinicId || session?.user?.role !== "admin") {
+        throw new Error("Unauthorized");
+    }
+
+    const parsed = adminSetDoctorPasswordSchema.safeParse(Object.fromEntries(formData));
+
+    if (!parsed.success) {
+        return { error: "Dados inválidos", details: z.flattenError(parsed.error) };
+    }
+
+    const result = await adminSetDoctorPassword(parsed.data, clinicId);
 
     if (!result.success) {
         return { error: result.error };

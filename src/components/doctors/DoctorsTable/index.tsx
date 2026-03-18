@@ -5,6 +5,7 @@ import {
     Pencil,
     Trash2,
     QrCode,
+    KeyRound,
 } from "lucide-react"
 import {
     Table,
@@ -36,6 +37,7 @@ import { deleteDoctorAction } from "@/app/actions/doctors"
 import { Badge } from "@/components/ui/badge"
 import { EditDoctorDialog } from "../EditDoctorDialog"
 import { DoctorQRCodeDialog } from "../DoctorQRCodeDialog"
+import { SetDoctorPasswordDialog } from "../SetDoctorPasswordDialog"
 
 interface Doctor {
     id: string
@@ -65,6 +67,7 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
     const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
+    const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
 
     const handleDelete = async () => {
         if (!selectedDoctor) return
@@ -77,7 +80,7 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
             } else {
                 alert("Erro ao excluir médico")
             }
-        } catch (error) {
+        } catch {
             alert("Erro ao excluir médico")
         } finally {
             setIsDeleting(false)
@@ -183,6 +186,16 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem
+                                                    onClick={() => {
+                                                        setSelectedDoctor(doctor)
+                                                        setIsPasswordDialogOpen(true)
+                                                    }}
+                                                >
+                                                    <KeyRound className="mr-2 h-4 w-4" />
+                                                    Definir senha
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
                                                     className="text-destructive focus:text-destructive"
                                                     onClick={() => {
                                                         setSelectedDoctor(doctor)
@@ -215,6 +228,12 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
                 onOpenChange={setIsQrDialogOpen}
                 doctorName={selectedDoctor?.name ?? null}
                 inviteCode={selectedDoctor?.inviteCode ?? null}
+            />
+
+            <SetDoctorPasswordDialog
+                doctor={selectedDoctor}
+                isOpen={isPasswordDialogOpen}
+                onOpenChange={setIsPasswordDialogOpen}
             />
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
