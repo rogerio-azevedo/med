@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
     users,
@@ -13,6 +13,7 @@ import { deleteDoctor as deleteDoctorQuery } from "@/db/queries/doctors";
 import { geocodeAddress } from "@/lib/geocode";
 import type { CreateDoctorInput, UpdateDoctorInput } from "@/lib/validations/doctor";
 import { syncDoctorHealthInsurances } from "@/services/health-insurances";
+import { ensureDoctorPatientInviteCode } from "@/services/invites";
 import bcrypt from "bcryptjs";
 
 export async function createDoctor(
@@ -23,6 +24,7 @@ export async function createDoctor(
         name,
         email,
         password,
+        relationshipType,
         crm,
         crmState,
         phone,
@@ -79,7 +81,9 @@ export async function createDoctor(
     await db.insert(clinicDoctors).values({
         doctorId: newDoctor.id,
         clinicId,
+        relationshipType,
     });
+    await ensureDoctorPatientInviteCode(clinicId, newDoctor.id);
 
     if (specialtyIds && specialtyIds.length > 0) {
         await db.insert(doctorSpecialties).values(
@@ -146,6 +150,7 @@ export async function updateDoctor(
         id: doctorId,
         name,
         email,
+        relationshipType,
         crm,
         crmState,
         phone,
@@ -174,6 +179,16 @@ export async function updateDoctor(
     const userId = doctor.userId;
 
     await db.update(users).set({ name, email }).where(eq(users.id, userId));
+
+    await db
+        .update(clinicDoctors)
+        .set({ relationshipType })
+        .where(
+            and(
+                eq(clinicDoctors.doctorId, doctorId),
+                eq(clinicDoctors.clinicId, clinicId)
+            )
+        );
 
     await db
         .update(doctors)

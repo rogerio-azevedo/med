@@ -14,6 +14,10 @@ export async function generateInvite(formData: FormData) {
 
     const clinicId = formData.get("clinicId") as string | null;
     const role = formData.get("role") as "admin" | "doctor" | "patient";
+    const doctorRelationshipType = formData.get("doctorRelationshipType") as
+        | "linked"
+        | "partner"
+        | null;
 
     if (role === "admin" && session?.user?.role !== "super_admin") {
         throw new Error("Only super admins can generate admin invites");
@@ -30,6 +34,8 @@ export async function generateInvite(formData: FormData) {
     const validated = generateInviteSchema.safeParse({
         clinicId: clinicId || undefined,
         role,
+        doctorRelationshipType:
+            role === "doctor" ? doctorRelationshipType || "linked" : undefined,
     });
 
     if (!validated.success) {

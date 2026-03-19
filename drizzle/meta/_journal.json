@@ -113,6 +113,13 @@
       "when": 1773861164578,
       "tag": "0015_appointment_integration_credentials",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1773877989020,
+      "tag": "0016_doctor_relationship_types",
+      "breakpoints": true
     }
   ]
 }

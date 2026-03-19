@@ -10,6 +10,7 @@ import {
     clinicPatients,
     addresses,
     patientDoctors,
+    patientOrigins,
     doctorSpecialties,
 } from "@/db/schema";
 import { geocodeAddress } from "@/lib/geocode";
@@ -54,7 +55,14 @@ export async function registerUser(
         return { success: false, error: "Email já cadastrado." };
     }
 
-    let inviteData: { id: string; role: string; clinicId: string | null; doctorId: string | null; usedCount: number } | null = null;
+    let inviteData: {
+        id: string;
+        role: string;
+        clinicId: string | null;
+        doctorId: string | null;
+        doctorRelationshipType: "linked" | "partner" | null;
+        usedCount: number;
+    } | null = null;
     let userRole = "user";
 
     if (invite) {
@@ -70,6 +78,7 @@ export async function registerUser(
             role: foundInvite.role,
             clinicId: foundInvite.clinicId,
             doctorId: foundInvite.doctorId,
+            doctorRelationshipType: foundInvite.doctorRelationshipType,
             usedCount: foundInvite.usedCount ?? 0,
         };
         userRole = inviteData.role;
@@ -119,6 +128,7 @@ export async function registerUser(
                     await db.insert(clinicDoctors).values({
                         doctorId: newDoctor.id,
                         clinicId: inviteData.clinicId,
+                        relationshipType: inviteData.doctorRelationshipType ?? "linked",
                     });
                 }
 
@@ -164,13 +174,29 @@ export async function registerUser(
                         patientId: newPatient.id,
                         clinicId: inviteData.clinicId,
                     });
-                }
+                    if (inviteData.doctorId) {
+                        await db.insert(patientOrigins).values({
+                            patientId: newPatient.id,
+                            clinicId: inviteData.clinicId,
+                            originType: "medical_referral",
+                            referringDoctorId: inviteData.doctorId,
+                        });
 
-                if (inviteData.doctorId) {
-                    await db.insert(patientDoctors).values({
-                        patientId: newPatient.id,
-                        doctorId: inviteData.doctorId,
-                    });
+                        const clinicDoctorLink = await db.query.clinicDoctors.findFirst({
+                            where: and(
+                                eq(clinicDoctors.doctorId, inviteData.doctorId),
+                                eq(clinicDoctors.clinicId, inviteData.clinicId),
+                                eq(clinicDoctors.isActive, true)
+                            ),
+                        });
+
+                        if (clinicDoctorLink?.relationshipType === "linked") {
+                            await db.insert(patientDoctors).values({
+                                patientId: newPatient.id,
+                                doctorId: inviteData.doctorId,
+                            });
+                        }
+                    }
                 }
             } else if (inviteData.role === "admin") {
                 if (inviteData.clinicId) {

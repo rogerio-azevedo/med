@@ -12,7 +12,34 @@ import {
     addresses,
     inviteLinks,
 } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc, isNull, or } from "drizzle-orm";
+
+type DoctorListItem = {
+    id: string;
+    crm: string | null;
+    crmState: string | null;
+    phone: string | null;
+    relationshipType: "linked" | "partner" | null;
+    isAssociated: boolean;
+    name: string | null;
+    email: string | null;
+    inviteCode: string | null;
+    address: {
+        id: string | null;
+        zipCode: string | null;
+        street: string | null;
+        number: string | null;
+        complement: string | null;
+        neighborhood: string | null;
+        city: string | null;
+        state: string | null;
+        latitude: number | null;
+        longitude: number | null;
+    } | null;
+    specialties: { id: string; name: string }[];
+    practiceAreas: { id: string; name: string }[];
+    healthInsurances: { id: string; name: string }[];
+};
 
 export async function getDoctorsByClinic(clinicId: string) {
     const rawResults = await db
@@ -21,6 +48,8 @@ export async function getDoctorsByClinic(clinicId: string) {
             crm: doctors.crm,
             crmState: doctors.crmState,
             phone: doctors.phone,
+            relationshipType: clinicDoctors.relationshipType,
+            isAssociated: clinicDoctors.id,
             name: users.name,
             email: users.email,
             specialtyId: specialties.id,
@@ -45,7 +74,13 @@ export async function getDoctorsByClinic(clinicId: string) {
         })
         .from(doctors)
         .innerJoin(users, eq(doctors.userId, users.id))
-        .innerJoin(clinicDoctors, eq(clinicDoctors.doctorId, doctors.id))
+        .leftJoin(
+            clinicDoctors,
+            and(
+                eq(clinicDoctors.doctorId, doctors.id),
+                eq(clinicDoctors.clinicId, clinicId)
+            )
+        )
         .leftJoin(doctorSpecialties, eq(doctorSpecialties.doctorId, doctors.id))
         .leftJoin(specialties, eq(doctorSpecialties.specialtyId, specialties.id))
         .leftJoin(doctorPracticeAreas, eq(doctorPracticeAreas.doctorId, doctors.id))
@@ -82,41 +117,42 @@ export async function getDoctorsByClinic(clinicId: string) {
         )
         .where(
             and(
-                eq(clinicDoctors.clinicId, clinicId),
-                eq(clinicDoctors.isActive, true)
+                eq(users.role, "doctor"),
+                or(eq(clinicDoctors.isActive, true), isNull(clinicDoctors.id))
             )
-        );
+        )
+        .orderBy(asc(users.name));
 
-    const doctorsMap = new Map<string, any>();
+    const doctorsMap = new Map<string, DoctorListItem>();
 
     for (const row of rawResults) {
         if (!doctorsMap.has(row.id)) {
-            const {
-                specialtyId,
-                specialtyName,
-                practiceAreaId,
-                practiceAreaName,
-                healthInsuranceId,
-                healthInsuranceName,
-                address,
-                ...doctorData
-            } = row;
-            // The LEFT JOIN addresses will return an address object filled with nulls if no address exists.
-            const hasAddress = address && address.id !== null;
+            const hasAddress = row.address && row.address.id !== null;
             doctorsMap.set(row.id, {
-                ...doctorData,
-                address: hasAddress ? address : null,
+                id: row.id,
+                crm: row.crm,
+                crmState: row.crmState,
+                phone: row.phone,
+                relationshipType: row.relationshipType ?? null,
+                isAssociated: !!row.isAssociated,
+                name: row.name,
+                email: row.email,
+                inviteCode: row.inviteCode,
+                address: hasAddress ? row.address : null,
                 specialties: [],
                 practiceAreas: [],
                 healthInsurances: [],
             });
-        } else if (row.inviteCode && !doctorsMap.get(row.id).inviteCode) {
-            doctorsMap.get(row.id).inviteCode = row.inviteCode;
+        } else {
+            const doctor = doctorsMap.get(row.id);
+            if (doctor && row.inviteCode && !doctor.inviteCode) {
+                doctor.inviteCode = row.inviteCode;
+            }
         }
 
         if (row.specialtyId && row.specialtyName) {
             const doctor = doctorsMap.get(row.id);
-            if (!doctor.specialties.some((s: any) => s.id === row.specialtyId)) {
+            if (doctor && !doctor.specialties.some((s) => s.id === row.specialtyId)) {
                 doctor.specialties.push({
                     id: row.specialtyId,
                     name: row.specialtyName,
@@ -126,7 +162,7 @@ export async function getDoctorsByClinic(clinicId: string) {
 
         if (row.practiceAreaId && row.practiceAreaName) {
             const doctor = doctorsMap.get(row.id);
-            if (!doctor.practiceAreas.some((p: any) => p.id === row.practiceAreaId)) {
+            if (doctor && !doctor.practiceAreas.some((p) => p.id === row.practiceAreaId)) {
                 doctor.practiceAreas.push({
                     id: row.practiceAreaId,
                     name: row.practiceAreaName,
@@ -136,7 +172,7 @@ export async function getDoctorsByClinic(clinicId: string) {
 
         if (row.healthInsuranceId && row.healthInsuranceName) {
             const doctor = doctorsMap.get(row.id);
-            if (!doctor.healthInsurances.some((item: any) => item.id === row.healthInsuranceId)) {
+            if (doctor && !doctor.healthInsurances.some((item) => item.id === row.healthInsuranceId)) {
                 doctor.healthInsurances.push({
                     id: row.healthInsuranceId,
                     name: row.healthInsuranceName,
@@ -145,7 +181,9 @@ export async function getDoctorsByClinic(clinicId: string) {
         }
     }
 
-    return Array.from(doctorsMap.values());
+    return Array.from(doctorsMap.values()).sort((a, b) =>
+        (a.name || "").localeCompare(b.name || "", "pt-BR", { sensitivity: "base" })
+    );
 }
 
 export async function deleteDoctor(doctorId: string, clinicId: string) {
@@ -164,10 +202,11 @@ export async function deleteDoctor(doctorId: string, clinicId: string) {
 }
 
 export async function getDoctorsSimple(clinicId: string) {
-    return db
+    const result = await db
         .select({
             id: doctors.id,
             name: users.name,
+            relationshipType: clinicDoctors.relationshipType,
         })
         .from(doctors)
         .innerJoin(users, eq(doctors.userId, users.id))
@@ -178,6 +217,10 @@ export async function getDoctorsSimple(clinicId: string) {
                 eq(clinicDoctors.isActive, true)
             )
         )
+
+    return result.sort((a, b) =>
+        (a.name || "").localeCompare(b.name || "", "pt-BR", { sensitivity: "base" })
+    );
 }
 
 export async function getDoctorDetails(doctorId: string, clinicId: string) {
@@ -187,6 +230,7 @@ export async function getDoctorDetails(doctorId: string, clinicId: string) {
             crm: doctors.crm,
             crmState: doctors.crmState,
             phone: doctors.phone,
+            relationshipType: clinicDoctors.relationshipType,
             name: users.name,
             email: users.email,
             specialtyId: specialties.id,
@@ -253,6 +297,7 @@ export async function getDoctorDetails(doctorId: string, clinicId: string) {
         phone: rawResults[0].phone,
         crm: rawResults[0].crm,
         crmState: rawResults[0].crmState,
+        relationshipType: rawResults[0].relationshipType,
         address: rawResults[0].address?.id ? rawResults[0].address : null,
         specialties: [] as { id: string; name: string }[],
         practiceAreas: [] as { id: string; name: string }[],

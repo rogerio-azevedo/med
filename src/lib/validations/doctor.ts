@@ -1,9 +1,12 @@
 import { z } from "zod";
 
+export const doctorRelationshipTypeSchema = z.enum(["linked", "partner"]);
+
 export const createDoctorSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
     email: z.email("Email inválido"),
     password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional(),
+    relationshipType: doctorRelationshipTypeSchema,
     crm: z.string().optional(),
     crmState: z.string().optional(),
     phone: z.string().optional(),
@@ -25,6 +28,7 @@ export const updateDoctorSchema = z.object({
     id: z.string().uuid(),
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
     email: z.email("Email inválido"),
+    relationshipType: doctorRelationshipTypeSchema,
     crm: z.string().optional(),
     crmState: z.string().optional(),
     phone: z.string().optional(),

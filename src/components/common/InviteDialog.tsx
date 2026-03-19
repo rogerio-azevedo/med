@@ -11,7 +11,14 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { Link2, Copy, Check, Share2, UserPlus, Mail } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Copy, Check, Share2, Mail } from "lucide-react";
 import { generateInvite } from "@/app/actions/invites";
 import { toast } from "sonner";
 
@@ -26,12 +33,16 @@ export function InviteDialog({ clinicId, role, trigger }: InviteDialogProps) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [inviteCode, setInviteCode] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
+    const [doctorRelationshipType, setDoctorRelationshipType] = useState<"linked" | "partner">("linked");
 
     const handleGenerate = async () => {
         setIsGenerating(true);
         const formData = new FormData();
         formData.append("clinicId", clinicId);
         formData.append("role", role);
+        if (role === "doctor") {
+            formData.append("doctorRelationshipType", doctorRelationshipType);
+        }
 
         try {
             const result = await generateInvite(formData);
@@ -40,7 +51,7 @@ export function InviteDialog({ clinicId, role, trigger }: InviteDialogProps) {
             } else {
                 toast.error("Erro ao gerar convite");
             }
-        } catch (error) {
+        } catch {
             toast.error("Erro ao gerar convite");
         } finally {
             setIsGenerating(false);
@@ -66,6 +77,7 @@ export function InviteDialog({ clinicId, role, trigger }: InviteDialogProps) {
             if (!open) {
                 setInviteCode(null);
                 setCopied(false);
+                setDoctorRelationshipType("linked");
             }
         }}>
             <DialogTrigger asChild>
@@ -89,8 +101,27 @@ export function InviteDialog({ clinicId, role, trigger }: InviteDialogProps) {
                         <div className="p-4 bg-primary/10 rounded-full text-primary">
                             <Mail size={32} />
                         </div>
+                        {role === "doctor" && (
+                            <div className="w-full space-y-2">
+                                <p className="text-sm font-medium text-left">Tipo de relação do médico</p>
+                                <Select
+                                    value={doctorRelationshipType}
+                                    onValueChange={(value: "linked" | "partner") => setDoctorRelationshipType(value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecione o tipo de vínculo" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="linked">Médico Vinculado</SelectItem>
+                                        <SelectItem value="partner">Médico Parceiro</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
                         <p className="text-sm text-center text-muted-foreground px-6">
-                            Ao gerar o link, ele poderá ser usado uma única vez para cadastrar um novo {roleLabel.toLowerCase()} vinculado à sua clínica.
+                            {role === "doctor"
+                                ? `Ao gerar o link, ele poderá ser usado uma única vez para cadastrar um novo ${doctorRelationshipType === "partner" ? "médico parceiro" : "médico vinculado"} à sua clínica.`
+                                : `Ao gerar o link, ele poderá ser usado uma única vez para cadastrar um novo ${roleLabel.toLowerCase()} vinculado à sua clínica.`}
                         </p>
                         <Button
                             onClick={handleGenerate}

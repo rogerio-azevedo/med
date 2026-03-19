@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -22,6 +23,13 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Loader2, Mail, Check, Pencil } from "lucide-react";
 import { updateDoctorAction } from "@/app/actions/doctors";
 import { getSpecialtiesAction } from "@/app/actions/specialties";
@@ -29,6 +37,7 @@ import { getPracticeAreasAction } from "@/app/actions/practice-areas";
 import { getActiveHealthInsurancesAction } from "@/app/actions/health-insurances";
 import { toast } from "sonner";
 import ReactSelect from "react-select";
+import type { GroupBase, MultiValue, StylesConfig } from "react-select";
 import cep from "cep-promise";
 import { maskPhone } from "@/utils/masks";
 
@@ -41,6 +50,7 @@ const doctorFormSchema = z.object({
     id: z.string(),
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
     email: z.string().email("Email inválido"),
+    relationshipType: z.enum(["linked", "partner"]),
     crm: z.string().optional(),
     crmState: z.string().optional(),
     phone: z.string().optional(),
@@ -58,8 +68,10 @@ const doctorFormSchema = z.object({
     addressLongitude: z.number().optional(),
 });
 
-const customSelectStyles = {
-    control: (base: any, state: any) => ({
+type SelectOption = { value: string; label: string };
+
+const customSelectStyles: StylesConfig<SelectOption, true, GroupBase<SelectOption>> = {
+    control: (base, state) => ({
         ...base,
         backgroundColor: "rgba(var(--muted), 0.3)",
         borderColor: state.isFocused ? "rgba(var(--primary), 0.3)" : "rgba(var(--muted-foreground), 0.1)",
@@ -70,7 +82,7 @@ const customSelectStyles = {
             borderColor: "rgba(var(--primary), 0.3)",
         }
     }),
-    menu: (base: any) => ({
+    menu: (base) => ({
         ...base,
         backgroundColor: "white",
         borderRadius: "0.75rem",
@@ -78,7 +90,7 @@ const customSelectStyles = {
         padding: "4px",
         zIndex: 50,
     }),
-    option: (base: any, state: any) => ({
+    option: (base, state) => ({
         ...base,
         borderRadius: "0.5rem",
         backgroundColor: state.isSelected
@@ -91,19 +103,19 @@ const customSelectStyles = {
             backgroundColor: "hsl(var(--primary) / 0.2)",
         }
     }),
-    multiValue: (base: any) => ({
+    multiValue: (base) => ({
         ...base,
         backgroundColor: "hsl(var(--primary) / 0.1)",
         borderRadius: "1rem",
         padding: "2px 8px",
     }),
-    multiValueLabel: (base: any) => ({
+    multiValueLabel: (base) => ({
         ...base,
         color: "hsl(var(--primary))",
         fontWeight: "500",
         fontSize: "12px",
     }),
-    multiValueRemove: (base: any) => ({
+    multiValueRemove: (base) => ({
         ...base,
         color: "hsl(var(--primary))",
         "&:hover": {
@@ -138,12 +150,14 @@ interface EditDoctorDialogProps {
             latitude?: number | null;
             longitude?: number | null;
         } | null;
+        relationshipType: "linked" | "partner";
     };
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
 }
 
 export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDialogProps) {
+    const router = useRouter();
     const [isPending, setIsPending] = useState(false);
     const [isFetchingCep, setIsFetchingCep] = useState(false);
     const [specialties, setSpecialties] = useState<{ value: string; label: string }[]>([]);
@@ -156,6 +170,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
             id: doctor.id,
             name: doctor.name || "",
             email: doctor.email || "",
+            relationshipType: doctor.relationshipType,
             crm: doctor.crm || "",
             crmState: doctor.crmState || "",
             specialtyIds: [],
@@ -195,6 +210,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                 id: doctor.id,
                 name: doctor.name || "",
                 email: doctor.email || "",
+                relationshipType: doctor.relationshipType,
                 crm: doctor.crm || "",
                 crmState: doctor.crmState || "",
                 phone: doctor.phone ? maskPhone(doctor.phone) : "",
@@ -275,10 +291,11 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
             if (result.success) {
                 toast.success("Dados do médico atualizados!");
                 onOpenChange(false);
+                router.refresh();
             } else {
                 toast.error(result.error || "Erro ao atualizar médico");
             }
-        } catch (error) {
+        } catch {
             toast.error("Erro ao atualizar médico");
         } finally {
             setIsPending(false);
@@ -336,6 +353,28 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                                                 <FormControl>
                                                     <Input placeholder="email@exemplo.com" {...field} className="h-11 bg-muted/30 border-muted-foreground/10 focus:border-primary/30 transition-all font-mono text-xs" />
                                                 </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="relationshipType"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Tipo de Relação</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="h-11 bg-muted/30 border-muted-foreground/10 focus:border-primary/30 transition-all">
+                                                            <SelectValue placeholder="Selecione o vínculo" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="linked">Médico Vinculado</SelectItem>
+                                                        <SelectItem value="partner">Médico Parceiro</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -406,7 +445,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                                                             classNamePrefix="react-select"
                                                             styles={customSelectStyles}
                                                             value={specialties.filter(s => field.value?.includes(s.value))}
-                                                            onChange={(val) => field.onChange(val.map(v => v.value))}
+                                                            onChange={(val: MultiValue<SelectOption>) => field.onChange(val.map((v) => v.value))}
                                                         />
                                                     </FormControl>
                                                     <FormMessage />
@@ -429,7 +468,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                                                             classNamePrefix="react-select"
                                                             styles={customSelectStyles}
                                                             value={practiceAreas.filter(pa => field.value?.includes(pa.value))}
-                                                            onChange={(val) => field.onChange(val.map(v => v.value))}
+                                                            onChange={(val: MultiValue<SelectOption>) => field.onChange(val.map((v) => v.value))}
                                                         />
                                                     </FormControl>
                                                     <FormMessage />
@@ -453,7 +492,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                                                         classNamePrefix="react-select"
                                                         styles={customSelectStyles}
                                                         value={healthInsurances.filter((item) => field.value?.includes(item.value))}
-                                                        onChange={(val) => field.onChange(val.map(v => v.value))}
+                                                        onChange={(val: MultiValue<SelectOption>) => field.onChange(val.map((v) => v.value))}
                                                     />
                                                 </FormControl>
                                                 <FormMessage />

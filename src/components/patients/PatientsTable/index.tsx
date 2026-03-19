@@ -47,7 +47,7 @@ interface Patient {
 
 interface PatientsTableProps {
     patients: Patient[];
-    doctors: { id: string; name: string | null }[];
+    doctors: { id: string; name: string | null; relationshipType: "linked" | "partner" }[];
     emptyMessage?: string;
 }
 

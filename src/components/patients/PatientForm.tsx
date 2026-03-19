@@ -30,7 +30,6 @@ import { checkPatientEligibilityAction } from "@/app/actions/patients/eligibilit
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { AddDoctorDialog } from "@/components/doctors/AddDoctorDialog";
 import { maskCPF, maskPhone } from "@/utils/masks";
 import { BRAZILIAN_STATES } from "@/utils/states";
@@ -44,7 +43,7 @@ interface PatientFormProps {
     defaultValues: PatientFormValues;
     onSubmit: (values: PatientFormValues, intent: "create" | "reactivate" | "import", globalId?: string) => Promise<void>;
     isPending: boolean;
-    doctors: { id: string; name: string | null }[];
+    doctors: { id: string; name: string | null; relationshipType: "linked" | "partner" }[];
     onCancel: () => void;
     mode?: "create" | "edit";
 }
@@ -57,6 +56,8 @@ export function PatientForm({
     onCancel,
     mode = "create",
 }: PatientFormProps) {
+    const responsibleDoctors = doctors.filter((doctor) => doctor.relationshipType === "linked");
+    const referralDoctors = doctors;
     const [loadingCEP, setLoadingCEP] = useState(false);
     const [step, setStep] = useState<"cpf" | 1 | 2 | 3 | 4 | 5>(mode === "edit" ? 1 : "cpf");
     const [checkingCpf, setCheckingCpf] = useState(false);
@@ -203,7 +204,7 @@ export function PatientForm({
                 setStep(1);
             }
 
-        } catch (error) {
+        } catch {
             toast.error("Erro ao verificar CPF");
         } finally {
             setCheckingCpf(false);
@@ -559,7 +560,7 @@ export function PatientForm({
                                             control={form.control}
                                             name="referringDoctorId"
                                             render={({ field }) => {
-                                                const options = doctors.map(d => ({ value: d.id, label: d.name || "Sem Nome" }));
+                                                const options = referralDoctors.map(d => ({ value: d.id, label: d.name || "Sem Nome" }));
                                                 const selectedOption = options.find(o => o.value === field.value) ?? null;
                                                 return (
                                                 <FormItem>
@@ -746,7 +747,7 @@ export function PatientForm({
                                     control={form.control}
                                     name="responsibleDoctorIds"
                                     render={({ field }) => {
-                                        const options = doctors.map(d => ({ value: d.id, label: d.name || "Sem Nome" }));
+                                        const options = responsibleDoctors.map(d => ({ value: d.id, label: d.name || "Sem Nome" }));
                                         const selectedOptions = options.filter(o => field.value?.includes(o.value)) ?? [];
                                         return (
                                         <FormItem>

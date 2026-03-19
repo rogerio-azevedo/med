@@ -1,9 +1,57 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
-import { patients, clinicPatients, addresses, patientDoctors, patientOrigins } from "@/db/schema";
+import { patients, clinicPatients, clinicDoctors, addresses, patientDoctors, patientOrigins } from "@/db/schema";
 import { deletePatient as deletePatientQuery } from "@/db/queries/patients";
 import type { CreatePatientInput, UpdatePatientInput } from "@/lib/validations/patient";
 import { syncPatientHealthInsurances } from "@/services/health-insurances";
+
+async function getClinicScopedDoctorSelection(
+    clinicId: string,
+    responsibleDoctorIds: string[] | undefined,
+    referringDoctorId: string | undefined
+) {
+    const requestedDoctorIds = Array.from(
+        new Set(
+            [...(responsibleDoctorIds ?? []), ...(referringDoctorId ? [referringDoctorId] : [])].filter(
+                Boolean
+            )
+        )
+    );
+
+    if (requestedDoctorIds.length === 0) {
+        return {
+            validResponsibleDoctorIds: [] as string[],
+            validReferringDoctorId: undefined as string | undefined,
+        };
+    }
+
+    const clinicDoctorRows = await db
+        .select({
+            doctorId: clinicDoctors.doctorId,
+            relationshipType: clinicDoctors.relationshipType,
+        })
+        .from(clinicDoctors)
+        .where(and(eq(clinicDoctors.clinicId, clinicId), eq(clinicDoctors.isActive, true)));
+
+    const clinicDoctorIds = new Set(clinicDoctorRows.map((row) => row.doctorId));
+    const linkedDoctorIds = new Set(
+        clinicDoctorRows
+            .filter((row) => row.relationshipType === "linked")
+            .map((row) => row.doctorId)
+    );
+    const validResponsibleDoctorIds = (responsibleDoctorIds ?? []).filter((doctorId) =>
+        linkedDoctorIds.has(doctorId)
+    );
+    const validReferringDoctorId =
+        referringDoctorId && clinicDoctorIds.has(referringDoctorId)
+            ? referringDoctorId
+            : undefined;
+
+    return {
+        validResponsibleDoctorIds,
+        validReferringDoctorId,
+    };
+}
 
 export async function createPatient(
     data: CreatePatientInput,
@@ -28,6 +76,8 @@ export async function createPatient(
         referringDoctorId,
         patientHealthInsurances,
     } = data;
+    const { validResponsibleDoctorIds, validReferringDoctorId } =
+        await getClinicScopedDoctorSelection(clinicId, responsibleDoctorIds, referringDoctorId);
 
     let insertedPatientId: string | null = null;
 
@@ -51,9 +101,9 @@ export async function createPatient(
             clinicId,
         });
 
-        if (responsibleDoctorIds && responsibleDoctorIds.length > 0) {
+        if (validResponsibleDoctorIds.length > 0) {
             await db.insert(patientDoctors).values(
-                responsibleDoctorIds.map((doctorId) => ({
+                validResponsibleDoctorIds.map((doctorId) => ({
                     patientId: newPatient.id,
                     doctorId,
                 }))
@@ -65,7 +115,7 @@ export async function createPatient(
                 patientId: newPatient.id,
                 clinicId,
                 originType,
-                referringDoctorId: referringDoctorId || null,
+                referringDoctorId: validReferringDoctorId || null,
             });
         }
 
@@ -131,6 +181,8 @@ export async function updatePatient(
         referringDoctorId,
         patientHealthInsurances,
     } = data;
+    const { validResponsibleDoctorIds, validReferringDoctorId } =
+        await getClinicScopedDoctorSelection(clinicId, responsibleDoctorIds, referringDoctorId);
 
     try {
         await db
@@ -147,9 +199,9 @@ export async function updatePatient(
 
         if (responsibleDoctorIds !== undefined) {
             await db.delete(patientDoctors).where(eq(patientDoctors.patientId, patientId));
-            if (responsibleDoctorIds.length > 0) {
+            if (validResponsibleDoctorIds.length > 0) {
                 await db.insert(patientDoctors).values(
-                    responsibleDoctorIds.map((doctorId) => ({
+                    validResponsibleDoctorIds.map((doctorId) => ({
                         patientId,
                         doctorId,
                     }))
@@ -174,7 +226,7 @@ export async function updatePatient(
                     .update(patientOrigins)
                     .set({
                         originType,
-                        referringDoctorId: referringDoctorId || null,
+                        referringDoctorId: validReferringDoctorId || null,
                     })
                     .where(eq(patientOrigins.id, existingOrigin[0].id));
             } else {
@@ -182,7 +234,7 @@ export async function updatePatient(
                     patientId,
                     clinicId,
                     originType,
-                    referringDoctorId: referringDoctorId || null,
+                    referringDoctorId: validReferringDoctorId || null,
                 });
             }
         }

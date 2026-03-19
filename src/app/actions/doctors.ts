@@ -63,6 +63,8 @@ export async function createDoctorAction(formData: FormData) {
                     eq(clinicDoctors.clinicId, clinicId)
                 )
             );
+            const { ensureDoctorPatientInviteCode } = await import("@/services/invites");
+            await ensureDoctorPatientInviteCode(clinicId, globalId);
             revalidatePath("/doctors");
             return { success: true };
         }
@@ -79,7 +81,10 @@ export async function createDoctorAction(formData: FormData) {
             await db.insert(clinicDoctors).values({
                 doctorId: globalId,
                 clinicId: clinicId,
+                relationshipType: parsed.data.relationshipType,
             });
+            const { ensureDoctorPatientInviteCode } = await import("@/services/invites");
+            await ensureDoctorPatientInviteCode(clinicId, globalId);
             revalidatePath("/doctors");
             return { success: true };
         }
@@ -145,6 +150,82 @@ export async function updateDoctorAction(formData: FormData) {
     }
 
     revalidatePath("/doctors");
+    return { success: true };
+}
+
+export async function updateDoctorRelationshipTypeAction(
+    doctorId: string,
+    relationshipType: "linked" | "partner"
+) {
+    const session = await auth();
+    const clinicId = session?.user?.clinicId;
+
+    if (!clinicId) {
+        throw new Error("Unauthorized: No clinic association found.");
+    }
+
+    const { db } = await import("@/db");
+    const { clinicDoctors } = await import("@/db/schema/medical");
+    const { and, eq } = await import("drizzle-orm");
+
+    await db
+        .update(clinicDoctors)
+        .set({ relationshipType })
+        .where(
+            and(
+                eq(clinicDoctors.doctorId, doctorId),
+                eq(clinicDoctors.clinicId, clinicId),
+                eq(clinicDoctors.isActive, true)
+            )
+        );
+
+    revalidatePath("/doctors");
+    revalidatePath("/patients");
+    return { success: true };
+}
+
+export async function associateDoctorToClinicAction(
+    doctorId: string,
+    relationshipType: "linked" | "partner"
+) {
+    const session = await auth();
+    const clinicId = session?.user?.clinicId;
+
+    if (!clinicId) {
+        throw new Error("Unauthorized: No clinic association found.");
+    }
+
+    const { db } = await import("@/db");
+    const { clinicDoctors } = await import("@/db/schema/medical");
+    const { and, eq } = await import("drizzle-orm");
+    const existingAssociation = await db.query.clinicDoctors.findFirst({
+        where: and(
+            eq(clinicDoctors.doctorId, doctorId),
+            eq(clinicDoctors.clinicId, clinicId)
+        ),
+    });
+
+    if (existingAssociation) {
+        await db
+            .update(clinicDoctors)
+            .set({
+                isActive: true,
+                relationshipType,
+            })
+            .where(eq(clinicDoctors.id, existingAssociation.id));
+    } else {
+        await db.insert(clinicDoctors).values({
+            doctorId,
+            clinicId,
+            relationshipType,
+        });
+    }
+
+    const { ensureDoctorPatientInviteCode } = await import("@/services/invites");
+    await ensureDoctorPatientInviteCode(clinicId, doctorId);
+
+    revalidatePath("/doctors");
+    revalidatePath("/patients");
     return { success: true };
 }
 

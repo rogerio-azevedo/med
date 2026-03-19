@@ -9,7 +9,7 @@ import {
     boolean,
 } from "drizzle-orm/pg-core";
 import { clinics } from "./clinics";
-import { doctors } from "./medical";
+import { doctorClinicRelationshipTypeEnum, doctors } from "./medical";
 
 export const inviteRoleEnum = pgEnum("invite_role", ["admin", "doctor", "patient"]);
 
@@ -21,6 +21,7 @@ export const inviteLinks = pgTable("invite_links", {
         .references(() => clinics.id, { onDelete: "cascade" }),
     doctorId: uuid("doctor_id")
         .references(() => doctors.id, { onDelete: "cascade" }),
+    doctorRelationshipType: doctorClinicRelationshipTypeEnum("doctor_relationship_type"),
     role: inviteRoleEnum("role").notNull(),
     expiresAt: timestamp("expires_at"),
     usedCount: integer("used_count").default(0).notNull(),

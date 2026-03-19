@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -30,7 +31,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Stethoscope, Loader2, Mail, Lock, ShieldCheck, Check, ArrowRight, UserPlus, Info } from "lucide-react";
+import { Loader2, Mail, Lock, ShieldCheck, Check, ArrowRight, UserPlus, Info } from "lucide-react";
 import { createDoctorAction } from "@/app/actions/doctors";
 import { getSpecialtiesAction } from "@/app/actions/specialties";
 import { getPracticeAreasAction } from "@/app/actions/practice-areas";
@@ -38,6 +39,7 @@ import { getActiveHealthInsurancesAction } from "@/app/actions/health-insurances
 import { checkDoctorEligibilityAction } from "@/app/actions/doctors/eligibility";
 import { toast } from "sonner";
 import ReactSelect from "react-select";
+import type { GroupBase, MultiValue, StylesConfig } from "react-select";
 import cep from "cep-promise";
 import { maskPhone } from "@/utils/masks";
 import { BRAZILIAN_STATES } from "@/utils/states";
@@ -52,6 +54,7 @@ const doctorFormSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
     email: z.email("Email inválido"),
     password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional(),
+    relationshipType: z.enum(["linked", "partner"]),
     crm: z.string().optional(),
     crmState: z.string().optional(),
     phone: z.string().optional(),
@@ -70,9 +73,17 @@ const doctorFormSchema = z.object({
 });
 
 type DoctorFormValues = z.infer<typeof doctorFormSchema>;
+type SelectOption = { value: string; label: string };
+type DoctorEligibilityCandidate = {
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    crm?: string | null;
+    crmState?: string | null;
+};
 
-const customSelectStyles = {
-    control: (base: any, state: any) => ({
+const customSelectStyles: StylesConfig<SelectOption, true, GroupBase<SelectOption>> = {
+    control: (base, state) => ({
         ...base,
         backgroundColor: "rgba(var(--muted), 0.3)",
         borderColor: state.isFocused ? "rgba(var(--primary), 0.3)" : "rgba(var(--muted-foreground), 0.1)",
@@ -83,15 +94,15 @@ const customSelectStyles = {
             borderColor: "rgba(var(--primary), 0.3)",
         }
     }),
-    menu: (base: any) => ({
+    menu: (base) => ({
         ...base,
         backgroundColor: "white",
         borderRadius: "0.75rem",
         boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
         padding: "4px",
     }),
-    menuPortal: (base: any) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
-    option: (base: any, state: any) => ({
+    menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
+    option: (base, state) => ({
         ...base,
         borderRadius: "0.5rem",
         backgroundColor: state.isSelected
@@ -104,19 +115,19 @@ const customSelectStyles = {
             backgroundColor: "hsl(var(--primary) / 0.2)",
         }
     }),
-    multiValue: (base: any) => ({
+    multiValue: (base) => ({
         ...base,
         backgroundColor: "hsl(var(--primary) / 0.1)",
         borderRadius: "1rem",
         padding: "2px 8px",
     }),
-    multiValueLabel: (base: any) => ({
+    multiValueLabel: (base) => ({
         ...base,
         color: "hsl(var(--primary))",
         fontWeight: "500",
         fontSize: "12px",
     }),
-    multiValueRemove: (base: any) => ({
+    multiValueRemove: (base) => ({
         ...base,
         color: "hsl(var(--primary))",
         "&:hover": {
@@ -128,6 +139,7 @@ const customSelectStyles = {
 };
 
 export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.ReactNode }) {
+    const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
     const [isFetchingCep, setIsFetchingCep] = useState(false);
@@ -145,6 +157,7 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
         resolver: zodResolver(doctorFormSchema),
         defaultValues: {
             name: "", email: "", password: "", crm: "", crmState: "", phone: "",
+            relationshipType: "linked",
             specialtyIds: [], practiceAreaIds: [], healthInsuranceIds: [],
             addressZipCode: "", addressStreet: "", addressNumber: "",
             addressComplement: "", addressNeighborhood: "", addressCity: "", addressState: "",
@@ -170,7 +183,7 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
         getActiveHealthInsurancesAction().then((r) => {
             if (r.success && r.data) setHealthInsurances(r.data.map((item) => ({ value: item.id, label: item.name })));
         });
-    }, [isOpen]);
+    }, [isOpen, form]);
 
     const handleCrmCheck = async () => {
         const crmVal = form.getValues("crm");
@@ -201,13 +214,14 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                 setCheckingCrm(false);
                 return;
             } else if (status === "inactive") {
-                const doc = res.data.doctor as any;
+                    const doc = res.data.doctor as DoctorEligibilityCandidate;
                 if (doc) {
                     form.reset({
                         ...form.getValues(),
                         name: doc.name || "",
                         email: doc.email || "",
                         phone: doc.phone || "",
+                        relationshipType: "linked",
                         crm: doc.crm || crmVal,
                         crmState: doc.crmState || crmStateVal,
                         password: "dummy_password", // Bypass length check for update
@@ -221,13 +235,14 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                 });
                 setStep("details");
             } else if (status === "global") {
-                const doc = res.data.doctor as any;
+                    const doc = res.data.doctor as DoctorEligibilityCandidate;
                 if (doc) {
                     form.reset({
                         ...form.getValues(),
                         name: doc.name || "",
                         email: doc.email || "",
                         phone: doc.phone || "",
+                        relationshipType: "linked",
                         crm: doc.crm || crmVal,
                         crmState: doc.crmState || crmStateVal,
                         password: "dummy_password",
@@ -245,7 +260,7 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                 setInfoMessage(null);
                 setStep("details");
             }
-        } catch (error) {
+        } catch {
             toast.error("Erro ao verificar CRM");
         } finally {
             setCheckingCrm(false);
@@ -319,6 +334,7 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                 setIsOpen(false);
                 form.reset();
                 setStep("crm");
+                router.refresh();
             } else {
                 toast.error(result.error || "Erro ao processar requisição do médico");
             }
@@ -455,6 +471,24 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                                             </FormItem>
                                         )} />
 
+                                        <FormField control={form.control} name="relationshipType" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Tipo de Relação</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="h-11 bg-muted/30 border-muted-foreground/10 focus:border-primary/30 transition-all">
+                                                            <SelectValue placeholder="Selecione o vínculo" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="linked">Médico Vinculado</SelectItem>
+                                                        <SelectItem value="partner">Médico Parceiro</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+
                                         {doctorIntent === 'create' && (
                                             <FormField control={form.control} name="password" render={({ field }) => (
                                                 <FormItem>
@@ -526,7 +560,7 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                                                             menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                                             menuPosition="fixed"
                                                             value={specialties.filter((s) => field.value?.includes(s.value))}
-                                                            onChange={(v) => field.onChange(v ? v.map((x: any) => x.value) : [])} />
+                                                            onChange={(v: MultiValue<SelectOption>) => field.onChange(v.map((x) => x.value))} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -543,7 +577,7 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                                                             menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                                             menuPosition="fixed"
                                                             value={practiceAreas.filter((p) => field.value?.includes(p.value))}
-                                                            onChange={(v) => field.onChange(v ? v.map((x: any) => x.value) : [])} />
+                                                            onChange={(v: MultiValue<SelectOption>) => field.onChange(v.map((x) => x.value))} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -564,7 +598,7 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                                                         menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                                         menuPosition="fixed"
                                                         value={healthInsurances.filter((item) => field.value?.includes(item.value))}
-                                                        onChange={(v) => field.onChange(v ? v.map((x: any) => x.value) : [])}
+                                                        onChange={(v: MultiValue<SelectOption>) => field.onChange(v.map((x) => x.value))}
                                                     />
                                                 </FormControl>
                                                 <p className="text-xs text-muted-foreground">

@@ -59,6 +59,10 @@ export const patientOriginTypeEnum = pgEnum("patient_origin_type", [
     "friends_family",
     "medical_referral",
 ]);
+export const doctorClinicRelationshipTypeEnum = pgEnum("doctor_clinic_relationship_type", [
+    "linked",
+    "partner",
+]);
 
 export const consultationTypeEnum = pgEnum("consultation_type", [
     "consultation",
@@ -178,6 +182,9 @@ export const clinicDoctors = pgTable("clinic_doctors", {
     clinicId: uuid("clinic_id")
         .notNull()
         .references(() => clinics.id, { onDelete: "cascade" }),
+    relationshipType: doctorClinicRelationshipTypeEnum("relationship_type")
+        .default("linked")
+        .notNull(),
     isActive: boolean("is_active").default(true).notNull(),
     joinedAt: timestamp("joined_at").defaultNow().notNull(),
 });

@@ -18,6 +18,7 @@ interface DoctorQRCodeDialogProps {
     onOpenChange: (open: boolean) => void;
     doctorName: string | null;
     inviteCode: string | null;
+    relationshipType: "linked" | "partner" | null;
 }
 
 export function DoctorQRCodeDialog({
@@ -25,6 +26,7 @@ export function DoctorQRCodeDialog({
     onOpenChange,
     doctorName,
     inviteCode,
+    relationshipType,
 }: DoctorQRCodeDialogProps) {
     const [copied, setCopied] = useState(false);
 
@@ -55,9 +57,7 @@ export function DoctorQRCodeDialog({
                         <div>
                             <DialogTitle>QR Code de Cadastro</DialogTitle>
                             <DialogDescription className="text-xs mt-0.5">
-                                {doctorName
-                                    ? `Pacientes de ${doctorName}`
-                                    : "Pacientes"}
+                                {doctorName ? `Pacientes de ${doctorName}` : "Pacientes"}
                             </DialogDescription>
                         </div>
                     </div>
@@ -90,11 +90,25 @@ export function DoctorQRCodeDialog({
                         </div>
 
                         <p className="text-xs text-muted-foreground text-center px-4 break-words w-full">
-                            Pacientes que escanearem este código serão cadastrados automaticamente vinculados a{" "}
-                            <span className="font-semibold text-foreground">
-                                {doctorName ?? "este médico"}
-                            </span>
-                            .
+                            {relationshipType === "partner" ? (
+                                <>
+                                    Pacientes que escanearem este código serão cadastrados na clínica com a
+                                    indicação registrada para{" "}
+                                    <span className="font-semibold text-foreground">
+                                        {doctorName ?? "este médico parceiro"}
+                                    </span>
+                                    .
+                                </>
+                            ) : (
+                                <>
+                                    Pacientes que escanearem este código serão cadastrados automaticamente
+                                    vinculados à clínica e a{" "}
+                                    <span className="font-semibold text-foreground">
+                                        {doctorName ?? "este médico"}
+                                    </span>
+                                    .
+                                </>
+                            )}
                         </p>
 
                         {/* URL box */}

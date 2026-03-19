@@ -6,7 +6,6 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
@@ -16,7 +15,7 @@ import { toast } from "sonner";
 import { PatientForm, PatientFormValues } from "./PatientForm";
 
 interface AddPatientDialogProps {
-    doctors: { id: string; name: string | null }[];
+    doctors: { id: string; name: string | null; relationshipType: "linked" | "partner" }[];
 }
 
 export function AddPatientDialog({ doctors }: AddPatientDialogProps) {
@@ -81,7 +80,7 @@ export function AddPatientDialog({ doctors }: AddPatientDialogProps) {
             } else {
                 toast.error(result.error || "Erro ao processar requisição do paciente");
             }
-        } catch (error) {
+        } catch {
             toast.error("Erro interno. Tente novamente.");
         } finally {
             setIsPending(false);

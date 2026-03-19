@@ -1,9 +1,9 @@
 import { db } from "@/db";
-import { patients, clinicPatients, patientDoctors, patientOrigins, doctors } from "@/db/schema/medical";
+import { patients, clinicPatients, clinicDoctors, patientDoctors, patientOrigins, doctors } from "@/db/schema/medical";
 import { addresses } from "@/db/schema/clinics";
 import { users } from "@/db/schema/auth";
 import { getPatientHealthInsurances } from "@/db/queries/health-insurances";
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 
 export async function getPatientsByClinic(clinicId: string) {
     return db
@@ -19,7 +19,8 @@ export async function getPatientsByClinic(clinicId: string) {
         })
         .from(patients)
         .innerJoin(clinicPatients, eq(patients.id, clinicPatients.patientId))
-        .where(eq(clinicPatients.clinicId, clinicId));
+        .where(eq(clinicPatients.clinicId, clinicId))
+        .orderBy(asc(patients.name));
 }
 
 export async function deletePatient(patientId: string, clinicId: string) {
@@ -72,6 +73,14 @@ export async function getPatientById(patientId: string, clinicId: string) {
         })
         .from(patientDoctors)
         .innerJoin(doctors, eq(patientDoctors.doctorId, doctors.id))
+        .innerJoin(
+            clinicDoctors,
+            and(
+                eq(clinicDoctors.doctorId, doctors.id),
+                eq(clinicDoctors.clinicId, clinicId),
+                eq(clinicDoctors.isActive, true)
+            )
+        )
         .innerJoin(users, eq(doctors.userId, users.id))
         .where(eq(patientDoctors.patientId, patientId));
 

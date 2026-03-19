@@ -19,7 +19,7 @@ interface Patient {
 interface PatientsContentProps {
     clinicId: string;
     patients: Patient[];
-    doctors: { id: string; name: string | null }[];
+    doctors: { id: string; name: string | null; relationshipType: "linked" | "partner" }[];
 }
 
 export function PatientsContent({

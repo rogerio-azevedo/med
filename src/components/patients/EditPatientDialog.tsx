@@ -12,7 +12,8 @@ import { updatePatientAction, getPatientAction } from "@/app/actions/patients";
 import { toast } from "sonner";
 import { PatientForm, PatientFormValues } from "./PatientForm";
 
-type DoctorRef = { id: string; name: string | null };
+type SelectedDoctorRef = { id: string; name: string | null };
+type DoctorOption = { id: string; name: string | null; relationshipType: "linked" | "partner" };
 
 interface PatientForEdit {
     id?: string;
@@ -30,7 +31,7 @@ interface PatientForEdit {
         city?: string | null;
         state?: string | null;
     } | null;
-    responsibleDoctors?: DoctorRef[];
+    responsibleDoctors?: SelectedDoctorRef[];
     patientHealthInsurances?: PatientFormValues["patientHealthInsurances"];
     originType?: PatientFormValues["originType"] | null;
     referringDoctorId?: string | null;
@@ -38,7 +39,7 @@ interface PatientForEdit {
 
 interface EditPatientDialogProps {
     patientId: string;
-    doctors: DoctorRef[];
+    doctors: DoctorOption[];
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     initialData?: PatientForEdit | null;
@@ -100,7 +101,7 @@ export function EditPatientDialog({
         neighborhood: patient.address?.neighborhood || "",
         city: patient.address?.city || "",
         state: patient.address?.state || "",
-        responsibleDoctorIds: patient.responsibleDoctors?.map((d: DoctorRef) => d.id) ?? [],
+        responsibleDoctorIds: patient.responsibleDoctors?.map((d: SelectedDoctorRef) => d.id) ?? [],
         patientHealthInsurances: patient.patientHealthInsurances ?? [],
         originType: patient.originType ?? undefined,
         referringDoctorId: patient.referringDoctorId ?? undefined,
