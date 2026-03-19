@@ -25,7 +25,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
     Select,
     SelectContent,
@@ -78,9 +77,14 @@ interface Doctor {
     } | null;
 }
 
-export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
+export function DoctorsTable({
+    doctors,
+    hideUnassociatedDoctors,
+}: {
+    doctors: Doctor[];
+    hideUnassociatedDoctors: boolean;
+}) {
     const router = useRouter()
-    const [hideUnassociatedDoctors, setHideUnassociatedDoctors] = useState(true)
     const linkedDoctors = doctors.filter(
         (doctor) => doctor.isAssociated && doctor.relationshipType === "linked"
     )
@@ -171,15 +175,6 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
 
     return (
         <>
-            <div className="flex items-center justify-end">
-                <label className="flex items-center gap-3 rounded-lg border px-3 py-2 text-sm text-muted-foreground">
-                    <Checkbox
-                        checked={hideUnassociatedDoctors}
-                        onCheckedChange={(checked) => setHideUnassociatedDoctors(checked === true)}
-                    />
-                    <span className="font-medium">Ocultar médicos sem vínculo</span>
-                </label>
-            </div>
             <div className="rounded-md border">
                 <Table>
                     <TableHeader>
