@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
     Sheet,
     SheetContent,
@@ -28,7 +29,6 @@ import {
     User,
     Stethoscope,
     Clock,
-    CalendarIcon,
     MessageSquare,
     Loader2,
     XCircle,
@@ -94,13 +94,16 @@ interface AppointmentDetailDrawerProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     appointment: AppointmentDetail | null;
+    onAppointmentUpdated?: (appointmentId: string, status: AppointmentStatus) => void;
 }
 
 export function AppointmentDetailDrawer({
     open,
     onOpenChange,
     appointment,
+    onAppointmentUpdated,
 }: AppointmentDetailDrawerProps) {
+    const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const [isCancelling, startCancelTransition] = useTransition();
 
@@ -114,7 +117,9 @@ export function AppointmentDetailDrawer({
             if ("error" in result) {
                 toast.error(result.error);
             } else {
+                onAppointmentUpdated?.(appointment.id, newStatus as AppointmentStatus);
                 toast.success("Status atualizado!");
+                router.refresh();
                 onOpenChange(false);
             }
         });
@@ -127,7 +132,9 @@ export function AppointmentDetailDrawer({
             if ("error" in result) {
                 toast.error(result.error);
             } else {
+                onAppointmentUpdated?.(appointment.id, "cancelled");
                 toast.success("Agendamento cancelado.");
+                router.refresh();
                 onOpenChange(false);
             }
         });

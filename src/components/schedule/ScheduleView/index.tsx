@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { format, addDays, subDays, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
+import { useState, useCallback, useEffect } from "react";
+import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-    Calendar as CalendarIcon,
     Settings,
     CalendarDays,
     List,
@@ -45,6 +44,7 @@ export function ScheduleView({
     patients,
     specialties,
 }: ScheduleViewProps) {
+    const [appointmentItems, setAppointmentItems] = useState(appointments);
     const [viewMode, setViewMode] = useState<ViewMode>("calendar");
     const [currentWeekStart, setCurrentWeekStart] = useState(() =>
         startOfWeek(new Date(), { weekStartsOn: 1 })
@@ -61,9 +61,17 @@ export function ScheduleView({
 
     const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
 
+    useEffect(() => {
+        setAppointmentItems(appointments);
+    }, [appointments]);
+
     const filteredAppointments = selectedDoctorId
-        ? appointments.filter((a) => a.doctor.id === selectedDoctorId)
-        : appointments;
+        ? appointmentItems.filter((a) => a.doctor.id === selectedDoctorId)
+        : appointmentItems;
+
+    const visibleAppointments = filteredAppointments.filter(
+        (appointment) => appointment.status !== "cancelled"
+    );
 
     const handleAppointmentClick = useCallback((appt: AppointmentCardData) => {
         // Map card data to detail shape
@@ -85,6 +93,29 @@ export function ScheduleView({
         setDefaultSlotDate(date);
         setNewDrawerOpen(true);
     }, []);
+
+    const handleAppointmentUpdated = useCallback(
+        (appointmentId: string, status: AppointmentDetail["status"]) => {
+            setAppointmentItems((current) =>
+                current.flatMap((appointment) => {
+                    if (appointment.id !== appointmentId) {
+                        return [appointment];
+                    }
+
+                    if (status === "cancelled") {
+                        return [];
+                    }
+
+                    return [{ ...appointment, status }];
+                })
+            );
+
+            setSelectedAppointment((current) =>
+                current && current.id === appointmentId ? { ...current, status } : current
+            );
+        },
+        []
+    );
 
     const doctorOptions = [
         { value: "", label: "Todos os médicos" },
@@ -205,14 +236,14 @@ export function ScheduleView({
             {/* Visualização principal */}
             {viewMode === "calendar" ? (
                 <AppointmentCalendar
-                    appointments={filteredAppointments}
+                    appointments={visibleAppointments}
                     weekStart={currentWeekStart}
                     onAppointmentClick={handleAppointmentClick}
                     onSlotClick={handleSlotClick}
                 />
             ) : (
                 <AppointmentSlotList
-                    appointments={filteredAppointments}
+                    appointments={visibleAppointments}
                     startDate={currentWeekStart}
                     endDate={weekEnd}
                     onAppointmentClick={handleAppointmentClick}
@@ -234,6 +265,7 @@ export function ScheduleView({
                 open={detailDrawerOpen}
                 onOpenChange={setDetailDrawerOpen}
                 appointment={selectedAppointment}
+                onAppointmentUpdated={handleAppointmentUpdated}
             />
 
             <DoctorScheduleBlockModal
