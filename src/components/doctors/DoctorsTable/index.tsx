@@ -227,7 +227,7 @@ export function DoctorsTable({ doctors }: { doctors: Doctor[] }) {
                                         <div className="flex flex-wrap gap-1">
                                             {doctor.specialties.length > 0 ? (
                                                 doctor.specialties.map((s) => (
-                                                    <Badge key={s.id} variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-none">
+                                                    <Badge key={s.id} variant="secondary" className="border-none bg-blue-500/10 text-blue-700 hover:bg-blue-500/20">
                                                         {s.name}
                                                     </Badge>
                                                 ))
