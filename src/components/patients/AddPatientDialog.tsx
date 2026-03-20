@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -15,12 +16,15 @@ import { toast } from "sonner";
 import { PatientForm, PatientFormValues } from "./PatientForm";
 
 interface AddPatientDialogProps {
-    doctors: { id: string; name: string | null; relationshipType: "linked" | "partner" }[];
+    doctors: { id: string; name: string | null; relationshipType: "linked" | "partner" | null }[];
+    children?: React.ReactNode;
+    onSuccess?: (patientId: string) => void;
 }
 
-export function AddPatientDialog({ doctors }: AddPatientDialogProps) {
+export function AddPatientDialog({ doctors, children, onSuccess }: AddPatientDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
+    const router = useRouter();
 
     const defaultValues: PatientFormValues = {
         name: "",
@@ -77,6 +81,10 @@ export function AddPatientDialog({ doctors }: AddPatientDialogProps) {
             if (result.success) {
                 toast.success("Paciente cadastrado/atualizado com sucesso!");
                 setIsOpen(false);
+                if (result.patientId && onSuccess) {
+                    onSuccess(result.patientId);
+                }
+                router.refresh();
             } else {
                 toast.error(result.error || "Erro ao processar requisição do paciente");
             }
@@ -90,10 +98,12 @@ export function AddPatientDialog({ doctors }: AddPatientDialogProps) {
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Adicionar Paciente
-                </Button>
+                {children || (
+                    <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95">
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Adicionar Paciente
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-none shadow-2xl bg-white/95 backdrop-blur-md">
                 <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 pb-4 border-b">
@@ -115,7 +125,7 @@ export function AddPatientDialog({ doctors }: AddPatientDialogProps) {
                         defaultValues={defaultValues}
                         onSubmit={onSubmit}
                         isPending={isPending}
-                        doctors={doctors}
+                        doctors={doctors as { id: string; name: string | null; relationshipType: "linked" | "partner" }[]}
                         onCancel={() => setIsOpen(false)}
                     />
                 </div>

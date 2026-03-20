@@ -24,10 +24,11 @@ import { getAvailableSlotsAction, createAppointmentAction } from "@/app/actions/
 import { appointmentModalityValues } from "@/lib/validations/appointments";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { AddPatientDialog } from "@/components/patients/AddPatientDialog";
 
-type Doctor = { id: string; name: string | null };
+type Doctor = { id: string; name: string | null; relationshipType: "linked" | "partner" | null };
 type Patient = { id: string; name: string; phone: string | null };
 type Specialty = { id: string; name: string };
 type TimeSlot = { startsAt: string; endsAt: string; available: boolean };
@@ -196,9 +197,22 @@ export function NewAppointmentDrawer({
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">
-                                    Paciente *
-                                </Label>
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">
+                                        Paciente *
+                                    </Label>
+                                    <AddPatientDialog doctors={doctors} onSuccess={(id) => setPatientId(id)}>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 px-2 text-xs text-primary hover:bg-primary/10 gap-1 rounded-sm"
+                                        >
+                                            <Plus className="size-3" />
+                                            Novo Paciente
+                                        </Button>
+                                    </AddPatientDialog>
+                                </div>
                                 <Select
                                     placeholder="Buscar paciente..."
                                     options={patientOptions}

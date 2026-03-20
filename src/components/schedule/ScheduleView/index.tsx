@@ -25,7 +25,7 @@ import { NewAppointmentDrawer } from "@/components/schedule/NewAppointmentDrawer
 import { DoctorScheduleBlockModal } from "@/components/schedule/DoctorScheduleBlockModal";
 import type { AppointmentCardData } from "@/components/schedule/AppointmentCard";
 
-type Doctor = { id: string; name: string | null };
+type Doctor = { id: string; name: string | null; relationshipType: "linked" | "partner" | null };
 type Patient = { id: string; name: string; phone: string | null };
 type Specialty = { id: string; name: string };
 

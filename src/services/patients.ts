@@ -56,7 +56,7 @@ async function getClinicScopedDoctorSelection(
 export async function createPatient(
     data: CreatePatientInput,
     clinicId: string
-): Promise<{ success: true } | { success: false; error: string }> {
+): Promise<{ success: true; patientId?: string } | { success: false; error: string }> {
     const {
         name,
         cpf,
@@ -136,7 +136,7 @@ export async function createPatient(
             });
         }
 
-        return { success: true };
+        return { success: true, patientId: newPatient.id };
     } catch (err: unknown) {
         if (insertedPatientId) {
             try {

@@ -85,7 +85,7 @@ export async function createPatientAction(formData: FormData) {
     }
 
     revalidatePath("/patients");
-    return { success: true };
+    return { success: true, patientId: result.patientId };
 }
 
 export async function deletePatientAction(patientId: string) {
