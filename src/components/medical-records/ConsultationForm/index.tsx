@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
     Dialog, 
     DialogContent, 
@@ -25,28 +25,57 @@ interface ConsultationFormProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (data: any) => void;
+    initialData?: {
+        id?: string;
+        soap: any;
+        vitals: any;
+    } | null;
 }
 
-export function ConsultationForm({ patient, isOpen, onClose, onSubmit }: ConsultationFormProps) {
+export function ConsultationForm({ patient, isOpen, onClose, onSubmit, initialData }: ConsultationFormProps) {
     const [activeTab, setActiveTab] = useState("subjective");
     const [soap, setSoap] = useState({
-        subjective: "",
-        objective: "",
-        assessment: "",
-        plan: "",
-        diagnosisCidId: null as string | null,
-        diagnosisCode: "",
-        diagnosisDescription: "",
-        diagnosisFreeText: "",
+        subjective: initialData?.soap?.subjective || "",
+        objective: initialData?.soap?.objective || "",
+        assessment: initialData?.soap?.assessment || "",
+        plan: initialData?.soap?.plan || "",
+        diagnosisCidId: initialData?.soap?.diagnosisCidId || null as string | null,
+        diagnosisCode: initialData?.soap?.diagnosisCid?.code || "",
+        diagnosisDescription: initialData?.soap?.diagnosisCid?.description || "",
+        diagnosisFreeText: initialData?.soap?.diagnosisFreeText || "",
     });
 
     const [vitals, setVitals] = useState({
-        weight: "",
-        height: "",
-        bloodPressure: "",
-        heartRate: "",
-        temperature: "",
+        weight: initialData?.vitals?.weight || "",
+        height: initialData?.vitals?.height || "",
+        bloodPressure: initialData?.vitals?.bloodPressure || "",
+        heartRate: initialData?.vitals?.heartRate || "",
+        temperature: initialData?.vitals?.temperature || "",
     });
+
+    // Reset form when initialData changes or when reopening
+    useEffect(() => {
+        if (isOpen) {
+            setSoap({
+                subjective: initialData?.soap?.subjective || "",
+                objective: initialData?.soap?.objective || "",
+                assessment: initialData?.soap?.assessment || "",
+                plan: initialData?.soap?.plan || "",
+                diagnosisCidId: initialData?.soap?.diagnosisCidId || null,
+                diagnosisCode: initialData?.soap?.diagnosisCid?.code || "",
+                diagnosisDescription: initialData?.soap?.diagnosisCid?.description || "",
+                diagnosisFreeText: initialData?.soap?.diagnosisFreeText || "",
+            });
+            setVitals({
+                weight: initialData?.vitals?.weight || "",
+                height: initialData?.vitals?.height || "",
+                bloodPressure: initialData?.vitals?.bloodPressure || "",
+                heartRate: initialData?.vitals?.heartRate || "",
+                temperature: initialData?.vitals?.temperature || "",
+            });
+            setActiveTab("subjective");
+        }
+    }, [initialData, isOpen]);
 
     const handleSelectCid = (cid: any) => {
         setSoap(prev => ({
@@ -57,6 +86,8 @@ export function ConsultationForm({ patient, isOpen, onClose, onSubmit }: Consult
         }));
     };
 
+    const isEditing = !!initialData?.id;
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-6xl max-h-[90vh] overflow-hidden flex flex-col p-0">
@@ -64,7 +95,7 @@ export function ConsultationForm({ patient, isOpen, onClose, onSubmit }: Consult
                     <div className="flex justify-between items-center">
                         <DialogTitle className="text-2xl flex items-center gap-2">
                             <Stethoscope className="h-6 w-6 text-primary" />
-                            Novo Atendimento: {patient.name}
+                            {isEditing ? `Editar Atendimento: ${patient.name}` : `Novo Atendimento: ${patient.name}`}
                         </DialogTitle>
                         <Badge variant="outline" className="px-3 py-1">Consulta Clínica</Badge>
                     </div>

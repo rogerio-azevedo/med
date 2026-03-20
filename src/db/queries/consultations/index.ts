@@ -210,3 +210,21 @@ export async function upsertVitalSignsQuery(data: any) {
         .values(data)
         .returning();
 }
+
+/**
+ * Exclui uma consulta e todos os seus dados relacionados
+ */
+export async function deleteConsultationQuery(consultationId: string, clinicId: string) {
+    // Como os dados (SOAP, vitais, etc) devem ter FK com CASCADE, 
+    // deletar a consulta deve ser suficiente.
+    // Mas vamos verificar se as FKs têm CASCADE.
+    return db
+        .delete(consultations)
+        .where(
+            and(
+                eq(consultations.id, consultationId),
+                eq(consultations.clinicId, clinicId)
+            )
+        )
+        .returning();
+}

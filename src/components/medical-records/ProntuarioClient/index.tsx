@@ -17,33 +17,45 @@ interface ProntuarioClientProps {
     consultations: any[];
     latestVitals?: any;
     isDoctor?: boolean;
+    currentDoctorId?: string;
 }
 
-export function ProntuarioClient({ patient, consultations, latestVitals, isDoctor }: ProntuarioClientProps) {
+export function ProntuarioClient({ patient, consultations, latestVitals, isDoctor, currentDoctorId }: ProntuarioClientProps) {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedConsultationId, setSelectedConsultationId] = useState<string | null>(null);
+    const [editingConsultation, setEditingConsultation] = useState<any>(null);
 
     const handleStartConsultation = () => {
+        setEditingConsultation(null);
+        setIsFormOpen(true);
+    };
+
+    const handleEditConsultation = (consultation: any) => {
+        setEditingConsultation(consultation);
         setIsFormOpen(true);
     };
 
     const handleSubmitConsultation = async (data: any) => {
         try {
-            // 1. Iniciar a consulta
-            const startResult = await startConsultationAction({
-                patientId: patient.id,
-                type: "consultation",
-            });
+            let consultationId = editingConsultation?.id;
 
-            if (!startResult.success || !startResult.data) {
-                toast.error("Erro ao iniciar consulta: " + (startResult.error || "Dados não retornados"));
-                return;
+            if (!isEditing) {
+                // 1. Iniciar a consulta apenas se for nova
+                const startResult = await startConsultationAction({
+                    patientId: patient.id,
+                    type: "consultation",
+                });
+
+                if (!startResult.success || !startResult.data) {
+                    toast.error("Erro ao iniciar consulta: " + (startResult.error || "Dados não retornados"));
+                    return;
+                }
+
+                consultationId = startResult.data.id;
             }
 
-            const consultationId = startResult.data.id;
-
-            // 2. Salvar o SOAP e diagnóstico
+            // 2. Salvar o SOAP e diagnóstico (upsert)
             const soapResult = await saveSoapAction(consultationId, patient.id, {
                 ...data.soap,
                 diagnosisCidId: data.soap.diagnosisCidId,
@@ -65,13 +77,16 @@ export function ProntuarioClient({ patient, consultations, latestVitals, isDocto
                 }
             }
 
-            toast.success("Prontuário salvo com sucesso!");
+            toast.success(isEditing ? "Prontuário atualizado com sucesso!" : "Prontuário salvo com sucesso!");
             setIsFormOpen(false);
+            setEditingConsultation(null);
         } catch (error: any) {
             toast.error("Ocorreu um erro inesperado.");
             console.error(error);
         }
     };
+
+    const isEditing = !!editingConsultation;
 
     return (
         <div className="flex bg-background min-h-screen">
@@ -123,13 +138,24 @@ export function ProntuarioClient({ patient, consultations, latestVitals, isDocto
             <ConsultationDetailSheet 
                 consultationId={selectedConsultationId}
                 onClose={() => setSelectedConsultationId(null)}
+                onEdit={handleEditConsultation}
+                patientId={patient.id}
+                currentDoctorId={currentDoctorId}
             />
 
             <ConsultationForm 
                 patient={patient}
                 isOpen={isFormOpen}
-                onClose={() => setIsFormOpen(false)}
+                onClose={() => {
+                    setIsFormOpen(false);
+                    setEditingConsultation(null);
+                }}
                 onSubmit={handleSubmitConsultation}
+                initialData={editingConsultation ? {
+                    id: editingConsultation.id,
+                    soap: editingConsultation.soap,
+                    vitals: editingConsultation.vitalSigns?.[0] || {}
+                } : null}
             />
         </div>
     );

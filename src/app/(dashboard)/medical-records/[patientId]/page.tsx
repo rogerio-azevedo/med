@@ -25,7 +25,8 @@ export default async function ProntuarioPage({ params }: ProntuarioPageProps) {
 
     const consultations = await getPatientConsultationsTimeline(patientId, session.user.clinicId);
     const latestVitals = await getPatientLatestVitals(patientId, session.user.clinicId);
-    const isDoctor = !!(session.user as any).doctorId;
+    const docId = (session.user as any).doctorId;
+    const isDoctor = !!docId;
 
     return (
         <ProntuarioClient 
@@ -33,6 +34,7 @@ export default async function ProntuarioPage({ params }: ProntuarioPageProps) {
             consultations={consultations} 
             latestVitals={latestVitals}
             isDoctor={isDoctor}
+            currentDoctorId={docId}
         />
     );
 }

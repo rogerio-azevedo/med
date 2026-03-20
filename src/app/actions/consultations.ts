@@ -33,9 +33,17 @@ export async function startConsultationAction(data: any) {
 
 export async function saveSoapAction(consultationId: string, patientId: string, data: any) {
     const session = await auth();
-    if (!session?.user?.clinicId) return { error: "Não autorizado" };
+    if (!session?.user?.clinicId) return { success: false, error: "Não autorizado" };
 
     try {
+        const { getConsultationDetails } = await import("@/db/queries/consultations");
+        const consultation = await getConsultationDetails(consultationId, session.user.clinicId);
+        
+        const currentDoctorId = (session.user as any).doctorId;
+        if (!consultation || consultation.doctorId !== currentDoctorId) {
+            return { success: false, error: "Apenas o médico que iniciou o atendimento pode editá-lo." };
+        }
+
         await upsertConsultationSoapQuery({
             ...data,
             consultationId,
@@ -53,6 +61,14 @@ export async function saveVitalSignsAction(consultationId: string, patientId: st
     if (!session?.user?.clinicId) return { success: false, error: "Não autorizado" };
 
     try {
+        const { getConsultationDetails } = await import("@/db/queries/consultations");
+        const consultation = await getConsultationDetails(consultationId, session.user.clinicId);
+        
+        const currentDoctorId = (session.user as any).doctorId;
+        if (!consultation || consultation.doctorId !== currentDoctorId) {
+            return { success: false, error: "Apenas o médico que iniciou o atendimento pode editá-lo." };
+        }
+
         const normalizedData = {
             consultationId,
             weight: data.weight?.trim() || null,
@@ -76,7 +92,15 @@ export async function saveVitalSignsAction(consultationId: string, patientId: st
 
 export async function finishConsultationAction(consultationId: string, patientId: string) {
     const session = await auth();
-    if (!session?.user?.clinicId) return { error: "Não autorizado" };
+    if (!session?.user?.clinicId) return { success: false, error: "Não autorizado" };
+
+    const currentDoctorId = (session.user as any).doctorId;
+    const { getConsultationDetails } = await import("@/db/queries/consultations");
+    const consultation = await getConsultationDetails(consultationId, session.user.clinicId);
+
+    if (!consultation || consultation.doctorId !== currentDoctorId) {
+        return { success: false, error: "Apenas o médico que iniciou o atendimento pode finalizá-lo." };
+    }
 
     const result = await finishConsultation(consultationId, session.user.clinicId);
     
@@ -85,4 +109,32 @@ export async function finishConsultationAction(consultationId: string, patientId
     }
 
     return result;
+}
+
+export async function deleteConsultationAction(consultationId: string, patientId: string) {
+    const session = await auth();
+    if (!session?.user?.clinicId) return { success: false, error: "Não autorizado" };
+
+    try {
+        const { getConsultationDetails, deleteConsultationQuery } = await import("@/db/queries/consultations");
+        
+        const consultation = await getConsultationDetails(consultationId, session.user.clinicId);
+        const currentDoctorId = (session.user as any).doctorId;
+        
+        if (!consultation || consultation.doctorId !== currentDoctorId) {
+            return { success: false, error: "Apenas o médico que iniciou o atendimento pode excluí-lo." };
+        }
+
+        const result = await deleteConsultationQuery(consultationId, session.user.clinicId);
+
+        if (result && result.length > 0) {
+            revalidatePath(`/medical-records/${patientId}`);
+            return { success: true };
+        }
+        
+        return { success: false, error: "Atendimento não encontrado ou já excluído." };
+    } catch (error: any) {
+        console.error("Error deleting consultation:", error);
+        return { success: false, error: error.message };
+    }
 }
