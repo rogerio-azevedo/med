@@ -10,6 +10,7 @@ import {
 import { clinicUsers } from "@/db/schema/clinics";
 import { users } from "@/db/schema/auth";
 import { eq, and, asc, sql, inArray } from "drizzle-orm";
+import { doctors, clinicDoctors } from "@/db/schema/medical";
 
 /** Converts an ISO string (or Date) to a Date object, or null if falsy. */
 function toDateOrNull(value: string | Date | null | undefined): Date | null {
@@ -281,7 +282,19 @@ export async function getClinicUsersByClinic(clinicId: string) {
         })
         .from(clinicUsers)
         .innerJoin(users, eq(clinicUsers.userId, users.id))
-        .where(and(eq(clinicUsers.clinicId, clinicId), eq(clinicUsers.isActive, true)));
+        .innerJoin(doctors, eq(users.id, doctors.userId))
+        .innerJoin(clinicDoctors, and(
+            eq(clinicDoctors.doctorId, doctors.id),
+            eq(clinicDoctors.clinicId, clinicId),
+            eq(clinicDoctors.isActive, true)
+        ))
+        .where(
+            and(
+                eq(clinicUsers.clinicId, clinicId),
+                eq(clinicUsers.isActive, true)
+            )
+        )
+        .orderBy(asc(users.name));
 }
 
 export async function reorderColumns(boardId: string, orderedIds: string[], clinicId: string) {

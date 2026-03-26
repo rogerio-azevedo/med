@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ReactSelect from "react-select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -144,6 +145,10 @@ export function CreateCardModal({ isOpen, onClose, initialColumnId, cardToEdit, 
                     </DialogTitle>
                 </DialogHeader>
 
+                {/* 
+                  Note: we use ReactSelect for responsibleId to allow searching.
+                  We need to map between the UUID and the {value, label} format.
+                */}
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
                         console.error("[CreateCardModal] validation errors:", errors);
@@ -208,26 +213,64 @@ export function CreateCardModal({ isOpen, onClose, initialColumnId, cardToEdit, 
                             <FormField
                                 control={form.control}
                                 name="responsibleId"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Responsável</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value || undefined}>
+                                render={({ field }) => {
+                                    const options = clinicUsers.map((cu: any) => ({
+                                        value: cu.id,
+                                        label: cu.user?.name || cu.user?.email || "Sem nome"
+                                    }));
+                                    const selectedOption = options.find((opt: any) => opt.value === field.value) || null;
+
+                                    return (
+                                        <FormItem>
+                                            <FormLabel>Responsável</FormLabel>
                                             <FormControl>
-                                                <SelectTrigger className="rounded-xl">
-                                                    <SelectValue placeholder="Nenhum" />
-                                                </SelectTrigger>
+                                                <ReactSelect
+                                                    placeholder="Buscar responsável..."
+                                                    options={options}
+                                                    value={selectedOption}
+                                                    onChange={(val: any) => field.onChange(val?.value || null)}
+                                                    isClearable
+                                                    classNamePrefix="rs"
+                                                    styles={{
+                                                        control: (base) => ({ 
+                                                            ...base, 
+                                                            borderColor: 'hsl(var(--input))', 
+                                                            borderRadius: '0.75rem', 
+                                                            padding: '0px', 
+                                                            boxShadow: 'none',
+                                                            backgroundColor: 'hsl(var(--background))',
+                                                            minHeight: '40px',
+                                                            '&:hover': {
+                                                                borderColor: 'hsl(var(--input))'
+                                                            }
+                                                        }),
+                                                        menu: (base) => ({
+                                                            ...base,
+                                                            borderRadius: '0.75rem',
+                                                            overflow: 'hidden',
+                                                            zIndex: 50
+                                                        }),
+                                                        option: (base, state) => ({
+                                                            ...base,
+                                                            backgroundColor: state.isSelected 
+                                                                ? 'hsl(var(--primary))' 
+                                                                : state.isFocused 
+                                                                    ? 'hsl(var(--accent))' 
+                                                                    : 'transparent',
+                                                            color: state.isSelected 
+                                                                ? 'hsl(var(--primary-foreground))' 
+                                                                : 'hsl(var(--foreground))',
+                                                            '&:active': {
+                                                                backgroundColor: 'hsl(var(--primary))'
+                                                            }
+                                                        })
+                                                    }}
+                                                />
                                             </FormControl>
-                                            <SelectContent>
-                                                {clinicUsers.map((cu: any) => (
-                                                    <SelectItem key={cu.id} value={cu.id}>
-                                                        {cu.user?.name || cu.user?.email}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
+                                            <FormMessage />
+                                        </FormItem>
+                                    );
+                                }}
                             />
                         </div>
 

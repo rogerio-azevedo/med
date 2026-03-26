@@ -54,7 +54,7 @@ export function KanbanCard({ card, categories, onClick, doneColumnId, isInDoneCo
             <div
                 ref={setNodeRef}
                 style={style}
-                className="opacity-30 bg-muted border-2 border-primary/20 rounded-xl h-[100px]"
+                className="opacity-40 bg-muted/40 border-2 border-dashed border-primary/30 rounded-xl min-h-[120px] transition-all"
             />
         );
     }

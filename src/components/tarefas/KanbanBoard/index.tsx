@@ -12,7 +12,10 @@ import {
     DragStartEvent,
     DragOverEvent,
     DragEndEvent,
-    defaultDropAnimationSideEffects
+    defaultDropAnimationSideEffects,
+    pointerWithin,
+    rectIntersection,
+    getFirstCollision
 } from "@dnd-kit/core";
 import {
     arrayMove,
@@ -110,6 +113,20 @@ export function KanbanBoard({ initialData, clinicId, userId }: any) {
         setIsDetailsOpen(true);
     };
 
+    /** Custom collision detection to handle columns better when empty */
+    const collisionDetectionStrategy = (args: any) => {
+        // First try to find card collisions
+        const cardCollisions = closestCorners(args);
+        
+        // If we found a card, return it
+        if (cardCollisions.length > 0 && cardCollisions.some(c => c.data?.type === "Card")) {
+            return cardCollisions;
+        }
+
+        // Otherwise, look for column/drop zones
+        return rectIntersection(args);
+    };
+
     function onDragStart(event: DragStartEvent) {
         if (event.active.data.current?.type === "Column") {
             setActiveColumn(event.active.data.current.column);
@@ -167,14 +184,14 @@ export function KanbanBoard({ initialData, clinicId, userId }: any) {
 
         if (!targetColumnId) return; // Can't determine target, abort
 
-        const targetCards = cards.filter((c: any) => c.kanbanColumnId === targetColumnId && c.id !== String(active.id));
-        const newPosition = overCard
-            ? targetCards.findIndex((c: any) => c.id === over?.id) + 1
-            : targetCards.length + 1;
+        const cleanTargetId = String(targetColumnId);
+        const targetCards = cards.filter((c: any) => String(c.kanbanColumnId) === cleanTargetId);
+        const finalIndex = targetCards.findIndex((c: any) => String(c.id) === String(active.id));
+        const newPosition = finalIndex !== -1 ? finalIndex + 1 : targetCards.length + 1;
 
         const result = await moveCardAction({
             cardId: String(active.id),
-            targetColumnId: String(targetColumnId),
+            targetColumnId: cleanTargetId,
             position: Math.max(1, newPosition),
         });
         if (result.error) {
@@ -211,13 +228,28 @@ export function KanbanBoard({ initialData, clinicId, userId }: any) {
             const targetColId = over.data.current?.type === "ColumnDrop"
                 ? over.data.current?.column?.id
                 : over.id;
-            if (!targetColId) return;
             setCards((prev: any[]) => {
-                const ai = prev.findIndex((c) => c.id === active.id);
+                const ai = prev.findIndex((c) => String(c.id) === String(active.id));
                 if (ai === -1) return prev;
                 const next = [...prev];
-                next[ai] = { ...next[ai], kanbanColumnId: targetColId };
-                return arrayMove(next, ai, ai);
+                const targetId = String(targetColId);
+                
+                if (next[ai].kanbanColumnId !== targetId) {
+                    next[ai] = { ...next[ai], kanbanColumnId: targetId };
+                }
+
+                // Find a good index in the global array for this column
+                // We want to move it near other cards of the same column
+                let overIndex = ai;
+                for (let i = 0; i < next.length; i++) {
+                   if (String(next[i].kanbanColumnId) === targetId && String(next[i].id) !== String(active.id)) {
+                       overIndex = i;
+                       // If we are moving forward in array, we take the last one.
+                       // Actually, arrayMove to the first found index is often enough for dnd-kit to stabilize
+                   }
+                }
+                
+                return arrayMove(next, ai, overIndex);
             });
         }
     }
@@ -315,7 +347,7 @@ export function KanbanBoard({ initialData, clinicId, userId }: any) {
             <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4 mt-2">
                 <DndContext
                     sensors={sensors}
-                    collisionDetection={closestCorners}
+                    collisionDetection={collisionDetectionStrategy}
                     onDragStart={onDragStart}
                     onDragOver={onDragOver}
                     onDragEnd={onDragEnd}
