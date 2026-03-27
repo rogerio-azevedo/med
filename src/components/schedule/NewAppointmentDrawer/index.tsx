@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import Select from "react-select";
 import {
     Sheet,
@@ -76,6 +76,39 @@ export function NewAppointmentDrawer({
     // timeZone atual do navegador
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+    const hasNonMidnightTime = (d: Date) => d.getHours() !== 0 || d.getMinutes() !== 0;
+
+
+    const [shouldAutoSelectSlot, setShouldAutoSelectSlot] = useState(false);
+
+    useEffect(() => {
+        const newDate = defaultDate ? format(defaultDate, "yyyy-MM-dd") : "";
+        setDate(newDate);
+        setDoctorId(defaultDoctorId ?? "");
+        setSelectedSlot(null);
+        setSlots([]);
+        
+        if (defaultDate && hasNonMidnightTime(defaultDate)) {
+            setShouldAutoSelectSlot(true);
+        } else {
+            setShouldAutoSelectSlot(false);
+        }
+    }, [defaultDate, defaultDoctorId]);
+
+    function autoSelectSlot(fetchedSlots: TimeSlot[]) {
+        if (!shouldAutoSelectSlot || !defaultDate) return;
+        
+        const targetTime = format(defaultDate, "HH:mm");
+        const matchingSlot = fetchedSlots.find(
+            (s) => s.available && format(new Date(s.startsAt), "HH:mm") === targetTime
+        );
+        
+        if (matchingSlot) {
+            setSelectedSlot(matchingSlot);
+        }
+        setShouldAutoSelectSlot(false);
+    }
+
     async function handleDateChange(newDate: string) {
         setDate(newDate);
         setSelectedSlot(null);
@@ -84,12 +117,13 @@ export function NewAppointmentDrawer({
         const res = await getAvailableSlotsAction(doctorId, newDate, timeZone);
         setLoadingSlots(false);
         if ("slots" in res && res.slots) {
-            // Server returns Date objects serialized as strings via JSON
-            setSlots(res.slots.map((s) => ({
+            const fetchedSlots: TimeSlot[] = res.slots.map((s) => ({
                 startsAt: new Date(s.startsAt).toISOString(),
                 endsAt: new Date(s.endsAt).toISOString(),
                 available: s.available,
-            })));
+            }));
+            setSlots(fetchedSlots);
+            autoSelectSlot(fetchedSlots);
         }
     }
 
@@ -101,11 +135,13 @@ export function NewAppointmentDrawer({
         const res = await getAvailableSlotsAction(id, date, timeZone);
         setLoadingSlots(false);
         if ("slots" in res && res.slots) {
-            setSlots(res.slots.map((s) => ({
+            const fetchedSlots: TimeSlot[] = res.slots.map((s) => ({
                 startsAt: new Date(s.startsAt).toISOString(),
                 endsAt: new Date(s.endsAt).toISOString(),
                 available: s.available,
-            })));
+            }));
+            setSlots(fetchedSlots);
+            autoSelectSlot(fetchedSlots);
         }
     }
 

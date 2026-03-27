@@ -147,7 +147,17 @@ export function AppointmentCalendar({
                 className={`relative border-r border-border/50 transition-colors hover:bg-muted/30 cursor-pointer ${isToday ? "bg-primary/[0.02]" : ""}`}
                 style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}
                 onKeyDown={() => {}}
-                onClick={() => onSlotClick?.(day)}
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  const offsetY = e.clientY - rect.top
+                  const minutesFromStart = Math.round(((offsetY / HOUR_HEIGHT) * 60) / 15) * 15
+                  const clickedDate = new Date(day)
+                  clickedDate.setHours(START_HOUR)
+                  clickedDate.setMinutes(minutesFromStart)
+                  clickedDate.setSeconds(0)
+                  clickedDate.setMilliseconds(0)
+                  onSlotClick?.(clickedDate)
+                }}
               >
                 {/* Linhas de hora e meia-hora */}
                 {hours.map((h) => (
