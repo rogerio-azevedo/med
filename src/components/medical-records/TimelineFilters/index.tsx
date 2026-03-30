@@ -8,7 +8,7 @@ import {
     DropdownMenuSeparator, 
     DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Filter, Calendar as CalendarIcon, User as UserIcon } from "lucide-react";
+import { Filter, Calendar as CalendarIcon } from "lucide-react";
 
 interface TimelineFiltersProps {
     onFilterChange: (filters: any) => void;
@@ -20,8 +20,8 @@ export function TimelineFilters({ onFilterChange }: TimelineFiltersProps) {
             {/* Filtro por Tipo */}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                        <Filter className="h-4 w-4" />
+                    <Button variant="outline" size="lg" className="gap-2 text-sm">
+                        <Filter className="size-4 md:size-4.5" />
                         Tipos
                     </Button>
                 </DropdownMenuTrigger>
@@ -39,8 +39,8 @@ export function TimelineFilters({ onFilterChange }: TimelineFiltersProps) {
             {/* Filtro por Período */}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                        <CalendarIcon className="h-4 w-4" />
+                    <Button variant="outline" size="lg" className="gap-2 text-sm">
+                        <CalendarIcon className="size-4 md:size-4.5" />
                         Período
                     </Button>
                 </DropdownMenuTrigger>
@@ -55,11 +55,17 @@ export function TimelineFilters({ onFilterChange }: TimelineFiltersProps) {
             </DropdownMenu>
 
             {/* Tags Ativas (Exemplos) */}
-            <div className="flex items-center gap-2 ml-2">
-                <Badge variant="secondary" className="gap-1 border-primary/20 text-primary bg-primary/5">
+            <div className="ml-2 flex flex-wrap items-center gap-2">
+                <Badge
+                    variant="secondary"
+                    className="gap-1 border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary"
+                >
                     Todos os tipos
                 </Badge>
-                <Badge variant="secondary" className="gap-1 border-primary/20 text-primary bg-primary/5">
+                <Badge
+                    variant="secondary"
+                    className="gap-1 border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary"
+                >
                     Histórico completo
                 </Badge>
             </div>

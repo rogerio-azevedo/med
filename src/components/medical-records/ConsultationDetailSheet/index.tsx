@@ -1,28 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
     Sheet,
     SheetContent,
-    SheetHeader,
     SheetTitle,
-    SheetDescription,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-    Activity, 
-    Stethoscope, 
-    Calendar, 
-    Clock, 
-    User, 
+import {
+    Activity,
+    Stethoscope,
+    Calendar,
+    Clock,
+    User,
     ClipboardList,
     FileText,
     Pill,
     Microscope,
-    ExternalLink,
     Pencil,
     Trash2
 } from "lucide-react";
@@ -42,6 +37,8 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { FileCard, type PatientFileRow } from "../FileCard";
+import { FileUploadModal } from "../FileUploadModal";
 
 interface ConsultationDetailSheetProps {
     consultationId: string | null;
@@ -49,21 +46,53 @@ interface ConsultationDetailSheetProps {
     onEdit?: (consultation: any) => void;
     patientId: string;
     currentDoctorId?: string;
+    /** Recarrega dados do servidor (timeline, listas) após arquivo ou exclusão de consulta */
+    onTimelineRefresh?: () => void;
 }
 
-export function ConsultationDetailSheet({ consultationId, onClose, onEdit, patientId, currentDoctorId }: ConsultationDetailSheetProps) {
+export function ConsultationDetailSheet({
+    consultationId,
+    onClose,
+    onEdit,
+    patientId,
+    currentDoctorId,
+    onTimelineRefresh,
+}: ConsultationDetailSheetProps) {
     const [loading, setLoading] = useState(false);
     const [consultation, setConsultation] = useState<any>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [files, setFiles] = useState<PatientFileRow[]>([]);
+    const [filesLoading, setFilesLoading] = useState(false);
+    const [uploadOpen, setUploadOpen] = useState(false);
+
+    const loadFiles = useCallback(async () => {
+        if (!consultationId) return;
+        setFilesLoading(true);
+        try {
+            const res = await fetch(`/api/consultations/${consultationId}/files`);
+            if (res.ok) {
+                const data = (await res.json()) as PatientFileRow[];
+                setFiles(data);
+            } else {
+                setFiles([]);
+            }
+        } catch {
+            setFiles([]);
+        } finally {
+            setFilesLoading(false);
+        }
+    }, [consultationId]);
 
     useEffect(() => {
         if (consultationId) {
             fetchConsultation();
+            loadFiles();
         } else {
             setConsultation(null);
+            setFiles([]);
         }
-    }, [consultationId]);
+    }, [consultationId, loadFiles]);
 
     const fetchConsultation = async () => {
         setLoading(true);
@@ -89,13 +118,14 @@ export function ConsultationDetailSheet({ consultationId, onClose, onEdit, patie
 
     const handleDelete = async () => {
         if (!consultationId) return;
-        
+
         setIsDeleting(true);
         try {
             const result = await deleteConsultationAction(consultationId, patientId);
             if (result.success) {
                 toast.success("Atendimento excluído com sucesso!");
                 onClose();
+                onTimelineRefresh?.();
             } else {
                 toast.error("Erro ao excluir atendimento: " + result.error);
             }
@@ -200,30 +230,69 @@ export function ConsultationDetailSheet({ consultationId, onClose, onEdit, patie
 
                                     {/* SOAP Sections */}
                                     <div className="space-y-6">
-                                        <SoapSection 
-                                            icon={<User className="h-4 w-4" />} 
-                                            title="Subjetivo" 
-                                            content={consultation.soap?.subjective} 
+                                        <SoapSection
+                                            icon={<User className="h-4 w-4" />}
+                                            title="Subjetivo"
+                                            content={consultation.soap?.subjective}
                                             subtitle="Queixa principal e história da doença atual"
                                         />
-                                        <SoapSection 
-                                            icon={<Stethoscope className="h-4 w-4" />} 
-                                            title="Objetivo" 
-                                            content={consultation.soap?.objective} 
+                                        <SoapSection
+                                            icon={<Stethoscope className="h-4 w-4" />}
+                                            title="Objetivo"
+                                            content={consultation.soap?.objective}
                                             subtitle="Achados do exame físico e exames complementares"
                                         />
-                                        <SoapSection 
-                                            icon={<ClipboardList className="h-4 w-4" />} 
-                                            title="Avaliação" 
-                                            content={consultation.soap?.assessment} 
+                                        <SoapSection
+                                            icon={<ClipboardList className="h-4 w-4" />}
+                                            title="Avaliação"
+                                            content={consultation.soap?.assessment}
                                             subtitle="Raciocínio clínico e hipóteses"
                                         />
-                                        <SoapSection 
-                                            icon={<FileText className="h-4 w-4" />} 
-                                            title="Plano" 
-                                            content={consultation.soap?.plan} 
+                                        <SoapSection
+                                            icon={<FileText className="h-4 w-4" />}
+                                            title="Plano"
+                                            content={consultation.soap?.plan}
                                             subtitle="Condutas, orientações e encaminhamentos"
                                         />
+                                    </div>
+
+                                    <div>
+                                        <div className="mb-3 flex items-center justify-between gap-2">
+                                            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                                                <FileText className="h-4 w-4" />
+                                                Arquivos desta consulta
+                                            </h3>
+                                            {isAuthor ? (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-1"
+                                                    onClick={() => setUploadOpen(true)}
+                                                >
+                                                    Adicionar arquivo
+                                                </Button>
+                                            ) : null}
+                                        </div>
+                                        {filesLoading ? (
+                                            <p className="text-sm text-muted-foreground">Carregando arquivos…</p>
+                                        ) : files.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground italic">
+                                                Nenhum arquivo vinculado a esta consulta.
+                                            </p>
+                                        ) : (
+                                            <ul className="space-y-2">
+                                                {files.map((f) => (
+                                                    <li key={f.id}>
+                                                        <FileCard
+                                                            file={f}
+                                                            onDeleted={loadFiles}
+                                                            canDelete={!!isAuthor}
+                                                        />
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
                                     </div>
 
                                     {/* Prescrições e Exames (Placeholders se houver dados futuros) */}
@@ -271,18 +340,29 @@ export function ConsultationDetailSheet({ consultationId, onClose, onEdit, patie
                 </SheetContent>
             </Sheet>
 
+            <FileUploadModal
+                open={uploadOpen}
+                onOpenChange={setUploadOpen}
+                patientId={patientId}
+                consultationId={consultationId}
+                onSuccess={() => {
+                    void loadFiles();
+                    onTimelineRefresh?.();
+                }}
+            />
+
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Excluir Atendimento?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Esta ação não pode ser desfeita. Isso excluirá permanentemente o prontuário 
+                            Esta ação não pode ser desfeita. Isso excluirá permanentemente o prontuário
                             e todos os dados associados a este atendimento.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogAction
                             onClick={(e) => {
                                 e.preventDefault();
                                 handleDelete();
@@ -310,7 +390,7 @@ function VitalCard({ label, value }: { label: string, value: string | null }) {
 
 function SoapSection({ icon, title, content, subtitle }: { icon: any, title: string, content: string | null, subtitle: string }) {
     if (!content) return null;
-    
+
     return (
         <div className="space-y-2">
             <div className="flex items-center gap-2">

@@ -1,5 +1,6 @@
 import {
     pgTable,
+    pgEnum,
     uuid,
     varchar,
     text,
@@ -11,6 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { patients, doctors, appointments, consultationTypeEnum, prescriptionRouteEnum, examRequestTypeEnum, referralUrgencyEnum, patientAlertTypeEnum } from "./medical";
 import { clinics } from "./clinics";
+import { users } from "./auth";
 
 // 1. ICD-10 Codes (Tabela de Referência Oficial)
 export const icd10Codes = pgTable("icd10_codes", {
@@ -157,6 +159,37 @@ export const patientAlerts = pgTable("patient_alerts", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const fileCategoryEnum = pgEnum("file_category", [
+    "lab_exam",
+    "imaging",
+    "clinical_photo",
+    "report",
+    "other",
+]);
+
+export const patientFiles = pgTable("patient_files", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    patientId: uuid("patient_id")
+        .notNull()
+        .references(() => patients.id, { onDelete: "cascade" }),
+    consultationId: uuid("consultation_id").references(() => consultations.id, { onDelete: "set null" }),
+    clinicId: uuid("clinic_id")
+        .notNull()
+        .references(() => clinics.id, { onDelete: "cascade" }),
+    uploadedBy: text("uploaded_by")
+        .notNull()
+        .references(() => users.id),
+    title: varchar("title", { length: 255 }).notNull(),
+    category: fileCategoryEnum("category").notNull(),
+    remoteKey: text("remote_key").notNull().unique(),
+    fileName: varchar("file_name", { length: 255 }).notNull(),
+    mimeType: varchar("mime_type", { length: 100 }).notNull(),
+    sizeBytes: integer("size_bytes"),
+    referenceDate: date("reference_date"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relacionamentos
 import { relations } from "drizzle-orm";
 
@@ -181,6 +214,7 @@ export const consultationsRelations = relations(consultations, ({ one, many }) =
     prescriptions: many(prescriptions),
     examRequests: many(examRequests),
     referrals: many(referrals),
+    patientFiles: many(patientFiles),
 }));
 
 export const consultationSoapRelations = relations(consultationSoap, ({ one }) => ({
@@ -226,5 +260,24 @@ export const patientAlertsRelations = relations(patientAlerts, ({ one }) => ({
     patient: one(patients, {
         fields: [patientAlerts.patientId],
         references: [patients.id],
+    }),
+}));
+
+export const patientFilesRelations = relations(patientFiles, ({ one }) => ({
+    patient: one(patients, {
+        fields: [patientFiles.patientId],
+        references: [patients.id],
+    }),
+    consultation: one(consultations, {
+        fields: [patientFiles.consultationId],
+        references: [consultations.id],
+    }),
+    clinic: one(clinics, {
+        fields: [patientFiles.clinicId],
+        references: [clinics.id],
+    }),
+    uploader: one(users, {
+        fields: [patientFiles.uploadedBy],
+        references: [users.id],
     }),
 }));

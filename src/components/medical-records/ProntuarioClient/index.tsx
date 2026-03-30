@@ -1,35 +1,91 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { PatientContextPanel } from "../PatientContextPanel";
 import { ConsultationTimeline } from "../ConsultationTimeline";
-import { TimelineFilters } from "../TimelineFilters";
 import { ConsultationForm } from "../ConsultationForm";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Search, Plus } from "lucide-react";
 import { startConsultationAction, saveSoapAction, saveVitalSignsAction } from "@/app/actions/consultations";
 import { toast } from "sonner";
 import { ConsultationDetailSheet } from "../ConsultationDetailSheet";
+import { FileUploadModal } from "../FileUploadModal";
+import { ProntuarioTimelineToolbar } from "../ProntuarioTimelineToolbar";
+import { useHeaderStore } from "@/store/header";
+import type { ProntuarioFileTimelineEntry } from "@/db/queries/prontuario-timeline";
 
 interface ProntuarioClientProps {
     patient: any;
     consultations: any[];
+    fileTimeline: ProntuarioFileTimelineEntry[];
     latestVitals?: any;
     isDoctor?: boolean;
     currentDoctorId?: string;
 }
 
-export function ProntuarioClient({ patient, consultations, latestVitals, isDoctor, currentDoctorId }: ProntuarioClientProps) {
+export function ProntuarioClient({
+    patient,
+    consultations,
+    fileTimeline,
+    latestVitals,
+    isDoctor,
+    currentDoctorId,
+}: ProntuarioClientProps) {
+    const router = useRouter();
+    const setHeader = useHeaderStore((s) => s.setHeader);
+    const setToolbar = useHeaderStore((s) => s.setToolbar);
+    const clearHeader = useHeaderStore((s) => s.clearHeader);
+
+    const [uploadOpen, setUploadOpen] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedConsultationId, setSelectedConsultationId] = useState<string | null>(null);
     const [editingConsultation, setEditingConsultation] = useState<any>(null);
 
-    const handleStartConsultation = () => {
+    const refreshAll = () => router.refresh();
+
+    const handleStartConsultation = useCallback(() => {
         setEditingConsultation(null);
         setIsFormOpen(true);
-    };
+    }, []);
+
+    useEffect(() => {
+        const name = typeof patient?.name === "string" && patient.name.trim() ? patient.name.trim() : "Paciente";
+        setHeader(name, "Prontuário");
+        return () => clearHeader();
+    }, [patient?.name, setHeader, clearHeader]);
+
+    useEffect(() => {
+        setToolbar(
+            <ProntuarioTimelineToolbar
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                onNewConsultation={handleStartConsultation}
+                isDoctor={isDoctor}
+            />
+        );
+        return () => setToolbar(null);
+    }, [searchTerm, isDoctor, handleStartConsultation, setToolbar]);
+
+    const filteredConsultations = useMemo(() => {
+        const q = searchTerm.trim().toLowerCase();
+        if (!q) return consultations;
+        return consultations.filter((c) => {
+            const doctor = String(c.doctorName ?? "").toLowerCase();
+            const diagnosis = String(c.diagnosis ?? "").toLowerCase();
+            const type = String(c.type ?? "").toLowerCase();
+            const dateStr = format(new Date(c.startTime), "dd MMM yyyy", { locale: ptBR }).toLowerCase();
+            const cid = String(c.cidCode ?? "").toLowerCase();
+            return (
+                doctor.includes(q) ||
+                diagnosis.includes(q) ||
+                type.includes(q) ||
+                dateStr.includes(q) ||
+                cid.includes(q)
+            );
+        });
+    }, [consultations, searchTerm]);
 
     const handleEditConsultation = (consultation: any) => {
         setEditingConsultation(consultation);
@@ -41,7 +97,6 @@ export function ProntuarioClient({ patient, consultations, latestVitals, isDocto
             let consultationId = editingConsultation?.id;
 
             if (!isEditing) {
-                // 1. Iniciar a consulta apenas se for nova
                 const startResult = await startConsultationAction({
                     patientId: patient.id,
                     type: "consultation",
@@ -55,7 +110,6 @@ export function ProntuarioClient({ patient, consultations, latestVitals, isDocto
                 consultationId = startResult.data.id;
             }
 
-            // 2. Salvar o SOAP e diagnóstico (upsert)
             const soapResult = await saveSoapAction(consultationId, patient.id, {
                 ...data.soap,
                 diagnosisCidId: data.soap.diagnosisCidId,
@@ -67,7 +121,9 @@ export function ProntuarioClient({ patient, consultations, latestVitals, isDocto
                 return;
             }
 
-            const hasAnyVital = Object.values(data.vitals ?? {}).some(value => String(value ?? "").trim() !== "");
+            const hasAnyVital = Object.values(data.vitals ?? {}).some(
+                (value) => String(value ?? "").trim() !== ""
+            );
             if (hasAnyVital) {
                 const vitalsResult = await saveVitalSignsAction(consultationId, patient.id, data.vitals);
 
@@ -80,6 +136,7 @@ export function ProntuarioClient({ patient, consultations, latestVitals, isDocto
             toast.success(isEditing ? "Prontuário atualizado com sucesso!" : "Prontuário salvo com sucesso!");
             setIsFormOpen(false);
             setEditingConsultation(null);
+            refreshAll();
         } catch (error: any) {
             toast.error("Ocorreu um erro inesperado.");
             console.error(error);
@@ -89,61 +146,51 @@ export function ProntuarioClient({ patient, consultations, latestVitals, isDocto
     const isEditing = !!editingConsultation;
 
     return (
-        <div className="flex bg-background min-h-screen">
-            {/* Painel Lateral de Contexto do Paciente */}
-            <aside className="w-80 flex-shrink-0 border-r bg-background">
-                <PatientContextPanel 
-                    patient={patient} 
+        <div className="flex min-h-screen w-full min-w-0 flex-col bg-background lg:flex-row">
+            <aside className="flex min-h-[min(50vh,28rem)] w-full shrink-0 flex-col border-b border-border bg-background lg:h-screen lg:min-h-0 lg:w-[40%] lg:min-w-[20rem] lg:max-w-[44%] lg:border-b-0 lg:border-r">
+                <PatientContextPanel
+                    patient={patient}
                     latestVitals={latestVitals}
-                    alerts={[]} 
+                    alerts={[]}
+                    fileTimeline={fileTimeline}
+                    isDoctor={isDoctor}
+                    onAnexarArquivo={isDoctor ? () => setUploadOpen(true) : undefined}
+                    onFilesChanged={refreshAll}
                 />
             </aside>
 
-            {/* Conteúdo Principal - Timeline */}
-            <main className="flex-1 flex flex-col bg-muted/10">
-                {/* Header de Filtros e Procura */}
-                <div className="p-6 bg-background border-b shadow-sm flex items-center justify-between gap-4">
-                    <div className="flex-1 flex items-center gap-3">
-                        <div className="relative flex-1 max-w-md">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                                placeholder="Buscar no histórico..." 
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10"
-                            />
-                        </div>
-                        <TimelineFilters onFilterChange={() => {}} />
-                    </div>
-                    <Button 
-                        onClick={handleStartConsultation} 
-                        className="gap-2"
-                        disabled={!isDoctor}
-                        title={!isDoctor ? "Apenas médicos podem iniciar atendimentos" : ""}
-                    >
-                        <Plus className="h-4 w-4" />
-                        Novo Atendimento
-                    </Button>
+            <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-muted/10">
+                <div className="border-b bg-muted/30 px-5 py-3 md:px-8">
+                    <p className="text-center text-sm leading-relaxed text-muted-foreground">
+                        <span className="font-medium text-foreground/80">Atendimentos</span> em ordem cronológica
+                        (mais recente no topo).{" "}
+                        <span className="font-medium text-foreground/80">Arquivos e exames</span> ficam na coluna à
+                        esquerda, na própria linha do tempo de documentos.
+                    </p>
                 </div>
 
-                {/* Lista da Timeline */}
-                <div className="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full">
-                    <ConsultationTimeline 
-                        consultations={consultations} 
-                        onSelect={setSelectedConsultationId}
-                    />
+                <div className="w-full flex-1 overflow-y-auto p-5 md:p-8">
+                    <ConsultationTimeline consultations={filteredConsultations} onSelect={setSelectedConsultationId} />
                 </div>
+
+                <FileUploadModal
+                    open={uploadOpen}
+                    onOpenChange={setUploadOpen}
+                    patientId={patient.id}
+                    onSuccess={refreshAll}
+                />
             </main>
 
-            <ConsultationDetailSheet 
+            <ConsultationDetailSheet
                 consultationId={selectedConsultationId}
                 onClose={() => setSelectedConsultationId(null)}
                 onEdit={handleEditConsultation}
                 patientId={patient.id}
                 currentDoctorId={currentDoctorId}
+                onTimelineRefresh={refreshAll}
             />
 
-            <ConsultationForm 
+            <ConsultationForm
                 patient={patient}
                 isOpen={isFormOpen}
                 onClose={() => {
@@ -151,11 +198,15 @@ export function ProntuarioClient({ patient, consultations, latestVitals, isDocto
                     setEditingConsultation(null);
                 }}
                 onSubmit={handleSubmitConsultation}
-                initialData={editingConsultation ? {
-                    id: editingConsultation.id,
-                    soap: editingConsultation.soap,
-                    vitals: editingConsultation.vitalSigns?.[0] || {}
-                } : null}
+                initialData={
+                    editingConsultation
+                        ? {
+                              id: editingConsultation.id,
+                              soap: editingConsultation.soap,
+                              vitals: editingConsultation.vitalSigns?.[0] || {},
+                          }
+                        : null
+                }
             />
         </div>
     );

@@ -1,5 +1,6 @@
 import { getPatientById } from "@/db/queries/patients";
 import { getPatientConsultationsTimeline, getPatientLatestVitals } from "@/db/queries/consultations";
+import { getPatientFilesTimelineSorted } from "@/db/queries/prontuario-timeline";
 import { auth } from "@/auth";
 import { notFound } from "next/navigation";
 import { ProntuarioClient } from "@/components/medical-records/ProntuarioClient";
@@ -23,15 +24,19 @@ export default async function ProntuarioPage({ params }: ProntuarioPageProps) {
         notFound();
     }
 
-    const consultations = await getPatientConsultationsTimeline(patientId, session.user.clinicId);
+    const [consultations, fileTimeline] = await Promise.all([
+        getPatientConsultationsTimeline(patientId, session.user.clinicId),
+        getPatientFilesTimelineSorted(patientId, session.user.clinicId),
+    ]);
     const latestVitals = await getPatientLatestVitals(patientId, session.user.clinicId);
     const docId = (session.user as any).doctorId;
     const isDoctor = !!docId;
 
     return (
-        <ProntuarioClient 
-            patient={patient} 
-            consultations={consultations} 
+        <ProntuarioClient
+            patient={patient}
+            consultations={consultations}
+            fileTimeline={fileTimeline}
             latestVitals={latestVitals}
             isDoctor={isDoctor}
             currentDoctorId={docId}

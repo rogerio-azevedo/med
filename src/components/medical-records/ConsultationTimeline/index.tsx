@@ -1,8 +1,8 @@
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, ChevronRight, FileText, ClipboardList, Send, Stethoscope } from "lucide-react";
+import { ChevronRight, ClipboardList, Stethoscope } from "lucide-react";
 
 interface ConsultationTimelineProps {
     consultations: any[];
@@ -12,53 +12,56 @@ interface ConsultationTimelineProps {
 export function ConsultationTimeline({ consultations = [], onSelect }: ConsultationTimelineProps) {
     if (consultations.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
+            <div className="flex flex-col items-center justify-center gap-4 py-20 text-muted-foreground">
                 <ClipboardList className="h-16 w-16 opacity-20" />
-                <p>Nenhum atendimento registrado no histórico deste paciente.</p>
+                <p className="text-center text-sm">Nenhum atendimento registrado no histórico deste paciente.</p>
             </div>
         );
     }
 
     return (
-        <div className="relative pl-8 flex flex-col gap-4 before:absolute before:left-[11px] before:top-2 before:bottom-0 before:w-[2px] before:bg-border">
-            {consultations.map((consultation, index) => (
-                <div key={consultation.id} className="relative group">
-                    {/* Indicador de Data na Timeline */}
-                    <div className="absolute -left-[37px] top-1 p-1 bg-background border-2 border-primary rounded-full z-10">
-                        <Stethoscope className="h-4 w-4 text-primary" />
+        <div className="relative flex flex-col gap-5 pl-9 before:absolute before:bottom-0 before:left-[13px] before:top-2 before:w-0.5 before:bg-border md:pl-10 md:before:left-[15px]">
+            {consultations.map((consultation) => (
+                <div key={consultation.id} className="group relative">
+                    {/* Indicador na timeline — alinhado ao trilho; padding à esquerda evita corte */}
+                    <div className="absolute -left-8.5 top-1 z-10 rounded-full border-2 border-primary bg-background p-1 md:-left-9.5">
+                        <Stethoscope className="size-4 text-primary md:size-4.5" />
                     </div>
 
-                    <Card 
-                        className="cursor-pointer hover:border-primary/50 transition-all hover:shadow-md"
+                    <Card
+                        className="cursor-pointer gap-0 py-0 shadow-sm transition-all hover:border-primary/50 hover:shadow-md"
                         onClick={() => onSelect?.(consultation.id)}
                     >
-                        <div className="p-4 py-3 flex flex-col gap-2">
-                            <div className="flex justify-between items-center">
-                                <div className="flex gap-3 items-center">
-                                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                        <div className="flex flex-col gap-1.5 px-3 py-2.5 md:px-4 md:py-3">
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="flex min-w-0 items-center gap-2">
+                                    <span className="shrink-0 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                                         {format(new Date(consultation.startTime), "dd MMM yyyy", { locale: ptBR })}
                                     </span>
-                                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 uppercase font-bold">
+                                    <Badge variant="secondary" className="h-5 px-2 py-0 text-[10px] font-bold uppercase md:text-xs">
                                         {translateType(consultation.type)}
                                     </Badge>
                                 </div>
-                                <div className="text-[11px] text-muted-foreground font-medium">
+                                <div className="shrink-0 truncate text-xs font-medium text-muted-foreground">
                                     Dr(a). {consultation.doctorName}
                                 </div>
                             </div>
 
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                    <h4 className="font-bold text-base text-card-foreground">
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="flex min-w-0 items-center gap-2">
+                                    <h4 className="truncate text-base font-bold text-card-foreground">
                                         {consultation.diagnosis || "Atendimento Clínico"}
                                     </h4>
-                                    {consultation.cidCode && (
-                                        <Badge variant="outline" className="text-[10px] text-primary border-primary/20 h-5">
+                                    {consultation.cidCode ? (
+                                        <Badge
+                                            variant="outline"
+                                            className="h-5 shrink-0 border-primary/20 px-2 py-0 text-xs text-primary"
+                                        >
                                             {consultation.cidCode}
                                         </Badge>
-                                    )}
+                                    ) : null}
                                 </div>
-                                <ChevronRight className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                                <ChevronRight className="size-4 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-primary md:size-5" />
                             </div>
                         </div>
                     </Card>

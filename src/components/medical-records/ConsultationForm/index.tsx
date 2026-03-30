@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-    Dialog, 
-    DialogContent, 
-    DialogHeader, 
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
     DialogTitle,
     DialogFooter
 } from "@/components/ui/dialog";
@@ -104,29 +104,29 @@ export function ConsultationForm({ patient, isOpen, onClose, onSubmit, initialDa
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 pt-4">
                     <div className="px-6 border-b">
                         <TabsList className="bg-transparent h-12 w-full justify-start gap-6 rounded-none p-0">
-                            <TabsTrigger 
-                                value="subjective" 
+                            <TabsTrigger
+                                value="subjective"
                                 className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-2"
                             >
                                 <span className="mr-2 px-1.5 py-0.5 bg-muted rounded text-[10px] font-bold">S</span>
                                 Subjetivo
                             </TabsTrigger>
-                            <TabsTrigger 
-                                value="objective" 
+                            <TabsTrigger
+                                value="objective"
                                 className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-2"
                             >
                                 <span className="mr-2 px-1.5 py-0.5 bg-muted rounded text-[10px] font-bold">O</span>
                                 Objetivo
                             </TabsTrigger>
-                            <TabsTrigger 
-                                value="assessment" 
+                            <TabsTrigger
+                                value="assessment"
                                 className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-2"
                             >
                                 <span className="mr-2 px-1.5 py-0.5 bg-muted rounded text-[10px] font-bold">A</span>
                                 Avaliação
                             </TabsTrigger>
-                            <TabsTrigger 
-                                value="plan" 
+                            <TabsTrigger
+                                value="plan"
                                 className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-2"
                             >
                                 <span className="mr-2 px-1.5 py-0.5 bg-muted rounded text-[10px] font-bold">P</span>
@@ -142,11 +142,11 @@ export function ConsultationForm({ patient, isOpen, onClose, onSubmit, initialDa
                                     <Label className="text-lg font-semibold flex items-center gap-2">
                                         Queixa Principal e História (HDA)
                                     </Label>
-                                    <Textarea 
+                                    <Textarea
                                         placeholder="Descreva o motivo da consulta, sintomas e histórico atual..."
                                         className="min-h-[300px] text-base"
                                         value={soap.subjective}
-                                        onChange={(e) => setSoap({...soap, subjective: e.target.value})}
+                                        onChange={(e) => setSoap({ ...soap, subjective: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -156,32 +156,32 @@ export function ConsultationForm({ patient, isOpen, onClose, onSubmit, initialDa
                             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                                 <div className="space-y-2">
                                     <Label>Peso (kg)</Label>
-                                    <Input placeholder="70.5" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} />
+                                    <Input placeholder="70.5" value={vitals.weight} onChange={e => setVitals({ ...vitals, weight: e.target.value })} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Altura (cm)</Label>
-                                    <Input placeholder="175" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} />
+                                    <Input placeholder="175" value={vitals.height} onChange={e => setVitals({ ...vitals, height: e.target.value })} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>PA (mmHg)</Label>
-                                    <Input placeholder="120/80" value={vitals.bloodPressure} onChange={e => setVitals({...vitals, bloodPressure: e.target.value})} />
+                                    <Input placeholder="120/80" value={vitals.bloodPressure} onChange={e => setVitals({ ...vitals, bloodPressure: e.target.value })} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>FC (bpm)</Label>
-                                    <Input placeholder="72" value={vitals.heartRate} onChange={e => setVitals({...vitals, heartRate: e.target.value})} />
+                                    <Input placeholder="72" value={vitals.heartRate} onChange={e => setVitals({ ...vitals, heartRate: e.target.value })} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Temp (°C)</Label>
-                                    <Input placeholder="36.5" value={vitals.temperature} onChange={e => setVitals({...vitals, temperature: e.target.value})} />
+                                    <Input placeholder="36.5" value={vitals.temperature} onChange={e => setVitals({ ...vitals, temperature: e.target.value })} />
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-lg font-semibold">Exame Físico</Label>
-                                <Textarea 
+                                <Textarea
                                     placeholder="Descreva os achados do exame físico..."
                                     className="min-h-[200px]"
                                     value={soap.objective}
-                                    onChange={(e) => setSoap({...soap, objective: e.target.value})}
+                                    onChange={(e) => setSoap({ ...soap, objective: e.target.value })}
                                 />
                             </div>
                         </TabsContent>
@@ -197,7 +197,7 @@ export function ConsultationForm({ patient, isOpen, onClose, onSubmit, initialDa
                                                 <Badge className="text-md h-8">{soap.diagnosisCode}</Badge>
                                                 <span className="font-medium">{soap.diagnosisDescription}</span>
                                             </div>
-                                            <Button variant="ghost" size="sm" onClick={() => setSoap({...soap, diagnosisCidId: null, diagnosisCode: "", diagnosisDescription: ""})}>
+                                            <Button variant="ghost" size="sm" onClick={() => setSoap({ ...soap, diagnosisCidId: null, diagnosisCode: "", diagnosisDescription: "" })}>
                                                 Remover
                                             </Button>
                                         </div>
@@ -206,11 +206,11 @@ export function ConsultationForm({ patient, isOpen, onClose, onSubmit, initialDa
                                 <Separator />
                                 <div className="space-y-2">
                                     <Label className="text-lg font-semibold">Avaliação Clínica / Observações</Label>
-                                    <Textarea 
+                                    <Textarea
                                         placeholder="Discuta o raciocínio clínico, gravidade e prognóstico..."
                                         className="min-h-[200px]"
                                         value={soap.assessment}
-                                        onChange={(e) => setSoap({...soap, assessment: e.target.value})}
+                                        onChange={(e) => setSoap({ ...soap, assessment: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -234,11 +234,11 @@ export function ConsultationForm({ patient, isOpen, onClose, onSubmit, initialDa
 
                             <div className="space-y-2">
                                 <Label className="text-lg font-semibold">Conduta / Orientações ao Paciente</Label>
-                                <Textarea 
+                                <Textarea
                                     placeholder="Descreva as orientações, próximas etapas e plano de cuidado..."
                                     className="min-h-[200px]"
                                     value={soap.plan}
-                                    onChange={(e) => setSoap({...soap, plan: e.target.value})}
+                                    onChange={(e) => setSoap({ ...soap, plan: e.target.value })}
                                 />
                             </div>
                         </TabsContent>
