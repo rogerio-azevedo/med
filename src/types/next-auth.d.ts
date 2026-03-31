@@ -5,12 +5,17 @@ declare module "next-auth" {
     interface User {
         role?: string;
         clinicId?: string;
+        doctorId?: string;
+        /** Papel na clínica (`clinic_users.role`): admin, doctor, receptionist, nurse */
+        clinicRole?: string;
     }
 
     interface Session {
         user: {
             role?: string;
             clinicId?: string;
+            doctorId?: string;
+            clinicRole?: string;
         } & DefaultSession["user"];
     }
 }
@@ -19,6 +24,8 @@ declare module "next-auth/jwt" {
     interface JWT {
         role?: string;
         clinicId?: string;
+        doctorId?: string;
+        clinicRole?: string;
     }
 }
 

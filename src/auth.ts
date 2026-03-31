@@ -39,6 +39,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     if (passwordsMatch) {
                         let clinicId: string | undefined;
                         let doctorId: string | undefined;
+                        let clinicRole: string | undefined;
 
                         if (user.role === "patient") {
                             const patient = await db.query.patients.findFirst({
@@ -55,6 +56,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                                 where: eq(clinicUsers.userId, user.id),
                             });
                             clinicId = clinicLink?.clinicId;
+                            clinicRole = clinicLink?.role ?? undefined;
 
                             if (user.role === "doctor") {
                                 const doctor = await db.query.doctors.findFirst({
@@ -70,7 +72,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                             email: user.email,
                             role: user.role,
                             clinicId: clinicId,
-                            doctorId: doctorId
+                            doctorId: doctorId,
+                            clinicRole,
                         };
                     }
                 }
@@ -87,6 +90,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 token.role = user.role;
                 token.clinicId = (user as any).clinicId;
                 token.doctorId = (user as any).doctorId;
+                token.clinicRole = (user as any).clinicRole;
             }
             return token;
         },
@@ -97,7 +101,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             if (token && session.user) {
                 session.user.role = token.role as string | undefined;
                 session.user.clinicId = token.clinicId as string | undefined;
-                (session.user as any).doctorId = token.doctorId as string | undefined;
+                session.user.doctorId = token.doctorId as string | undefined;
+                session.user.clinicRole = token.clinicRole as string | undefined;
             }
             return session;
         },

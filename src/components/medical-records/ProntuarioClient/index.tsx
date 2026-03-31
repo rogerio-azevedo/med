@@ -21,6 +21,8 @@ interface ProntuarioClientProps {
     fileTimeline: ProntuarioFileTimelineEntry[];
     latestVitals?: any;
     isDoctor?: boolean;
+    /** Anexar/remover arquivos no prontuário (médico ou admin da clínica). */
+    canManagePatientFiles?: boolean;
     currentDoctorId?: string;
 }
 
@@ -30,6 +32,7 @@ export function ProntuarioClient({
     fileTimeline,
     latestVitals,
     isDoctor,
+    canManagePatientFiles = false,
     currentDoctorId,
 }: ProntuarioClientProps) {
     const router = useRouter();
@@ -153,8 +156,8 @@ export function ProntuarioClient({
                     latestVitals={latestVitals}
                     alerts={[]}
                     fileTimeline={fileTimeline}
-                    isDoctor={isDoctor}
-                    onAnexarArquivo={isDoctor ? () => setUploadOpen(true) : undefined}
+                    canManagePatientFiles={canManagePatientFiles}
+                    onAnexarArquivo={canManagePatientFiles ? () => setUploadOpen(true) : undefined}
                     onFilesChanged={refreshAll}
                 />
             </aside>

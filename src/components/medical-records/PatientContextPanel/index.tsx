@@ -14,7 +14,7 @@ interface PatientContextPanelProps {
     latestVitals?: any;
     alerts?: any[];
     fileTimeline?: ProntuarioFileTimelineEntry[];
-    isDoctor?: boolean;
+    canManagePatientFiles?: boolean;
     onAnexarArquivo?: () => void;
     onFilesChanged?: () => void;
 }
@@ -24,7 +24,7 @@ export function PatientContextPanel({
     latestVitals,
     alerts = [],
     fileTimeline = [],
-    isDoctor,
+    canManagePatientFiles = false,
     onAnexarArquivo,
     onFilesChanged,
 }: PatientContextPanelProps) {
@@ -144,7 +144,7 @@ export function PatientContextPanel({
 
                     <PatientFilesSidebarTimeline
                         files={fileTimeline}
-                        isDoctor={isDoctor}
+                        canManagePatientFiles={canManagePatientFiles}
                         onAnexar={onAnexarArquivo}
                         onFilesChanged={onFilesChanged}
                     />

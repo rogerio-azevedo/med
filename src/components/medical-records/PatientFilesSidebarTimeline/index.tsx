@@ -24,12 +24,12 @@ function entryToRow(e: ProntuarioFileTimelineEntry): PatientFileRow {
 
 export function PatientFilesSidebarTimeline({
     files,
-    isDoctor,
+    canManagePatientFiles = false,
     onAnexar,
     onFilesChanged,
 }: {
     files: ProntuarioFileTimelineEntry[];
-    isDoctor?: boolean;
+    canManagePatientFiles?: boolean;
     onAnexar?: () => void;
     onFilesChanged?: () => void;
 }) {
@@ -40,7 +40,7 @@ export function PatientFilesSidebarTimeline({
                     <Paperclip className="size-4 shrink-0" />
                     Arquivos
                 </h3>
-                {isDoctor && onAnexar ? (
+                {canManagePatientFiles && onAnexar ? (
                     <Button
                         type="button"
                         variant="outline"
@@ -88,7 +88,7 @@ export function PatientFilesSidebarTimeline({
                                     <FileCard
                                         file={entryToRow(item)}
                                         onDeleted={onFilesChanged}
-                                        canDelete={isDoctor}
+                                        canDelete={canManagePatientFiles}
                                         compact
                                     />
                                 </div>
