@@ -30,6 +30,7 @@ interface Medication {
   brandName: string | null;
   genericName: string | null;
   concentration: string | null;
+  manufacturer: string | null;
   pharmaceuticalForm: string;
   presentation: string | null;
   route: string | null;

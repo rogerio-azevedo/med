@@ -45,7 +45,7 @@ export default async function MedicationsPage({
     getMedicationFilterOptionsAction(),
   ]);
 
-  const medicationsData = result.success
+  const medicationsData = result.success && result.data
     ? result.data
     : {
         items: [],
@@ -58,9 +58,12 @@ export default async function MedicationsPage({
           hasNextPage: false,
         },
       };
-  const filterOptions = filterOptionsResult.success
+
+  const filterOptions = filterOptionsResult.success && filterOptionsResult.data
     ? filterOptionsResult.data
-    : { pharmaceuticalForms: [] };
+    : {
+        pharmaceuticalForms: [],
+      };
 
   return (
     <div className="flex-1 space-y-6 overflow-x-hidden p-6 pt-4">
