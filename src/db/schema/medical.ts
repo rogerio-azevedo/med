@@ -63,6 +63,13 @@ export const doctorClinicRelationshipTypeEnum = pgEnum("doctor_clinic_relationsh
     "linked",
     "partner",
 ]);
+export const procedureTypeEnum = pgEnum("procedure_type", [
+    "general",
+    "consultation",
+    "exam",
+    "therapy",
+    "hospitalization",
+]);
 
 export const consultationTypeEnum = pgEnum("consultation_type", [
     "consultation",
@@ -122,7 +129,19 @@ export const practiceAreas = pgTable("practice_areas", {
     code: varchar("code", { length: 20 }),
 });
 
-// 5.a Health Insurances (Global Catalog)
+// 5.a Procedures (Global Catalog)
+export const procedures = pgTable("procedures", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    type: procedureTypeEnum("type").notNull(),
+    tussCode: varchar("tuss_code", { length: 50 }),
+    name: text("name").notNull(),
+    description: text("description"),
+    purpose: varchar("purpose", { length: 255 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// 5.b Health Insurances (Global Catalog)
 export const healthInsurances = pgTable("health_insurances", {
     id: uuid("id").primaryKey().defaultRandom(),
     name: varchar("name", { length: 150 }).notNull(),
