@@ -1,6 +1,6 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { db } from "@/db";
-import { clinics, clinicUsers } from "@/db/schema";
+import { clinics, clinicUsers, users } from "@/db/schema";
 import type { CreateClinicInput, UpdateClinicInput } from "@/lib/validations/clinic";
 
 export async function createClinic(
@@ -46,4 +46,26 @@ export async function getClinicIdForAdmin(userId: string): Promise<string | null
         ),
     });
     return clinicUser?.clinicId ?? null;
+}
+
+export async function getClinicUsers(clinicId: string) {
+    const members = await db
+        .select({
+            id: clinicUsers.id,
+            clinicId: clinicUsers.clinicId,
+            role: clinicUsers.role,
+            isActive: clinicUsers.isActive,
+            user: {
+                id: users.id,
+                name: users.name,
+                email: users.email,
+                image: users.image,
+            }
+        })
+        .from(clinicUsers)
+        .innerJoin(users, eq(clinicUsers.userId, users.id))
+        .where(eq(clinicUsers.clinicId, clinicId))
+        .orderBy(desc(clinicUsers.createdAt));
+
+    return members;
 }

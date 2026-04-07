@@ -127,6 +127,13 @@
       "when": 1774902288983,
       "tag": "0017_lively_shinko_yamashiro",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1775523135851,
+      "tag": "0018_overrated_satana",
+      "breakpoints": true
     }
   ]
 }

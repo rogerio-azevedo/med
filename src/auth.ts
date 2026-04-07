@@ -40,6 +40,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         let clinicId: string | undefined;
                         let doctorId: string | undefined;
                         let clinicRole: string | undefined;
+                        let clinicUserId: string | undefined;
 
                         if (user.role === "patient") {
                             const patient = await db.query.patients.findFirst({
@@ -57,6 +58,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                             });
                             clinicId = clinicLink?.clinicId;
                             clinicRole = clinicLink?.role ?? undefined;
+                            clinicUserId = clinicLink?.id;
 
                             if (user.role === "doctor") {
                                 const doctor = await db.query.doctors.findFirst({
@@ -74,6 +76,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                             clinicId: clinicId,
                             doctorId: doctorId,
                             clinicRole,
+                            clinicUserId,
                         };
                     }
                 }
@@ -91,6 +94,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 token.clinicId = (user as any).clinicId;
                 token.doctorId = (user as any).doctorId;
                 token.clinicRole = (user as any).clinicRole;
+                token.clinicUserId = (user as any).clinicUserId;
             }
             return token;
         },
@@ -103,6 +107,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 session.user.clinicId = token.clinicId as string | undefined;
                 session.user.doctorId = token.doctorId as string | undefined;
                 session.user.clinicRole = token.clinicRole as string | undefined;
+                session.user.clinicUserId = token.clinicUserId as string | undefined;
             }
             return session;
         },

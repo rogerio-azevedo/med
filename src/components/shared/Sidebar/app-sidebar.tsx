@@ -12,6 +12,8 @@ import {
     ClipboardList,
     Package,
     Map,
+    ShieldCheck,
+    FileText,
 } from "lucide-react"
 
 import { NavMain } from "@/components/shared/Sidebar/nav-main"
@@ -53,6 +55,11 @@ const data = {
             title: "Tarefas",
             url: "/tarefas",
             icon: KanbanSquare,
+        },
+        {
+            title: "Orçamentos",
+            url: "/proposals",
+            icon: FileText,
         },
         {
             title: "Cadastros",
@@ -101,16 +108,31 @@ const data = {
             title: "Clínicas",
             url: "/admin/clinics",
             icon: Building2,
+            superAdminOnly: true,
         },
         {
             title: "Médicos (Global)",
             url: "/admin/doctors",
             icon: Stethoscope,
+            superAdminOnly: true,
         },
         {
-            title: "Configurações",
-            url: "/settings",
+            title: "Configuração da Clínica",
+            url: "/conta",
             icon: Settings,
+            clinicAdminOnly: true,
+        },
+        {
+            title: "Usuários",
+            url: "/conta/usuarios",
+            icon: Users,
+            clinicAdminOnly: true,
+        },
+        {
+            title: "Permissões",
+            url: "/conta/permissoes",
+            icon: ShieldCheck,
+            clinicAdminOnly: true,
         },
     ],
 }
@@ -121,12 +143,20 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
         email?: string | null
         image?: string | null
         role?: string | null
+        clinicRole?: string | null
     }
 }
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
     const isSuperAdmin = user.role === "super_admin"
+    const isClinicAdmin = user.clinicRole === "admin"
     const isPatient = user.role === "patient"
+
+    const adminItems = data.admin.filter(item => {
+        if (item.superAdminOnly && !isSuperAdmin) return false;
+        if (item.clinicAdminOnly && !isClinicAdmin && !isSuperAdmin) return false;
+        return true;
+    });
 
     return (
         <Sidebar collapsible="icon" {...props}>
@@ -143,8 +173,8 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
             </SidebarHeader>
             <SidebarContent>
                 <NavMain items={isPatient ? data.patient : data.navMain} />
-                {isSuperAdmin && (
-                    <NavMain items={data.admin} label="Administração" />
+                {(isSuperAdmin || isClinicAdmin) && (
+                    <NavMain items={adminItems} label="Administração" />
                 )}
             </SidebarContent>
             <SidebarFooter>

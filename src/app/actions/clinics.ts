@@ -82,3 +82,60 @@ export async function updateClinicInfoAction(formData: FormData) {
     revalidatePath("/conta");
     return { success: true };
 }
+
+export async function updateClinicUserRole(clinicUserId: string, newRole: "admin" | "doctor" | "receptionist" | "nurse" | "patient") {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+        return { error: "Não autenticado." };
+    }
+
+    if (session.user.clinicRole !== "admin" && session.user.role !== "super_admin") {
+        return { error: "Sem permissão. Apenas o administrador da clínica pode alterar papéis." };
+    }
+
+    // Não permitir que o usuário altere seu próprio papel para evitar que fique sem acesso
+    if (session.user.clinicUserId === clinicUserId) {
+        return { error: "Você não pode alterar seu próprio papel." };
+    }
+
+    const { db } = await import("@/db");
+    const { clinicUsers, users } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+
+    try {
+        // Obter o usuário da clínica atual
+        const targetClinicUser = await db.query.clinicUsers.findFirst({
+            where: eq(clinicUsers.id, clinicUserId)
+        });
+
+        if (!targetClinicUser) {
+            return { error: "Usuário não encontrado na clínica." };
+        }
+        
+        // Atualiza a role na clínica
+        await db.update(clinicUsers)
+            .set({ role: newRole })
+            .where(eq(clinicUsers.id, clinicUserId));
+            
+        // Se a nova role for admin, promove também o users.role global para admin, se não for super_admin
+        // Se a role anterior era admin e agora não é, rebaixa para user
+        const targetUser = await db.query.users.findFirst({
+            where: eq(users.id, targetClinicUser.userId)
+        });
+        
+        if (targetUser && targetUser.role !== "super_admin") {
+            if (newRole === "admin" && targetUser.role !== "admin") {
+                await db.update(users).set({ role: "admin" }).where(eq(users.id, targetUser.id));
+            } else if (newRole !== "admin" && targetClinicUser.role === "admin") {
+                await db.update(users).set({ role: "user" }).where(eq(users.id, targetUser.id));
+            }
+        }
+
+        const { revalidatePath } = await import("next/cache");
+        revalidatePath("/conta/usuarios");
+        return { success: true };
+    } catch (e) {
+        return { error: "Erro ao atualizar papel do usuário." };
+    }
+}
