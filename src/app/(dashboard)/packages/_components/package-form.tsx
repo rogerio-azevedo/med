@@ -121,6 +121,7 @@ export function PackageForm({
                                     placeholder="Descreva o que está incluso..."
                                     className="min-h-[100px]"
                                     {...field}
+                                    value={field.value ?? ""}
                                     disabled={isPending}
                                 />
                             </FormControl>

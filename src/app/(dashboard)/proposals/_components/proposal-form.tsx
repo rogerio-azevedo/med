@@ -276,6 +276,7 @@ export function ProposalForm({
                                     placeholder="Ex: Condição especial para pagamento à vista..." 
                                     className="min-h-[80px]"
                                     {...field} 
+                                    value={field.value ?? ""}
                                     disabled={isPending} 
                                 />
                             </FormControl>
