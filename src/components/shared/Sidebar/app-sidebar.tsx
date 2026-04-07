@@ -86,6 +86,10 @@ const data = {
                     url: "/procedures",
                 },
                 {
+                    title: "Medicamentos",
+                    url: "/medications",
+                },
+                {
                     title: "Convênios",
                     url: "/health-insurances",
                 },
