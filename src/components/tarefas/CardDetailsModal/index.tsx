@@ -48,12 +48,12 @@ interface CardDetailsModalProps {
     onDeleted?: (cardId: string) => void;
 }
 
-function formatDate(value: string | null | undefined) {
+function formatDate(value: string | Date | null | undefined) {
     if (!value) return null;
     return new Date(value).toLocaleDateString("pt-BR");
 }
 
-function formatDateTime(value: string | null | undefined) {
+function formatDateTime(value: string | Date | null | undefined) {
     if (!value) return null;
     return new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
@@ -108,19 +108,21 @@ export function CardDetailsModal({ isOpen, onClose, card, onEdit, onDeleted }: C
 
     if (!card) return null;
 
+    const currentCard = card;
+
     async function handleAddComment() {
         if (!comment.trim()) return;
         setIsSubmitting(true);
         try {
             const result = await createCommentAction({
-                kanbanCardId: card.id,
+                kanbanCardId: currentCard.id,
                 content: comment,
             });
             if (result.success) {
                 setComment("");
                 toast.success("Comentário adicionado");
                 // Refresh comments from DB so we get the user info joined
-                const refreshed = await getCardCommentsAction(card.id);
+                const refreshed = await getCardCommentsAction(currentCard.id);
                 if (refreshed.success) {
                     setLocalComments(refreshed.data ?? []);
                 }
@@ -140,13 +142,13 @@ export function CardDetailsModal({ isOpen, onClose, card, onEdit, onDeleted }: C
 
     async function executeDelete() {
         try {
-            const result = await deleteCardAction(card.id);
+            const result = await deleteCardAction(currentCard.id);
             if (result.success) {
                 toast.success("Tarefa excluída");
                 if (onDeleted) {
-                    onDeleted(card.id);
+                    onDeleted(currentCard.id);
                 } else {
-                    onClose();
+                    onClose(false);
                 }
             }
         } catch {
@@ -173,21 +175,21 @@ export function CardDetailsModal({ isOpen, onClose, card, onEdit, onDeleted }: C
                     <DialogHeader className="flex-row items-start justify-between space-y-0">
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                                <Badge variant="outline" className={cn("text-[10px] font-bold uppercase", priorityColors[card.priority])}>
-                                    {priorityLabels[card.priority] || card.priority}
+                                <Badge variant="outline" className={cn("text-[10px] font-bold uppercase", priorityColors[currentCard.priority])}>
+                                    {priorityLabels[currentCard.priority] || currentCard.priority}
                                 </Badge>
-                                {card.sourceCardId && (
+                                {currentCard.sourceCardId && (
                                     <Badge variant="secondary" className="text-[10px] font-bold uppercase bg-indigo-50 text-indigo-700 border-indigo-100">
                                         Vindo de outro board
                                     </Badge>
                                 )}
                             </div>
                             <DialogTitle className="text-2xl font-bold text-foreground">
-                                {card.title}
+                                {currentCard.title}
                             </DialogTitle>
                         </div>
                         <div className="flex gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => onEdit(card)} className="rounded-full hover:bg-background">
+                            <Button variant="ghost" size="icon" onClick={() => onEdit(currentCard)} className="rounded-full hover:bg-background">
                                 <Settings2 className="size-5" />
                             </Button>
                             <Button variant="ghost" size="icon" onClick={requestDelete} className="rounded-full hover:bg-red-50 hover:text-red-500">
@@ -204,36 +206,36 @@ export function CardDetailsModal({ isOpen, onClose, card, onEdit, onDeleted }: C
                             <Calendar className="size-3.5 shrink-0" />
                             <span className="truncate text-xs">
                                 <span className="font-medium text-foreground/70">Criação: </span>
-                                {formatDateTime(card.createdAt) ?? "—"}
+                                {formatDateTime(currentCard.createdAt) ?? "—"}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-full">
                             <History className="size-3.5 shrink-0" />
                             <span className="truncate text-xs">
                                 <span className="font-medium text-foreground/70">Movimentação: </span>
-                                {formatDateTime(card.updatedAt) ?? "—"}
+                                {formatDateTime(currentCard.updatedAt) ?? "—"}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-full">
                             <CalendarClock className="size-3.5 shrink-0" />
                             <span className="truncate text-xs">
                                 <span className="font-medium text-foreground/70">Execução: </span>
-                                {formatDate(card.startDate) ?? "Sem data"}
+                                {formatDate(currentCard.startDate) ?? "Sem data"}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-full">
                             <CalendarCheck className="size-3.5 shrink-0" />
                             <span className="truncate text-xs">
                                 <span className="font-medium text-foreground/70">Conclusão: </span>
-                                {formatDate(card.endDate) ?? "Sem data"}
+                                {formatDate(currentCard.endDate) ?? "Sem data"}
                             </span>
                         </div>
-                        {card.hour && (
+                        {currentCard.hour && (
                             <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-full">
                                 <Clock className="size-3.5 shrink-0" />
                                 <span className="text-xs">
                                     <span className="font-medium text-foreground/70">Hora: </span>
-                                    {card.hour}
+                                    {currentCard.hour}
                                 </span>
                             </div>
                         )}
@@ -247,7 +249,7 @@ export function CardDetailsModal({ isOpen, onClose, card, onEdit, onDeleted }: C
                     <div className="space-y-2">
                         <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Descrição</h4>
                         <div className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap bg-muted/20 p-4 rounded-2xl">
-                            {card.description || <span className="italic text-muted-foreground">Sem descrição detalhada.</span>}
+                            {currentCard.description || <span className="italic text-muted-foreground">Sem descrição detalhada.</span>}
                         </div>
                     </div>
 
