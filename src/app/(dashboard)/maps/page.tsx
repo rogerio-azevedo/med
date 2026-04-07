@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getClinicsWithAddress, getDoctorsWithAddress } from "@/db/queries/map";
+import { getClinicsWithAddress, getDoctorsWithAddress, getHospitalsWithAddressForMap } from "@/db/queries/map";
 import { db } from "@/db";
 import { specialties } from "@/db/schema";
 import { MapComponent } from "./map";
@@ -13,9 +13,10 @@ export default async function MapsPage() {
         redirect("/login");
     }
 
-    const [clinicsData, doctorsData, allSpecialties] = await Promise.all([
+    const [clinicsData, doctorsData, hospitalsData, allSpecialties] = await Promise.all([
         getClinicsWithAddress(clinicId),
         getDoctorsWithAddress(clinicId),
+        getHospitalsWithAddressForMap(clinicId),
         db.select().from(specialties)
     ]);
 
@@ -24,6 +25,7 @@ export default async function MapsPage() {
             <MapComponent
                 clinics={clinicsData}
                 doctors={doctorsData}
+                hospitals={hospitalsData}
                 specialties={allSpecialties}
             />
         </main>

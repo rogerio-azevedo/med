@@ -12,7 +12,7 @@ import { users } from "./auth";
 
 // Enums
 export const roleEnum = pgEnum("role", ["admin", "doctor", "receptionist", "nurse", "patient"]);
-export const entityTypeEnum = pgEnum("entity_type", ["clinic", "doctor", "patient"]);
+export const entityTypeEnum = pgEnum("entity_type", ["clinic", "doctor", "patient", "hospital"]);
 
 // 1. Clinics (Tenants)
 export const clinics = pgTable("clinics", {
@@ -38,6 +38,18 @@ export const clinicUsers = pgTable("clinic_users", {
     role: roleEnum("role").notNull(),
     isActive: boolean("is_active").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const hospitals = pgTable("hospitals", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clinicId: uuid("clinic_id")
+        .notNull()
+        .references(() => clinics.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // 3. Addresses (Polimórfico)

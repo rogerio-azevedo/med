@@ -21,7 +21,7 @@ const SimpleMap = dynamic(
 );
 
 const addressSchema = z.object({
-    entityType: z.enum(["clinic", "doctor"]),
+    entityType: z.enum(["clinic", "doctor", "patient", "hospital"]),
     entityId: z.string().uuid(),
     zipCode: z.string().optional(),
     street: z.string().optional(),
@@ -37,7 +37,7 @@ const addressSchema = z.object({
 type AddressFormData = z.infer<typeof addressSchema>;
 
 export interface AddressFormProps {
-    entityType: "clinic" | "doctor";
+    entityType: "clinic" | "doctor" | "patient" | "hospital";
     entityId: string;
     initialData?: {
         zipCode?: string | null;

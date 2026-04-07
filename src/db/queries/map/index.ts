@@ -4,6 +4,7 @@ import {
     addresses,
     clinics,
     doctors,
+    hospitals,
     users,
     doctorSpecialties,
     specialties
@@ -99,16 +100,47 @@ export async function getDoctorsWithAddress(clinicId: string) {
         .where(inArray(doctorSpecialties.doctorId, doctorIds));
 
     // Agrupa especialidades por médico
-    const specialtiesByDoctorId = specialtiesRaw.reduce((acc, curr) => {
+    const specialtiesByDoctorId = specialtiesRaw.reduce<Record<string, { specialty: { id: string; name: string } }[]>>((acc, curr) => {
         if (!acc[curr.doctorId]) {
             acc[curr.doctorId] = [];
         }
         acc[curr.doctorId].push({ specialty: curr.specialty });
         return acc;
-    }, {} as Record<string, any[]>);
+    }, {});
 
     return doctorsRaw.map(doctor => ({
         ...doctor,
         specialties: specialtiesByDoctorId[doctor.id] || [],
     }));
+}
+
+export async function getHospitalsWithAddressForMap(clinicId: string) {
+    return db
+        .select({
+            id: hospitals.id,
+            name: hospitals.name,
+            description: hospitals.description,
+            address: {
+                id: addresses.id,
+                street: addresses.street,
+                number: addresses.number,
+                neighborhood: addresses.neighborhood,
+                city: addresses.city,
+                state: addresses.state,
+                zipCode: addresses.zipCode,
+                latitude: addresses.latitude,
+                longitude: addresses.longitude,
+            }
+        })
+        .from(hospitals)
+        .innerJoin(
+            addresses,
+            and(
+                eq(addresses.entityId, hospitals.id),
+                eq(addresses.entityType, "hospital"),
+                isNotNull(addresses.latitude),
+                isNotNull(addresses.longitude)
+            )
+        )
+        .where(and(eq(hospitals.clinicId, clinicId), eq(hospitals.isActive, true)));
 }

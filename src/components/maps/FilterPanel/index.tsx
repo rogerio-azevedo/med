@@ -1,9 +1,8 @@
 "use client";
 
 import { clsx } from "clsx";
-import { Maximize2, Minimize2, Move, X, Loader2, XCircle } from "lucide-react";
+import { Maximize2, Minimize2, Move, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -12,6 +11,7 @@ import Select from "react-select";
 export interface Filters {
     showClinics: boolean;
     showDoctors: boolean;
+    showHospitals: boolean;
     specialtyIds: string[];
 }
 
@@ -154,6 +154,15 @@ export function FilterPanel({
                             id="show-doctors"
                             checked={filters.showDoctors}
                             onCheckedChange={(v) => onFiltersChange({ ...filters, showDoctors: v })}
+                        />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="show-hospitals" className="cursor-pointer font-semibold">Exibir Hospitais</Label>
+                        <Switch
+                            id="show-hospitals"
+                            checked={filters.showHospitals}
+                            onCheckedChange={(v) => onFiltersChange({ ...filters, showHospitals: v })}
                         />
                     </div>
 

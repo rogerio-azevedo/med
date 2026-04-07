@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const addressSchema = z.object({
-    entityType: z.enum(["clinic", "doctor"]),
+    entityType: z.enum(["clinic", "doctor", "patient", "hospital"]),
     entityId: z.uuid(),
     zipCode: z.string().optional(),
     street: z.string().optional(),

@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import "./map-styles.css";
 
 import { clsx } from "clsx";
-import { Building2, Stethoscope } from "lucide-react";
+import { Building2, Cross, Stethoscope } from "lucide-react";
 import { useEffect, useState, useMemo, useRef } from "react";
 import Map, { Marker, Popup, ViewState, MapRef } from "react-map-gl/mapbox";
 import { FilterPanel, Filters } from "@/components/maps/FilterPanel";
@@ -15,27 +15,76 @@ interface Location {
     longitude: number;
 }
 
+interface AddressPoint {
+    id: string;
+    street: string | null;
+    number: string | null;
+    neighborhood: string | null;
+    city: string | null;
+    state: string | null;
+    zipCode: string | null;
+    latitude: number | null;
+    longitude: number | null;
+}
+
+interface ClinicMapItem {
+    id: string;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    address: AddressPoint | null;
+}
+
+interface DoctorSpecialty {
+    specialty: {
+        id: string;
+        name: string;
+    };
+}
+
+interface DoctorMapItem {
+    id: string;
+    name: string | null;
+    crm: string | null;
+    crmState: string | null;
+    address: AddressPoint | null;
+    specialties: DoctorSpecialty[];
+}
+
+interface HospitalMapItem {
+    id: string;
+    name: string;
+    description: string | null;
+    address: AddressPoint | null;
+}
+
+interface SpecialtyOption {
+    id: string;
+    name: string;
+}
+
 interface MapComponentProps {
-    clinics: any[];
-    doctors: any[];
-    specialties: any[];
+    clinics: ClinicMapItem[];
+    doctors: DoctorMapItem[];
+    hospitals: HospitalMapItem[];
+    specialties: SpecialtyOption[];
 }
 
 interface PopupInfo {
-    type: "clinic" | "doctor";
-    data: any;
+    type: "clinic" | "doctor" | "hospital";
+    data: ClinicMapItem | DoctorMapItem | HospitalMapItem;
     latitude: number;
     longitude: number;
 }
 
-export function MapComponent({ clinics, doctors, specialties }: MapComponentProps) {
+export function MapComponent({ clinics, doctors, hospitals, specialties }: MapComponentProps) {
     const defaultLocation = {
         latitude: -23.5505,
         longitude: -46.6333, // SP default se nao achar nada
         zoom: 4
     };
 
-    const firstPoint = (clinics[0]?.address || doctors[0]?.address);
+    const firstPoint = clinics[0]?.address || doctors[0]?.address || hospitals[0]?.address;
 
     const [viewState, setViewState] = useState<ViewState>({
         latitude: firstPoint?.latitude || defaultLocation.latitude,
@@ -51,6 +100,7 @@ export function MapComponent({ clinics, doctors, specialties }: MapComponentProp
     const [filters, setFilters] = useState<Filters>({
         showClinics: true,
         showDoctors: true,
+        showHospitals: true,
         specialtyIds: [],
     });
 
@@ -72,18 +122,12 @@ export function MapComponent({ clinics, doctors, specialties }: MapComponentProp
         }
     }, []);
 
-    useEffect(() => {
-        if (userLocation && !firstPoint) {
-            setViewState(prev => ({
-                ...prev,
-                latitude: userLocation.latitude,
-                longitude: userLocation.longitude,
-                zoom: 12
-            }));
-        }
-    }, [userLocation, firstPoint]);
-
-    function handleMarkerClick(type: "clinic" | "doctor", data: any, latitude: number, longitude: number) {
+    function handleMarkerClick(
+        type: "clinic" | "doctor" | "hospital",
+        data: ClinicMapItem | DoctorMapItem | HospitalMapItem,
+        latitude: number,
+        longitude: number
+    ) {
         setPopupInfo({ type, data, latitude, longitude });
         // Pan the map so the popup is fully visible — shift center upward to make room for the card above the marker
         mapRef.current?.flyTo({
@@ -98,11 +142,12 @@ export function MapComponent({ clinics, doctors, specialties }: MapComponentProp
         if (!filters.showDoctors) return [];
         if (filters.specialtyIds.length === 0) return doctors;
         return doctors.filter(doctor =>
-            doctor.specialties?.some((s: any) => filters.specialtyIds.includes(s.specialty.id))
+            doctor.specialties?.some((specialty) => filters.specialtyIds.includes(specialty.specialty.id))
         );
     }, [filters, doctors]);
 
     const filteredClinics = filters.showClinics ? clinics : [];
+    const filteredHospitals = filters.showHospitals ? hospitals : [];
 
     return (
         <div className="relative h-full w-full">
@@ -122,15 +167,18 @@ export function MapComponent({ clinics, doctors, specialties }: MapComponentProp
                 {/* Clínicas */}
                 {filteredClinics.map((clinic) => {
                     if (clinic.address?.latitude && clinic.address?.longitude) {
+                        const latitude = clinic.address.latitude;
+                        const longitude = clinic.address.longitude;
+
                         return (
                             <Marker
                                 key={clinic.id}
-                                longitude={clinic.address.longitude}
-                                latitude={clinic.address.latitude}
+                                longitude={longitude}
+                                latitude={latitude}
                                 anchor="bottom"
                                 onClick={(e) => {
                                     e.originalEvent.stopPropagation();
-                                    handleMarkerClick("clinic", clinic, clinic.address.latitude, clinic.address.longitude);
+                                    handleMarkerClick("clinic", clinic, latitude, longitude);
                                 }}
                             >
                                 <div className="relative flex items-center justify-center">
@@ -153,15 +201,18 @@ export function MapComponent({ clinics, doctors, specialties }: MapComponentProp
                 {/* Médicos */}
                 {filteredDoctors.map((doctor) => {
                     if (doctor.address?.latitude && doctor.address?.longitude) {
+                        const latitude = doctor.address.latitude;
+                        const longitude = doctor.address.longitude;
+
                         return (
                             <Marker
                                 key={doctor.id}
-                                longitude={doctor.address.longitude}
-                                latitude={doctor.address.latitude}
+                                longitude={longitude}
+                                latitude={latitude}
                                 anchor="bottom"
                                 onClick={(e) => {
                                     e.originalEvent.stopPropagation();
-                                    handleMarkerClick("doctor", doctor, doctor.address.latitude, doctor.address.longitude);
+                                    handleMarkerClick("doctor", doctor, latitude, longitude);
                                 }}
                             >
                                 <div className="relative flex items-center justify-center">
@@ -171,6 +222,40 @@ export function MapComponent({ clinics, doctors, specialties }: MapComponentProp
                                             "size-9 cursor-pointer rounded-full p-2 bg-blue-500 text-white shadow-md hover:scale-110 hover:bg-blue-600 transition-transform",
                                             popupInfo?.type === "doctor" && popupInfo?.data?.id === doctor.id
                                                 ? "scale-110 bg-blue-600 ring-2 ring-white"
+                                                : ""
+                                        )}
+                                    />
+                                </div>
+                            </Marker>
+                        );
+                    }
+                    return null;
+                })}
+
+                {/* Hospitais */}
+                {filteredHospitals.map((hospital) => {
+                    if (hospital.address?.latitude && hospital.address?.longitude) {
+                        const latitude = hospital.address.latitude;
+                        const longitude = hospital.address.longitude;
+
+                        return (
+                            <Marker
+                                key={hospital.id}
+                                longitude={longitude}
+                                latitude={latitude}
+                                anchor="bottom"
+                                onClick={(e) => {
+                                    e.originalEvent.stopPropagation();
+                                    handleMarkerClick("hospital", hospital, latitude, longitude);
+                                }}
+                            >
+                                <div className="relative flex items-center justify-center">
+                                    <div className="absolute h-8 w-8 animate-ping rounded-full bg-rose-400 opacity-50" />
+                                    <Cross
+                                        className={clsx(
+                                            "size-9 cursor-pointer rounded-full p-2 bg-rose-500 text-white shadow-md hover:scale-110 hover:bg-rose-600 transition-transform",
+                                            popupInfo?.type === "hospital" && popupInfo?.data?.id === hospital.id
+                                                ? "scale-110 bg-rose-600 ring-2 ring-white"
                                                 : ""
                                         )}
                                     />

@@ -10,7 +10,6 @@ import {
     Building2,
     Calendar,
     ClipboardList,
-    Package,
     Map,
     ShieldCheck,
     FileText,
@@ -73,6 +72,10 @@ const data = {
                 {
                     title: "Médicos",
                     url: "/doctors",
+                },
+                {
+                    title: "Hospitais",
+                    url: "/hospitals",
                 },
                 {
                     title: "Especialidades",
