@@ -17,6 +17,37 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
 
+interface CardComment {
+    id: string;
+    content: string;
+    createdAt: string | Date | null;
+    user?: {
+        name?: string | null;
+    } | null;
+}
+
+interface CardDetails {
+    id: string;
+    title: string;
+    description?: string | null;
+    priority: "HIGH" | "MEDIUM" | "LOW" | string;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    hour?: string | null;
+    sourceCardId?: string | null;
+    comments?: CardComment[];
+}
+
+interface CardDetailsModalProps {
+    isOpen: boolean;
+    onClose: (open: boolean) => void;
+    card: CardDetails | null;
+    onEdit: (card: CardDetails) => void;
+    onDeleted?: (cardId: string) => void;
+}
+
 function formatDate(value: string | null | undefined) {
     if (!value) return null;
     return new Date(value).toLocaleDateString("pt-BR");
@@ -27,20 +58,53 @@ function formatDateTime(value: string | null | undefined) {
     return new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
-export function CardDetailsModal({ isOpen, onClose, card, onEdit, onDeleted }: any) {
+export function CardDetailsModal({ isOpen, onClose, card, onEdit, onDeleted }: CardDetailsModalProps) {
     const [comment, setComment] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [localComments, setLocalComments] = useState<any[]>([]);
+    const [localComments, setLocalComments] = useState<CardComment[]>([]);
+    const [isLoadingComments, setIsLoadingComments] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const initialComments = card?.comments;
 
-    // Sync localComments whenever the card changes or the modal opens
     useEffect(() => {
-        if (card?.comments) {
-            setLocalComments(card.comments);
-        } else {
-            setLocalComments([]);
+        let isActive = true;
+
+        async function loadComments() {
+            if (!isOpen || !card?.id) {
+                if (isActive) {
+                    setLocalComments([]);
+                }
+                return;
+            }
+
+            if (initialComments && isActive) {
+                setLocalComments(initialComments);
+            }
+
+            setIsLoadingComments(true);
+
+            try {
+                const result = await getCardCommentsAction(card.id);
+                if (isActive) {
+                    if (result.success) {
+                        setLocalComments(result.data ?? []);
+                    } else {
+                        setLocalComments(initialComments ?? []);
+                    }
+                }
+            } finally {
+                if (isActive) {
+                    setIsLoadingComments(false);
+                }
+            }
         }
-    }, [card?.id, isOpen]);
+
+        loadComments();
+
+        return () => {
+            isActive = false;
+        };
+    }, [card?.id, initialComments, isOpen]);
 
     if (!card) return null;
 
@@ -63,7 +127,7 @@ export function CardDetailsModal({ isOpen, onClose, card, onEdit, onDeleted }: a
             } else {
                 toast.error(result.error || "Erro ao adicionar comentário");
             }
-        } catch (e) {
+        } catch {
             toast.error("Erro ao adicionar comentário");
         } finally {
             setIsSubmitting(false);
@@ -85,18 +149,18 @@ export function CardDetailsModal({ isOpen, onClose, card, onEdit, onDeleted }: a
                     onClose();
                 }
             }
-        } catch (e) {
+        } catch {
             toast.error("Erro ao excluir tarefa");
         }
     }
 
-    const priorityColors: any = {
+    const priorityColors: Record<string, string> = {
         HIGH: "bg-red-100 text-red-700",
         MEDIUM: "bg-amber-100 text-amber-700",
         LOW: "bg-blue-100 text-blue-700",
     };
 
-    const priorityLabels: any = {
+    const priorityLabels: Record<string, string> = {
         HIGH: "Alta",
         MEDIUM: "Média",
         LOW: "Baixa",
@@ -192,8 +256,12 @@ export function CardDetailsModal({ isOpen, onClose, card, onEdit, onDeleted }: a
                         <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Comentários</h4>
 
                         <div className="space-y-4 max-h-[250px] overflow-y-auto pr-2">
-                            {localComments.length > 0 ? (
-                                localComments.map((c: any) => (
+                            {isLoadingComments ? (
+                                <p className="text-xs text-muted-foreground text-center py-4 italic">
+                                    Carregando comentários...
+                                </p>
+                            ) : localComments.length > 0 ? (
+                                localComments.map((c) => (
                                     <div key={c.id} className="flex gap-3">
                                         <Avatar className="size-8">
                                             <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
