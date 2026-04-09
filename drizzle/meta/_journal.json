@@ -190,6 +190,20 @@
       "when": 1778603600000,
       "tag": "0026_payment_term_method",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1778607200000,
+      "tag": "0027_consultation_soap_text",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1778609000000,
+      "tag": "0028_proposals_notes_text",
+      "breakpoints": true
     }
   ]
 }

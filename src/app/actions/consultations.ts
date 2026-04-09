@@ -3,7 +3,7 @@
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { startConsultation, finishConsultation } from "@/services/consultations";
-import { consultationSchema, vitalSignsSchema } from "@/lib/validations/medical-records";
+import { consultationSchema, consultationSoapSchema, vitalSignsSchema } from "@/lib/validations/medical-records";
 import { upsertConsultationSoapQuery, upsertVitalSignsQuery } from "@/db/queries/consultations";
 
 export async function startConsultationAction(data: any) {
@@ -44,10 +44,12 @@ export async function saveSoapAction(consultationId: string, patientId: string, 
             return { success: false, error: "Apenas o médico que iniciou o atendimento pode editá-lo." };
         }
 
-        await upsertConsultationSoapQuery({
+        const validated = consultationSoapSchema.parse({
             ...data,
             consultationId,
         });
+
+        await upsertConsultationSoapQuery(validated);
         
         revalidatePath(`/medical-records/${patientId}`);
         return { success: true };

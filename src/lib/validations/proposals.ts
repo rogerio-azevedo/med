@@ -20,7 +20,7 @@ export const proposalItemSchema = z.object({
 export const createProposalSchema = z.object({
     patientId: z.string().uuid("Selecione um paciente"),
     validUntil: z.string().optional().or(z.literal("")),
-    notes: z.string().max(2000, "Observações muito longas").optional().or(z.literal("")),
+    notes: z.string().optional().or(z.literal("")),
     paymentTermId: z.string().uuid("Forma de pagamento inválida").optional().or(z.literal("")),
     paymentTermLabel: z.string().max(120, "Forma de pagamento muito longa").optional().or(z.literal("")),
     items: z.array(proposalItemSchema).min(1, "Adicione pelo menos um item"),

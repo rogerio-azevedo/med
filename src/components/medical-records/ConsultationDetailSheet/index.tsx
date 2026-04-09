@@ -144,7 +144,7 @@ export function ConsultationDetailSheet({
     return (
         <>
             <Sheet open={isOpen} onOpenChange={onClose}>
-                <SheetContent className="sm:max-w-2xl w-full p-0 flex flex-col gap-0 border-l shadow-2xl">
+                <SheetContent className="sm:max-w-2xl w-full overflow-hidden p-0 flex flex-col gap-0 border-l shadow-2xl">
                     {loading ? (
                         <div className="p-6 space-y-6">
                             <Skeleton className="h-8 w-3/4" />
@@ -154,7 +154,7 @@ export function ConsultationDetailSheet({
                     ) : consultation ? (
                         <>
                             {/* Custom Header */}
-                            <div className="p-6 pr-12 bg-muted/30 border-b">
+                            <div className="shrink-0 border-b bg-muted/30 p-6 pr-12">
                                 <div className="flex justify-between items-start mb-4">
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
@@ -199,7 +199,7 @@ export function ConsultationDetailSheet({
                                 </div>
                             </div>
 
-                            <ScrollArea className="flex-1">
+                            <ScrollArea className="min-h-0 flex-1">
                                 <div className="p-6 space-y-8">
                                     {/* Diagnóstico CID-10 se houver */}
                                     {consultation.soap?.diagnosisCid && (
@@ -326,7 +326,7 @@ export function ConsultationDetailSheet({
                             </ScrollArea>
 
                             {/* Footer */}
-                            <div className="p-4 border-t bg-muted/10 flex justify-end">
+                            <div className="shrink-0 border-t bg-muted/10 p-4 flex justify-end">
                                 <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
                                     ID: {consultation.id}
                                 </span>
