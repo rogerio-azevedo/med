@@ -3,7 +3,6 @@ import {
     uuid,
     varchar,
     text,
-    boolean,
     timestamp,
     integer,
     pgEnum,
@@ -14,6 +13,7 @@ import { clinics } from "./clinics";
 import { patients } from "./medical";
 import { users } from "./auth";
 import { products } from "./products";
+import { paymentTerms } from "./payment-terms";
 
 export const proposalStatusEnum = pgEnum("proposal_status", [
     "draft",
@@ -36,6 +36,10 @@ export const proposals = pgTable("proposals", {
     totalAmount: integer("total_amount").default(0).notNull(), // Centavos
     validUntil: date("valid_until"),
     notes: text("notes"),
+    paymentTermId: uuid("payment_term_id").references(() => paymentTerms.id, {
+        onDelete: "set null",
+    }),
+    paymentTermLabel: varchar("payment_term_label", { length: 120 }),
     
     // Traceability
     createdById: text("created_by_id")
@@ -78,6 +82,10 @@ export const proposalsRelations = relations(proposals, ({ one, many }) => ({
         fields: [proposals.createdById],
         references: [users.id],
         relationName: "proposal_author",
+    }),
+    paymentTerm: one(paymentTerms, {
+        fields: [proposals.paymentTermId],
+        references: [paymentTerms.id],
     }),
     items: many(proposalItems),
 }));

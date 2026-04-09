@@ -19,10 +19,11 @@ import { CreateProposalInput } from "@/lib/validations/proposals";
 interface ProposalDialogProps {
     patients: { id: string; name: string }[];
     products: { id: string; name: string; sellingPrice: number; type: string }[];
+    paymentTerms: { id: string; name: string; paymentMethod: string; description: string | null }[];
     children?: React.ReactNode;
 }
 
-export function ProposalDialog({ patients, products, children }: ProposalDialogProps) {
+export function ProposalDialog({ patients, products, paymentTerms, children }: ProposalDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
     const router = useRouter();
@@ -39,7 +40,7 @@ export function ProposalDialog({ patients, products, children }: ProposalDialogP
             } else {
                 toast.error(result.error || "Erro ao processar requisição");
             }
-        } catch (error) {
+        } catch {
             toast.error("Erro interno. Tente novamente.");
         } finally {
             setIsPending(false);
@@ -75,11 +76,14 @@ export function ProposalDialog({ patients, products, children }: ProposalDialogP
 
                 <div className="p-8">
                     <ProposalForm
+                        key={isOpen ? "proposal-form-open" : "proposal-form-closed"}
                         patients={patients}
                         products={products}
+                        paymentTerms={paymentTerms}
                         onSubmit={onSubmit}
                         isPending={isPending}
                         onCancel={() => setIsOpen(false)}
+                        submitLabel="Gerar Proposta"
                     />
                 </div>
             </DialogContent>

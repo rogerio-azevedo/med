@@ -1,6 +1,6 @@
 import { db } from "../index";
 import { proposals, proposalItems, proposalStatusEnum } from "../schema";
-import { asc, desc, eq, and, sql } from "drizzle-orm";
+import { desc, eq, and, sql } from "drizzle-orm";
 
 export async function getProposals(clinicId: string) {
     return db.query.proposals.findMany({
@@ -12,17 +12,19 @@ export async function getProposals(clinicId: string) {
                     name: true,
                 },
             },
+            paymentTerm: true,
         },
         orderBy: [desc(proposals.createdAt)],
     });
 }
 
-export async function getProposalById(id: string) {
+export async function getProposalById(id: string, clinicId: string) {
     return db.query.proposals.findFirst({
-        where: eq(proposals.id, id),
+        where: and(eq(proposals.id, id), eq(proposals.clinicId, clinicId)),
         with: {
             patient: true,
             createdBy: true,
+            paymentTerm: true,
             items: {
                 with: {
                     product: true,
@@ -46,7 +48,7 @@ export async function getNextProposalNumber(clinicId: string) {
 
 export async function createProposal(
     data: typeof proposals.$inferInsert,
-    items: (typeof proposalItems.$inferInsert)[]
+    items: Array<Omit<typeof proposalItems.$inferInsert, "proposalId">>
 ) {
     // Generate the proposal ID upfront to link items in a batch operation
     const proposalId = crypto.randomUUID();
@@ -66,6 +68,32 @@ export async function createProposal(
     ]);
 
     return proposalWithId;
+}
+
+export async function updateProposal(
+    id: string,
+    clinicId: string,
+    data: Partial<typeof proposals.$inferInsert>,
+    items: Array<Omit<typeof proposalItems.$inferInsert, "proposalId">>
+) {
+    const nextItems = items.map((item) => ({
+        ...item,
+        proposalId: id,
+    }));
+
+    await db.batch([
+        db
+            .update(proposals)
+            .set({
+                ...data,
+                updatedAt: new Date(),
+            })
+            .where(and(eq(proposals.id, id), eq(proposals.clinicId, clinicId))),
+        db.delete(proposalItems).where(eq(proposalItems.proposalId, id)),
+        ...(nextItems.length > 0 ? [db.insert(proposalItems).values(nextItems)] : []),
+    ]);
+
+    return getProposalById(id, clinicId);
 }
 
 export async function updateProposalStatus(

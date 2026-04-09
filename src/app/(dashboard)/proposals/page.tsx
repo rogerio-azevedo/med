@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { getProposals, getProposalStats } from "@/db/queries/proposals";
 import { getPatientsByClinic } from "@/db/queries/patients";
 import { getProducts } from "@/db/queries/products";
+import { getActivePaymentTerms } from "@/db/queries/payment-terms";
 import { redirect } from "next/navigation";
 import { ProposalDialog } from "./_components/proposal-dialog";
 import { ProposalsTable } from "./_components/proposals-table";
@@ -17,10 +18,13 @@ export default async function ProposalsPage() {
         redirect("/dashboard");
     }
 
-    const proposals = await getProposals(clinicId);
-    const stats = await getProposalStats(clinicId);
-    const patients = await getPatientsByClinic(clinicId);
-    const products = await getProducts(clinicId);
+    const [proposals, stats, patients, products, paymentTerms] = await Promise.all([
+        getProposals(clinicId),
+        getProposalStats(clinicId),
+        getPatientsByClinic(clinicId),
+        getProducts(clinicId),
+        getActivePaymentTerms(clinicId),
+    ]);
 
     return (
         <div className="flex flex-col gap-10 p-8 min-h-screen bg-slate-50/50">
@@ -38,7 +42,7 @@ export default async function ProposalsPage() {
                         </p>
                     </div>
                 </div>
-                <ProposalDialog patients={patients} products={products} />
+                <ProposalDialog patients={patients} products={products} paymentTerms={paymentTerms} />
             </header>
 
             <div className="space-y-6">

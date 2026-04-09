@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
     Table,
     TableBody,
@@ -25,14 +26,14 @@ import {
     RotateCcw, 
     History,
     Calendar,
-    User
+    User,
+    Eye
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { updateProposalStatusAction } from "@/app/actions/proposals";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import {
     Tooltip,
     TooltipContent,
@@ -40,23 +41,19 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-interface Proposal {
-    id: string;
-    number: number;
-    status: string;
-    totalAmount: number;
-    createdAt: Date;
-    validUntil: string | null;
-    patient: { name: string };
-    createdBy: { name: string | null };
-    wonAt?: Date | null;
-    wonById?: string | null;
-    cancelledAt?: Date | null;
-    cancelledById?: string | null;
-}
-
 interface ProposalsTableProps {
-    proposals: any[];
+    proposals: Array<{
+        id: string;
+        number: number;
+        status: string;
+        totalAmount: number;
+        createdAt: Date;
+        validUntil: string | null;
+        patient: { name: string | null } | null;
+        createdBy: { name: string | null } | null;
+        wonAt?: Date | null;
+        cancelledAt?: Date | null;
+    }>;
 }
 
 export function ProposalsTable({ proposals }: ProposalsTableProps) {
@@ -77,7 +74,7 @@ export function ProposalsTable({ proposals }: ProposalsTableProps) {
             } else {
                 toast.error(result.error);
             }
-        } catch (error) {
+        } catch {
             toast.error("Erro ao atualizar status");
         }
     }
@@ -192,12 +189,22 @@ export function ProposalsTable({ proposals }: ProposalsTableProps) {
                                                 <MoreHorizontal className="h-5 w-5" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-slate-100 shadow-2xl">
-                                            <DropdownMenuLabel className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-widest">Ações do Funil</DropdownMenuLabel>
-                                            <DropdownMenuSeparator className="bg-slate-100" />
+                                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-slate-100 shadow-2xl">
+                                                <DropdownMenuLabel className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-widest">Ações do Funil</DropdownMenuLabel>
+                                                <DropdownMenuSeparator className="bg-slate-100" />
+                                                <DropdownMenuItem asChild>
+                                                    <Link
+                                                        href={`/proposals/${proposal.id}`}
+                                                        className="flex items-center gap-3 rounded-xl p-3 font-bold"
+                                                    >
+                                                        <Eye className="h-5 w-5" />
+                                                        Visualizar / Editar
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator className="bg-slate-100" />
                                             
-                                            {proposal.status !== "won" && (
-                                                <DropdownMenuItem 
+                                                {proposal.status !== "won" && (
+                                                    <DropdownMenuItem 
                                                     className="flex items-center gap-3 p-3 rounded-xl cursor-pointer text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700 font-bold"
                                                     onClick={() => onUpdateStatus(proposal.id, "won")}
                                                 >

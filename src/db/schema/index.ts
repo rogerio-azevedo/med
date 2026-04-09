@@ -8,5 +8,6 @@ export * from "./kanban";
 export * from "./medications";
 export * from "./prontuario";
 export * from "./permissions";
+export * from "./payment-terms";
 export * from "./products";
 export * from "./proposals";

@@ -101,6 +101,10 @@ const data = {
                     title: "Planos/Pacotes",
                     url: "/packages",
                 },
+                {
+                    title: "Pagamentos",
+                    url: "/payment-terms",
+                },
             ],
         },
         {

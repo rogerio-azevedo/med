@@ -176,6 +176,20 @@
       "when": 1775575721700,
       "tag": "0024_unusual_genesis",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1778600000000,
+      "tag": "0025_payment_terms_proposals",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1778603600000,
+      "tag": "0026_payment_term_method",
+      "breakpoints": true
     }
   ]
 }
