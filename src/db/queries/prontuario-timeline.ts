@@ -26,6 +26,10 @@ export type ProntuarioTimelineFileItem = {
     notes: string | null;
     consultationId: string | null;
     uploader: { name: string | null } | null;
+    /** Presente apenas quando o arquivo é parte de um grupo de multi-upload. */
+    uploadGroupId: string | null;
+    /** Quantos arquivos existem no grupo (1 = não é grupo). */
+    groupCount: number;
 };
 
 /** Metadados de arquivo para timeline lateral (sem `kind`). */
@@ -64,14 +68,20 @@ function fileSortAtIso(referenceYmd: string | null, createdAt: Date | string): s
 }
 
 /**
- * Arquivos do paciente ordenados para a timeline lateral (data do exame quando houver; senão envio).
+ * Arquivos do paciente ordenados para a timeline lateral.
+ * Arquivos com mesmo `upload_group_id` são representados por um único entry
+ * com `groupCount > 1` — o entry usa os dados do primeiro arquivo do grupo.
  */
 export async function getPatientFilesTimelineSorted(
     patientId: string,
     clinicId: string
 ): Promise<ProntuarioFileTimelineEntry[]> {
     const files = await listPatientFilesByPatient(patientId, clinicId);
-    const entries: ProntuarioFileTimelineEntry[] = files.map((f) => {
+
+    // Mapear cada arquivo para entry individual primeiro
+    type RawEntry = ProntuarioFileTimelineEntry & { _rawGroupId: string | null };
+
+    const rawEntries: RawEntry[] = files.map((f) => {
         const createdIso = toIso(f.createdAt as Date | string);
         const referenceYmd = normalizePatientFileReferenceDate(f.referenceDate);
         const sortAt = fileSortAtIso(referenceYmd, f.createdAt as Date | string);
@@ -87,8 +97,42 @@ export async function getPatientFilesTimelineSorted(
             notes: f.notes ?? null,
             consultationId: f.consultationId ?? null,
             uploader: f.uploader ? { name: f.uploader.name } : null,
+            uploadGroupId: f.uploadGroupId ?? null,
+            groupCount: 1,
+            _rawGroupId: f.uploadGroupId ?? null,
         };
     });
+
+    // Agrupar: para cada uploadGroupId, manter apenas o primeiro entry e atualizar groupCount
+    const groupMap = new Map<string, RawEntry>();
+    const result: RawEntry[] = [];
+
+    for (const entry of rawEntries) {
+        if (!entry._rawGroupId) {
+            // Arquivo individual — entra direto
+            result.push(entry);
+        } else {
+            const existing = groupMap.get(entry._rawGroupId);
+            if (!existing) {
+                // Primeiro arquivo do grupo — usa como representante
+                groupMap.set(entry._rawGroupId, entry);
+                result.push(entry);
+            } else {
+                // Incrementa o contador do representante
+                existing.groupCount += 1;
+                // Usa a sortAt mais antiga para ordenar o grupo corretamente na timeline
+                if (new Date(entry.sortAt) < new Date(existing.sortAt)) {
+                    existing.sortAt = entry.sortAt;
+                    existing.referenceDate = entry.referenceDate;
+                    existing.createdAt = entry.createdAt;
+                }
+            }
+        }
+    }
+
+    // Remove campo interno
+    const entries: ProntuarioFileTimelineEntry[] = result.map(({ _rawGroupId: _, ...e }) => e);
+
     entries.sort((a, b) => new Date(b.sortAt).getTime() - new Date(a.sortAt).getTime());
     return entries;
 }

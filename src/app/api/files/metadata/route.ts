@@ -87,6 +87,8 @@ export async function POST(request: Request) {
             sizeBytes: d.sizeBytes,
             referenceDate,
             notes: d.notes?.trim() ? d.notes.trim() : null,
+            uploadGroupId: d.uploadGroupId ?? null,
+            groupOrder: d.groupOrder ?? null,
         });
         return NextResponse.json({ fileId: row.id, success: true });
     } catch (e) {

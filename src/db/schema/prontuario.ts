@@ -187,6 +187,10 @@ export const patientFiles = pgTable("patient_files", {
     sizeBytes: integer("size_bytes"),
     referenceDate: date("reference_date"),
     notes: text("notes"),
+    /** UUID compartilhado por todos os arquivos enviados na mesma sessão de multi-upload. */
+    uploadGroupId: uuid("upload_group_id"),
+    /** Posição do arquivo dentro do grupo (0-indexed). Usado para ordenar o carrossel. */
+    groupOrder: integer("group_order"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

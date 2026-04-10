@@ -6,6 +6,7 @@ import {
     Trash2,
     FileText,
 } from "lucide-react"
+import Link from "next/link"
 import {
     Table,
     TableBody,
@@ -105,7 +106,13 @@ export function PatientsTable({ patients, doctors, emptyMessage = "Nenhum pacien
                                     <TableCell>{patient.email || "-"}</TableCell>
                                     <TableCell>{patient.phone || "-"}</TableCell>
                                     <TableCell className="text-right">
-                                        <div className="flex justify-end items-center">
+                                        <div className="flex justify-end items-center gap-2">
+                                            <Button asChild variant="outline" size="sm" className="h-8">
+                                                <Link href={`/medical-records/${patient.id}`}>
+                                                    <FileText className="mr-2 h-4 w-4" />
+                                                    Prontuário
+                                                </Link>
+                                            </Button>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" className="h-8 w-8 p-0">
@@ -115,15 +122,6 @@ export function PatientsTable({ patients, doctors, emptyMessage = "Nenhum pacien
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                    <DropdownMenuItem
-                                                        onClick={() => {
-                                                            window.location.href = `/medical-records/${patient.id}`
-                                                        }}
-                                                    >
-                                                        <FileText className="mr-2 h-4 w-4" />
-                                                        Prontuário
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
                                                     <DropdownMenuItem
                                                         onClick={() => {
                                                             setSelectedPatient(patient)

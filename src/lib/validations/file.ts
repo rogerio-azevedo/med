@@ -83,6 +83,10 @@ export const fileMetadataBodySchema = z
         title: z.string().min(1).max(255),
         referenceDate: z.string().optional().nullable(),
         notes: z.string().max(5000).optional().nullable(),
+        /** UUID compartilhado por todos os arquivos de um mesmo multi-upload. */
+        uploadGroupId: z.string().uuid().optional().nullable(),
+        /** Posição do arquivo no grupo (0-indexed). */
+        groupOrder: z.number().int().min(0).optional().nullable(),
     })
     .superRefine((data, ctx) => {
         if (!categoryRequiresReferenceDate(data.category)) return;
