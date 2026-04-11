@@ -3,31 +3,10 @@ import { maskPhone } from "@/utils/masks";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { type Doctor } from "@/types/doctor";
 
 interface DoctorProfileProps {
-    doctor: {
-        id: string;
-        name: string | null;
-        email: string | null;
-        phone: string | null;
-        crm: string | null;
-        crmState: string | null;
-        address: {
-            street: string | null;
-            number: string | null;
-            complement: string | null;
-            neighborhood: string | null;
-            city: string | null;
-            state: string | null;
-            zipCode: string | null;
-            latitude: number | null;
-            longitude: number | null;
-        } | null;
-        specialties: { id: string; name: string }[];
-        practiceAreas: { id: string; name: string }[];
-        healthInsurances: { id: string; name: string }[];
-        observations: string | null;
-    };
+    doctor: Doctor;
     hideHeader?: boolean;
 }
 

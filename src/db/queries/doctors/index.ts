@@ -13,34 +13,7 @@ import {
     inviteLinks,
 } from "@/db/schema";
 import { eq, and, asc, isNull, or } from "drizzle-orm";
-
-type DoctorListItem = {
-    id: string;
-    crm: string | null;
-    crmState: string | null;
-    phone: string | null;
-    relationshipType: "linked" | "partner" | null;
-    isAssociated: boolean;
-    name: string | null;
-    email: string | null;
-    observations: string | null;
-    inviteCode: string | null;
-    address: {
-        id: string | null;
-        zipCode: string | null;
-        street: string | null;
-        number: string | null;
-        complement: string | null;
-        neighborhood: string | null;
-        city: string | null;
-        state: string | null;
-        latitude: number | null;
-        longitude: number | null;
-    } | null;
-    specialties: { id: string; name: string }[];
-    practiceAreas: { id: string; name: string }[];
-    healthInsurances: { id: string; name: string }[];
-};
+import { type Doctor as DoctorListItem } from "@/types/doctor";
 
 export async function getDoctorsByClinic(clinicId: string) {
     const rawResults = await db

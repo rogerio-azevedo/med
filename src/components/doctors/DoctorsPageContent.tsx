@@ -8,30 +8,7 @@ import { Input } from "@/components/ui/input";
 import { InviteDialog } from "@/components/common/InviteDialog";
 import { AddDoctorDialog } from "@/components/doctors/AddDoctorDialog";
 import { DoctorsTable } from "@/components/doctors/DoctorsTable";
-
-interface Doctor {
-    id: string;
-    name: string | null;
-    crm: string | null;
-    crmState: string | null;
-    phone: string | null;
-    email: string | null;
-    inviteCode: string | null;
-    relationshipType: "linked" | "partner" | null;
-    isAssociated: boolean;
-    specialties: { id: string; name: string }[];
-    practiceAreas: { id: string; name: string }[];
-    healthInsurances: { id: string; name: string }[];
-    address?: {
-        zipCode?: string | null;
-        street?: string | null;
-        number?: string | null;
-        complement?: string | null;
-        neighborhood?: string | null;
-        city?: string | null;
-        state?: string | null;
-    } | null;
-}
+import { type Doctor } from "@/types/doctor";
 
 interface DoctorsPageContentProps {
     clinicId: string;

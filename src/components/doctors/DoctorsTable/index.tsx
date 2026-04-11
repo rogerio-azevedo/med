@@ -54,33 +54,7 @@ import { DoctorQRCodeDialog } from "../DoctorQRCodeDialog"
 import { SetDoctorPasswordDialog } from "../SetDoctorPasswordDialog"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-
-interface Doctor {
-    id: string
-    name: string | null
-    crm: string | null
-    crmState: string | null
-    phone: string | null
-    email: string | null
-    inviteCode: string | null
-    relationshipType: "linked" | "partner" | null
-    isAssociated: boolean
-    specialties: { id: string; name: string }[]
-    practiceAreas: { id: string; name: string }[]
-    healthInsurances: { id: string; name: string }[]
-    address?: {
-        zipCode?: string | null;
-        street?: string | null;
-        number?: string | null;
-        complement?: string | null;
-        neighborhood?: string | null;
-        city?: string | null;
-        state?: string | null;
-        latitude?: number | null;
-        longitude?: number | null;
-    } | null;
-    observations: string | null;
-}
+import { type Doctor } from "@/types/doctor"
 
 export function DoctorsTable({
     doctors,
