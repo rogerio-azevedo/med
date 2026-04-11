@@ -23,6 +23,7 @@ type DoctorListItem = {
     isAssociated: boolean;
     name: string | null;
     email: string | null;
+    observations: string | null;
     inviteCode: string | null;
     address: {
         id: string | null;
@@ -52,6 +53,7 @@ export async function getDoctorsByClinic(clinicId: string) {
             isAssociated: clinicDoctors.id,
             name: users.name,
             email: users.email,
+            observations: doctors.observations,
             specialtyId: specialties.id,
             specialtyName: specialties.name,
             practiceAreaId: practiceAreas.id,
@@ -137,6 +139,7 @@ export async function getDoctorsByClinic(clinicId: string) {
                 isAssociated: !!row.isAssociated,
                 name: row.name,
                 email: row.email,
+                observations: row.observations,
                 inviteCode: row.inviteCode,
                 address: hasAddress ? row.address : null,
                 specialties: [],
@@ -231,6 +234,7 @@ export async function getDoctorDetails(doctorId: string, clinicId: string) {
             crmState: doctors.crmState,
             phone: doctors.phone,
             relationshipType: clinicDoctors.relationshipType,
+            observations: doctors.observations,
             name: users.name,
             email: users.email,
             specialtyId: specialties.id,
@@ -298,6 +302,7 @@ export async function getDoctorDetails(doctorId: string, clinicId: string) {
         crm: rawResults[0].crm,
         crmState: rawResults[0].crmState,
         relationshipType: rawResults[0].relationshipType,
+        observations: rawResults[0].observations,
         address: rawResults[0].address?.id ? rawResults[0].address : null,
         specialties: [] as { id: string; name: string }[],
         practiceAreas: [] as { id: string; name: string }[],

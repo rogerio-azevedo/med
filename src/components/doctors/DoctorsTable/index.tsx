@@ -7,6 +7,7 @@ import {
     QrCode,
     KeyRound,
     Link2,
+    Eye,
 } from "lucide-react"
 import {
     Table,
@@ -48,6 +49,7 @@ import {
 } from "@/app/actions/doctors"
 import { Badge } from "@/components/ui/badge"
 import { EditDoctorDialog } from "../EditDoctorDialog"
+import { DoctorDetailsDialog } from "../DoctorDetailsDialog"
 import { DoctorQRCodeDialog } from "../DoctorQRCodeDialog"
 import { SetDoctorPasswordDialog } from "../SetDoctorPasswordDialog"
 import { toast } from "sonner"
@@ -74,7 +76,10 @@ interface Doctor {
         neighborhood?: string | null;
         city?: string | null;
         state?: string | null;
+        latitude?: number | null;
+        longitude?: number | null;
     } | null;
+    observations: string | null;
 }
 
 export function DoctorsTable({
@@ -104,6 +109,7 @@ export function DoctorsTable({
     const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null)
     const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+    const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
     const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
     const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
     const [relationshipType, setRelationshipType] = useState<"linked" | "partner">("linked")
@@ -182,16 +188,14 @@ export function DoctorsTable({
                             <TableHead>Nome</TableHead>
                             <TableHead>Especialidade</TableHead>
                             <TableHead>Áreas de Atuação</TableHead>
-                            <TableHead>Convênios</TableHead>
                             <TableHead>CRM / Registro</TableHead>
-                            <TableHead>Email</TableHead>
                             <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {doctors.length === 0 || groupedDoctors.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center">
+                                <TableCell colSpan={5} className="h-24 text-center">
                                     {doctors.length === 0
                                         ? "Nenhum médico encontrado."
                                         : "Nenhum médico vinculado visível com o filtro atual."}
@@ -200,7 +204,7 @@ export function DoctorsTable({
                         ) : (
                             groupedDoctors.flatMap((group, index) => [
                                 <TableRow key={`${group.key}-header`} className="bg-muted/20 hover:bg-muted/20">
-                                    <TableCell colSpan={7} className="py-4">
+                                    <TableCell colSpan={5} className="py-4">
                                         <div className="flex items-center gap-3">
                                             <span className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                                                 {group.title}
@@ -217,7 +221,12 @@ export function DoctorsTable({
                                 </TableRow>,
                                 ...group.doctors.map((doctor) => (
                                 <TableRow key={doctor.id}>
-                                    <TableCell className="font-medium">{doctor.name || "-"}</TableCell>
+                                    <TableCell className="font-medium cursor-pointer hover:text-primary transition-colors" onClick={() => {
+                                        setSelectedDoctor(doctor);
+                                        setIsDetailsDialogOpen(true);
+                                    }}>
+                                        {doctor.name || "-"}
+                                    </TableCell>
                                     <TableCell>
                                         <div className="flex flex-wrap gap-1">
                                             {doctor.specialties.length > 0 ? (
@@ -244,21 +253,7 @@ export function DoctorsTable({
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-wrap gap-1">
-                                            {doctor.healthInsurances.length > 0 ? (
-                                                doctor.healthInsurances.map((item) => (
-                                                    <Badge key={item.id} variant="outline" className="border-blue-200 bg-blue-50/50 text-blue-700">
-                                                        {item.name}
-                                                    </Badge>
-                                                ))
-                                            ) : (
-                                                <span className="text-muted-foreground/50">-</span>
-                                            )}
-                                        </div>
-                                    </TableCell>
                                     <TableCell>{doctor.crm ? `${doctor.crm}${doctor.crmState ? ` - ${doctor.crmState}` : ''}` : "-"}</TableCell>
-                                    <TableCell>{doctor.email || "-"}</TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -269,6 +264,16 @@ export function DoctorsTable({
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                                <DropdownMenuItem
+                                                    onClick={() => {
+                                                        setSelectedDoctor(doctor)
+                                                        setIsDetailsDialogOpen(true)
+                                                    }}
+                                                >
+                                                    <Eye className="mr-2 h-4 w-4" />
+                                                    Ver Detalhes
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
                                                 {doctor.isAssociated && (
                                                     <>
                                                         <DropdownMenuItem
@@ -338,7 +343,7 @@ export function DoctorsTable({
                                 ...(index < groupedDoctors.length - 1
                                     ? [
                                         <TableRow key={`${group.key}-divider`} className="pointer-events-none bg-background">
-                                            <TableCell colSpan={7} className="h-6 border-t-2 border-border/70 bg-background" />
+                                            <TableCell colSpan={5} className="h-6 border-t-2 border-border/70 bg-background" />
                                         </TableRow>,
                                     ]
                                     : []),
@@ -347,6 +352,21 @@ export function DoctorsTable({
                     </TableBody>
                 </Table>
             </div>
+
+            {selectedDoctor && (
+                <DoctorDetailsDialog
+                    doctor={{
+                        ...selectedDoctor,
+                        address: selectedDoctor.address ? {
+                            ...selectedDoctor.address,
+                            latitude: selectedDoctor.address.latitude ?? null,
+                            longitude: selectedDoctor.address.longitude ?? null
+                        } : null
+                    }}
+                    isOpen={isDetailsDialogOpen}
+                    onOpenChange={setIsDetailsDialogOpen}
+                />
+            )}
 
             {selectedDoctor && (
                 <EditDoctorDialog

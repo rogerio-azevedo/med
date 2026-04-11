@@ -22,6 +22,7 @@ export const createDoctorSchema = z.object({
     addressState: z.string().optional(),
     addressLatitude: z.coerce.number().optional(),
     addressLongitude: z.coerce.number().optional(),
+    observations: z.string().optional(),
 });
 
 export const updateDoctorSchema = z.object({
@@ -44,6 +45,7 @@ export const updateDoctorSchema = z.object({
     addressState: z.string().optional(),
     addressLatitude: z.coerce.number().optional(),
     addressLongitude: z.coerce.number().optional(),
+    observations: z.string().optional(),
 });
 
 export type CreateDoctorInput = z.infer<typeof createDoctorSchema>;

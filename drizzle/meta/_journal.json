@@ -211,6 +211,13 @@
       "when": 1775857316730,
       "tag": "0029_add_upload_group_id_to_patient_files",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1775864775499,
+      "tag": "0030_easy_snowbird",
+      "breakpoints": true
     }
   ]
 }

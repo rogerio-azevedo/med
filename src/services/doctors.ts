@@ -40,6 +40,7 @@ export async function createDoctor(
         addressState,
         addressLatitude,
         addressLongitude,
+        observations,
     } = data;
 
     const existingUser = await db.query.users.findFirst({
@@ -76,6 +77,7 @@ export async function createDoctor(
         crm: crm || null,
         crmState: crmState || null,
         phone: phone || null,
+        observations: observations || null,
     }).returning();
 
     await db.insert(clinicDoctors).values({
@@ -166,6 +168,7 @@ export async function updateDoctor(
         addressState,
         addressLatitude,
         addressLongitude,
+        observations,
     } = data;
 
     const doctor = await db.query.doctors.findFirst({
@@ -196,6 +199,7 @@ export async function updateDoctor(
             crm: crm || null,
             crmState: crmState || null,
             phone: phone || null,
+            observations: observations || null,
         })
         .where(eq(doctors.id, doctorId));
 

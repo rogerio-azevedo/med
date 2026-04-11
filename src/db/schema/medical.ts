@@ -176,6 +176,7 @@ export const doctors = pgTable("doctors", {
     crmState: varchar("crm_state", { length: 2 }),
     phone: varchar("phone", { length: 20 }),
     bio: text("bio"),
+    observations: text("observations"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

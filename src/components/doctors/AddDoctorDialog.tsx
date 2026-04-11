@@ -24,6 +24,7 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
     Select,
     SelectContent,
@@ -70,6 +71,7 @@ const doctorFormSchema = z.object({
     addressState: z.string().optional(),
     addressLatitude: z.number().optional(),
     addressLongitude: z.number().optional(),
+    observations: z.string().optional(),
 });
 
 type DoctorFormValues = z.infer<typeof doctorFormSchema>;
@@ -161,6 +163,7 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
             specialtyIds: [], practiceAreaIds: [], healthInsuranceIds: [],
             addressZipCode: "", addressStreet: "", addressNumber: "",
             addressComplement: "", addressNeighborhood: "", addressCity: "", addressState: "",
+            observations: "",
         },
     });
 
@@ -604,6 +607,20 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                                                 <p className="text-xs text-muted-foreground">
                                                     Use esta lista para indicar quais convênios este médico realmente aceita.
                                                 </p>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+
+                                        <FormField control={form.control} name="observations" render={({ field }) => (
+                                            <FormItem className="col-span-2">
+                                                <FormLabel>Observações</FormLabel>
+                                                <FormControl>
+                                                    <Textarea
+                                                        placeholder="Informações adicionais sobre o médico..."
+                                                        className="resize-none min-h-[100px] bg-muted/30 border-muted-foreground/10 focus:border-primary/30 transition-all"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )} />

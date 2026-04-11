@@ -1,0 +1,1 @@
+ALTER TABLE "doctors" ADD COLUMN "observations" text;

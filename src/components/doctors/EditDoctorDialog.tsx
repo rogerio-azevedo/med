@@ -23,6 +23,7 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
     Select,
     SelectContent,
@@ -66,6 +67,7 @@ const doctorFormSchema = z.object({
     addressState: z.string().optional(),
     addressLatitude: z.number().optional(),
     addressLongitude: z.number().optional(),
+    observations: z.string().optional(),
 });
 
 type SelectOption = { value: string; label: string };
@@ -151,6 +153,7 @@ interface EditDoctorDialogProps {
             longitude?: number | null;
         } | null;
         relationshipType: "linked" | "partner";
+        observations?: string | null;
     };
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
@@ -183,6 +186,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
             addressNeighborhood: "",
             addressCity: "",
             addressState: "",
+            observations: "",
         },
     });
 
@@ -226,6 +230,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                 addressState: doctor.address?.state || "",
                 addressLatitude: doctor.address?.latitude || undefined,
                 addressLongitude: doctor.address?.longitude || undefined,
+                observations: doctor.observations || "",
             });
         }
     }, [isOpen, doctor, form]);
@@ -493,6 +498,24 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                                                         styles={customSelectStyles}
                                                         value={healthInsurances.filter((item) => field.value?.includes(item.value))}
                                                         onChange={(val: MultiValue<SelectOption>) => field.onChange(val.map((v) => v.value))}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="observations"
+                                        render={({ field }) => (
+                                            <FormItem className="col-span-2">
+                                                <FormLabel>Observações</FormLabel>
+                                                <FormControl>
+                                                    <Textarea
+                                                        placeholder="Informações adicionais sobre o médico..."
+                                                        className="resize-none min-h-[100px] bg-muted/30 border-muted-foreground/10 focus:border-primary/30 transition-all"
+                                                        {...field}
                                                     />
                                                 </FormControl>
                                                 <FormMessage />

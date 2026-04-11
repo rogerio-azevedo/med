@@ -20,14 +20,18 @@ interface DoctorProfileProps {
             city: string | null;
             state: string | null;
             zipCode: string | null;
+            latitude: number | null;
+            longitude: number | null;
         } | null;
         specialties: { id: string; name: string }[];
         practiceAreas: { id: string; name: string }[];
         healthInsurances: { id: string; name: string }[];
+        observations: string | null;
     };
+    hideHeader?: boolean;
 }
 
-export function DoctorProfile({ doctor }: DoctorProfileProps) {
+export function DoctorProfile({ doctor, hideHeader = false }: DoctorProfileProps) {
     const formatAddress = (addr: any) => {
         if (!addr) return "Endereço não informado";
         const parts = [
@@ -41,20 +45,22 @@ export function DoctorProfile({ doctor }: DoctorProfileProps) {
     };
 
     return (
-        <div className="flex flex-col gap-6 max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-            <div className="flex items-center gap-4 mb-2">
-                <Button variant="outline" size="icon" asChild>
-                    <Link href="/doctors">
-                        <ChevronLeft className="h-4 w-4" />
-                    </Link>
-                </Button>
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Perfil do Médico</h1>
-                    <p className="text-muted-foreground text-sm">
-                        Detalhes e informações de contato
-                    </p>
+        <div className={`flex flex-col gap-6 w-full ${!hideHeader ? "max-w-4xl mx-auto p-4 sm:p-6 lg:p-8" : ""}`}>
+            {!hideHeader && (
+                <div className="flex items-center gap-4 mb-2">
+                    <Button variant="outline" size="icon" asChild>
+                        <Link href="/doctors">
+                            <ChevronLeft className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Perfil do Médico</h1>
+                        <p className="text-muted-foreground text-sm">
+                            Detalhes e informações de contato
+                        </p>
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Informações Principais */}
@@ -188,6 +194,21 @@ export function DoctorProfile({ doctor }: DoctorProfileProps) {
                         )}
                     </div>
                 </div>
+
+                {/* Observações */}
+                {doctor.observations && (
+                    <div className="col-span-full md:col-span-1">
+                        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
+                            <h3 className="text-lg font-semibold flex items-center gap-2 mb-3">
+                                <Stethoscope className="h-5 w-5 text-amber-500" />
+                                Observações
+                            </h3>
+                            <div className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg border border-dashed border-muted-foreground/20 leading-relaxed whitespace-pre-wrap">
+                                {doctor.observations}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
