@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
     Select,
     SelectContent,
@@ -31,8 +32,23 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Mail, Check, Pencil } from "lucide-react";
-import { updateDoctorAction } from "@/app/actions/doctors";
+import {
+    ArrowRightLeft,
+    Check,
+    Loader2,
+    Mail,
+    Pencil,
+    Plus,
+    Trash2,
+    UserPlus,
+} from "lucide-react";
+import {
+    assignPatientReferralToDoctorAction,
+    getDoctorReferralDoctorOptionsAction,
+    getDoctorReferralPatientOptionsAction,
+    removePatientReferralFromDoctorAction,
+    updateDoctorAction,
+} from "@/app/actions/doctors";
 import { getSpecialtiesAction } from "@/app/actions/specialties";
 import { getPracticeAreasAction } from "@/app/actions/practice-areas";
 import { getActiveHealthInsurancesAction } from "@/app/actions/health-insurances";
@@ -71,6 +87,19 @@ const doctorFormSchema = z.object({
 });
 
 type SelectOption = { value: string; label: string };
+type SingleSelectOption = { value: string; label: string };
+type PatientOption = { id: string; name: string; cpf: string | null };
+type DoctorReferralOption = {
+    id: string;
+    name: string | null;
+    relationshipType: "linked" | "partner";
+};
+type ReferredPatient = {
+    patientId: string;
+    patientName: string;
+    createdAt: Date;
+    source: "patient_reported" | "doctor_reported" | "invite_link" | "manual";
+};
 
 const customSelectStyles: StylesConfig<SelectOption, true, GroupBase<SelectOption>> = {
     control: (base, state) => ({
@@ -128,6 +157,41 @@ const customSelectStyles: StylesConfig<SelectOption, true, GroupBase<SelectOptio
     })
 };
 
+const singleSelectStyles: StylesConfig<SingleSelectOption, false, GroupBase<SingleSelectOption>> = {
+    control: (base, state) => ({
+        ...base,
+        backgroundColor: "rgba(var(--muted), 0.3)",
+        borderColor: state.isFocused ? "rgba(var(--primary), 0.3)" : "rgba(var(--muted-foreground), 0.1)",
+        borderRadius: "0.5rem",
+        minHeight: "44px",
+        boxShadow: "none",
+        "&:hover": {
+            borderColor: "rgba(var(--primary), 0.3)",
+        }
+    }),
+    menu: (base) => ({
+        ...base,
+        backgroundColor: "white",
+        borderRadius: "0.75rem",
+        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+        padding: "4px",
+        zIndex: 50,
+    }),
+    option: (base, state) => ({
+        ...base,
+        borderRadius: "0.5rem",
+        backgroundColor: state.isSelected
+            ? "hsl(var(--primary))"
+            : state.isFocused
+                ? "hsl(var(--primary) / 0.1)"
+                : "transparent",
+        color: state.isSelected ? "white" : "inherit",
+        "&:active": {
+            backgroundColor: "hsl(var(--primary) / 0.2)",
+        }
+    }),
+};
+
 type DoctorFormValues = z.infer<typeof doctorFormSchema>;
 
 interface EditDoctorDialogProps {
@@ -154,18 +218,46 @@ interface EditDoctorDialogProps {
         } | null;
         relationshipType: "linked" | "partner";
         observations?: string | null;
+        referredPatients?: {
+            patientId: string;
+            patientName: string;
+            createdAt: Date;
+            source: "patient_reported" | "doctor_reported" | "invite_link" | "manual";
+        }[];
     };
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
+    onReferredPatientsChange?: (patients: ReferredPatient[]) => void;
 }
 
-export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDialogProps) {
+export function EditDoctorDialog({ doctor, isOpen, onOpenChange, onReferredPatientsChange }: EditDoctorDialogProps) {
     const router = useRouter();
     const [isPending, setIsPending] = useState(false);
     const [isFetchingCep, setIsFetchingCep] = useState(false);
     const [specialties, setSpecialties] = useState<{ value: string; label: string }[]>([]);
     const [practiceAreas, setPracticeAreas] = useState<{ value: string; label: string }[]>([]);
     const [healthInsurances, setHealthInsurances] = useState<{ value: string; label: string }[]>([]);
+    const [referredPatients, setReferredPatients] = useState<ReferredPatient[]>(doctor.referredPatients ?? []);
+    const [patientOptions, setPatientOptions] = useState<PatientOption[]>([]);
+    const [loadingPatientOptions, setLoadingPatientOptions] = useState(false);
+    const [doctorOptions, setDoctorOptions] = useState<DoctorReferralOption[]>([]);
+    const [loadingDoctorOptions, setLoadingDoctorOptions] = useState(false);
+    const [isReferralDialogOpen, setIsReferralDialogOpen] = useState(false);
+    const [isSavingReferral, setIsSavingReferral] = useState(false);
+    const [selectedPatientId, setSelectedPatientId] = useState("");
+    const [referralSource, setReferralSource] = useState<"patient_reported" | "doctor_reported" | "manual">("patient_reported");
+    const [referralNotes, setReferralNotes] = useState("");
+    const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+    const [transferPatient, setTransferPatient] = useState<ReferredPatient | null>(null);
+    const [selectedTransferDoctorId, setSelectedTransferDoctorId] = useState("");
+    const [transferSource, setTransferSource] = useState<"patient_reported" | "doctor_reported" | "manual">("manual");
+    const [transferNotes, setTransferNotes] = useState("");
+    const [isTransferringReferral, setIsTransferringReferral] = useState(false);
+    const [removingPatientId, setRemovingPatientId] = useState<string | null>(null);
+    const patientSelectOptions = patientOptions.map((patient) => ({
+        value: patient.id,
+        label: patient.cpf ? `${patient.name} (${patient.cpf})` : patient.name,
+    }));
 
     const form = useForm<DoctorFormValues>({
         resolver: zodResolver(doctorFormSchema),
@@ -210,6 +302,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                     setHealthInsurances(result.data.map((item) => ({ value: item.id, label: item.name })));
                 }
             });
+            setReferredPatients(doctor.referredPatients ?? []);
             form.reset({
                 id: doctor.id,
                 name: doctor.name || "",
@@ -234,6 +327,40 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
             });
         }
     }, [isOpen, doctor, form]);
+
+    useEffect(() => {
+        if (!isReferralDialogOpen) {
+            return;
+        }
+
+        setLoadingPatientOptions(true);
+        getDoctorReferralPatientOptionsAction()
+            .then((result) => {
+                if (result.success) {
+                    setPatientOptions(result.patients);
+                }
+            })
+            .finally(() => {
+                setLoadingPatientOptions(false);
+            });
+    }, [isReferralDialogOpen]);
+
+    useEffect(() => {
+        if (!isTransferDialogOpen) {
+            return;
+        }
+
+        setLoadingDoctorOptions(true);
+        getDoctorReferralDoctorOptionsAction()
+            .then((result) => {
+                if (result.success) {
+                    setDoctorOptions(result.doctors);
+                }
+            })
+            .finally(() => {
+                setLoadingDoctorOptions(false);
+            });
+    }, [isTransferDialogOpen]);
 
     const geocodeAddress = async (query: string) => {
         try {
@@ -304,6 +431,131 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
             toast.error("Erro ao atualizar médico");
         } finally {
             setIsPending(false);
+        }
+    }
+
+    async function handleAssignReferralPatient() {
+        if (!selectedPatientId) {
+            toast.error("Selecione um paciente para vincular.");
+            return;
+        }
+
+        setIsSavingReferral(true);
+
+        try {
+            const result = await assignPatientReferralToDoctorAction({
+                doctorId: doctor.id,
+                patientId: selectedPatientId,
+                referralSource,
+                referralNotes: referralNotes.trim() || undefined,
+            });
+
+            if (!result.success) {
+                toast.error(result.error || "Erro ao vincular paciente.");
+                return;
+            }
+
+            if (result.patient) {
+                const patient = result.patient;
+                startTransition(() => {
+                    setReferredPatients((current) => {
+                        const next = current.filter((item) => item.patientId !== patient.patientId);
+                        next.unshift({
+                            patientId: patient.patientId,
+                            patientName: patient.patientName,
+                            createdAt: new Date(patient.createdAt),
+                            source: patient.source,
+                        });
+                        onReferredPatientsChange?.(next);
+                        return next;
+                    });
+                });
+            }
+
+            toast.success("Paciente vinculado como indicação do médico.");
+            setIsReferralDialogOpen(false);
+            setSelectedPatientId("");
+            setReferralSource("patient_reported");
+            setReferralNotes("");
+            router.refresh();
+        } catch {
+            toast.error("Erro ao vincular paciente.");
+        } finally {
+            setIsSavingReferral(false);
+        }
+    }
+
+    async function handleRemoveReferralPatient(patient: ReferredPatient) {
+        setRemovingPatientId(patient.patientId);
+
+        try {
+            const result = await removePatientReferralFromDoctorAction({
+                doctorId: doctor.id,
+                patientId: patient.patientId,
+            });
+
+            if (!result.success) {
+                toast.error(result.error || "Erro ao remover indicação.");
+                return;
+            }
+
+            startTransition(() => {
+                setReferredPatients((current) => {
+                    const next = current.filter((item) => item.patientId !== patient.patientId);
+                    onReferredPatientsChange?.(next);
+                    return next;
+                });
+            });
+
+            toast.success("Indicação removida com sucesso.");
+            router.refresh();
+        } catch {
+            toast.error("Erro ao remover indicação.");
+        } finally {
+            setRemovingPatientId(null);
+        }
+    }
+
+    async function handleTransferReferralPatient() {
+        if (!transferPatient || !selectedTransferDoctorId) {
+            toast.error("Selecione o médico de destino.");
+            return;
+        }
+
+        setIsTransferringReferral(true);
+
+        try {
+            const result = await assignPatientReferralToDoctorAction({
+                doctorId: selectedTransferDoctorId,
+                patientId: transferPatient.patientId,
+                referralSource: transferSource,
+                referralNotes: transferNotes.trim() || undefined,
+            });
+
+            if (!result.success) {
+                toast.error(result.error || "Erro ao transferir indicação.");
+                return;
+            }
+
+            startTransition(() => {
+                setReferredPatients((current) => {
+                    const next = current.filter((item) => item.patientId !== transferPatient.patientId);
+                    onReferredPatientsChange?.(next);
+                    return next;
+                });
+            });
+
+            toast.success("Indicação transferida com sucesso.");
+            setIsTransferDialogOpen(false);
+            setTransferPatient(null);
+            setSelectedTransferDoctorId("");
+            setTransferSource("manual");
+            setTransferNotes("");
+            router.refresh();
+        } catch {
+            toast.error("Erro ao transferir indicação.");
+        } finally {
+            setIsTransferringReferral(false);
         }
     }
 
@@ -625,6 +877,74 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                                     </div>
                                 </div>
                             </div>
+
+                            <div className="space-y-5">
+                                <div className="flex items-center justify-between gap-3 border-b pb-2">
+                                    <h3 className="text-lg font-semibold text-foreground/90">Pacientes Indicados</h3>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="rounded-full">
+                                            {referredPatients.length}
+                                        </Badge>
+                                        <Button type="button" variant="outline" size="sm" onClick={() => setIsReferralDialogOpen(true)}>
+                                            <Plus className="mr-2 h-4 w-4" />
+                                            Vincular Paciente
+                                        </Button>
+                                    </div>
+                                </div>
+                                {referredPatients.length > 0 ? (
+                                    <div className="grid gap-3">
+                                        {referredPatients.map((patient) => (
+                                            <div
+                                                key={patient.patientId}
+                                                className="rounded-xl border bg-muted/20 px-4 py-3"
+                                            >
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div>
+                                                        <p className="font-medium text-foreground/90">{patient.patientName}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Indicado em {new Date(patient.createdAt).toLocaleDateString("pt-BR")}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant="secondary" className="capitalize">
+                                                            {patient.source.replace(/_/g, " ")}
+                                                        </Badge>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setTransferPatient(patient);
+                                                                setSelectedTransferDoctorId("");
+                                                                setTransferSource("manual");
+                                                                setTransferNotes("");
+                                                                setIsTransferDialogOpen(true);
+                                                            }}
+                                                        >
+                                                            <ArrowRightLeft className="mr-2 h-4 w-4" />
+                                                            Transferir
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            disabled={removingPatientId === patient.patientId}
+                                                            onClick={() => handleRemoveReferralPatient(patient)}
+                                                        >
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            {removingPatientId === patient.patientId ? "Removendo..." : "Remover"}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
+                                        Nenhum paciente indicado por este médico até o momento.
+                                    </div>
+                                )}
+                            </div>
                         </form>
                     </Form>
                 </div>
@@ -652,6 +972,238 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange }: EditDoctorDia
                     </Button>
                 </DialogFooter>
             </DialogContent>
+
+            <Dialog
+                open={isReferralDialogOpen}
+                onOpenChange={(open) => {
+                    setIsReferralDialogOpen(open);
+                    if (!open) {
+                        setSelectedPatientId("");
+                        setReferralSource("patient_reported");
+                        setReferralNotes("");
+                    }
+                }}
+            >
+                <DialogContent
+                    className="sm:max-w-xl"
+                    onInteractOutside={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (target?.closest?.(".react-select__menu, .react-select__menu-portal")) {
+                            e.preventDefault();
+                        }
+                    }}
+                >
+                    <div className="space-y-5">
+                        <div className="flex items-start gap-3">
+                            <div className="rounded-2xl bg-primary/10 p-3 text-primary">
+                                <UserPlus className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <DialogTitle>Vincular Paciente Indicado</DialogTitle>
+                                <DialogDescription>
+                                    Registre um paciente da clínica como indicado por {doctor.name ?? "este médico"}.
+                                </DialogDescription>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium leading-none text-foreground">
+                                    Paciente
+                                </label>
+                                <ReactSelect<SingleSelectOption, false>
+                                    options={patientSelectOptions}
+                                    value={patientSelectOptions.find((option) => option.value === selectedPatientId) ?? null}
+                                    onChange={(option: SingleSelectOption | null) =>
+                                        setSelectedPatientId(option?.value ?? "")
+                                    }
+                                    isLoading={loadingPatientOptions}
+                                    placeholder="Selecione um paciente da clínica..."
+                                    classNamePrefix="react-select"
+                                    menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+                                    menuPosition="fixed"
+                                    styles={{
+                                        ...singleSelectStyles,
+                                        menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: "auto" }),
+                                    }}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium leading-none text-foreground">
+                                    Como essa indicação foi registrada?
+                                </label>
+                                <Select
+                                    value={referralSource}
+                                    onValueChange={(value: "patient_reported" | "doctor_reported" | "manual") =>
+                                        setReferralSource(value)
+                                    }
+                                >
+                                    <SelectTrigger className="h-11">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="patient_reported">Informado pelo paciente</SelectItem>
+                                        <SelectItem value="doctor_reported">Informado pelo médico</SelectItem>
+                                        <SelectItem value="manual">Ajuste manual</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium leading-none text-foreground">
+                                    Observações
+                                </label>
+                                <Textarea
+                                    value={referralNotes}
+                                    onChange={(event) => setReferralNotes(event.target.value)}
+                                    placeholder="Ex.: médico ligou antecipando a chegada do paciente."
+                                    className="min-h-[120px]"
+                                />
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsReferralDialogOpen(false)} disabled={isSavingReferral}>
+                                Cancelar
+                            </Button>
+                            <Button onClick={handleAssignReferralPatient} disabled={isSavingReferral || !selectedPatientId}>
+                                {isSavingReferral ? "Vinculando..." : "Vincular Paciente"}
+                            </Button>
+                        </DialogFooter>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={isTransferDialogOpen}
+                onOpenChange={(open) => {
+                    setIsTransferDialogOpen(open);
+                    if (!open) {
+                        setTransferPatient(null);
+                        setSelectedTransferDoctorId("");
+                        setTransferSource("manual");
+                        setTransferNotes("");
+                    }
+                }}
+            >
+                <DialogContent
+                    className="sm:max-w-xl"
+                    onInteractOutside={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (target?.closest?.(".react-select__menu")) {
+                            e.preventDefault();
+                        }
+                    }}
+                >
+                    <div className="space-y-5">
+                        <div className="flex items-start gap-3">
+                            <div className="rounded-2xl bg-primary/10 p-3 text-primary">
+                                <ArrowRightLeft className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <DialogTitle>Transferir Indicação</DialogTitle>
+                                <DialogDescription>
+                                    {transferPatient
+                                        ? `Transfira ${transferPatient.patientName} para outro médico indicador da clínica.`
+                                        : "Selecione o novo médico indicador para este paciente."}
+                                </DialogDescription>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium leading-none text-foreground">
+                                    Paciente
+                                </label>
+                                <Input value={transferPatient?.patientName ?? ""} disabled />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium leading-none text-foreground">
+                                    Novo médico indicador
+                                </label>
+                                <Select
+                                    value={selectedTransferDoctorId}
+                                    onValueChange={setSelectedTransferDoctorId}
+                                    disabled={loadingDoctorOptions}
+                                >
+                                    <SelectTrigger className="h-11">
+                                        <SelectValue
+                                            placeholder={
+                                                loadingDoctorOptions
+                                                    ? "Carregando médicos..."
+                                                    : "Selecione o médico de destino"
+                                            }
+                                        />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {doctorOptions
+                                            .filter((option) => option.id !== doctor.id)
+                                            .map((option) => (
+                                                <SelectItem key={option.id} value={option.id}>
+                                                    {option.name ?? "Médico sem nome"}{" "}
+                                                    {option.relationshipType === "partner"
+                                                        ? "(Parceiro)"
+                                                        : "(Vinculado)"}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium leading-none text-foreground">
+                                    Como essa troca foi registrada?
+                                </label>
+                                <Select
+                                    value={transferSource}
+                                    onValueChange={(value: "patient_reported" | "doctor_reported" | "manual") =>
+                                        setTransferSource(value)
+                                    }
+                                >
+                                    <SelectTrigger className="h-11">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="patient_reported">Informado pelo paciente</SelectItem>
+                                        <SelectItem value="doctor_reported">Informado pelo médico</SelectItem>
+                                        <SelectItem value="manual">Ajuste manual</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium leading-none text-foreground">
+                                    Observações
+                                </label>
+                                <Textarea
+                                    value={transferNotes}
+                                    onChange={(event) => setTransferNotes(event.target.value)}
+                                    placeholder="Ex.: indicação corrigida após contato da clínica."
+                                    className="min-h-[120px]"
+                                />
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsTransferDialogOpen(false)}
+                                disabled={isTransferringReferral}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={handleTransferReferralPatient}
+                                disabled={isTransferringReferral || !transferPatient || !selectedTransferDoctorId}
+                            >
+                                {isTransferringReferral ? "Transferindo..." : "Transferir Indicação"}
+                            </Button>
+                        </DialogFooter>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Dialog>
     );
 }

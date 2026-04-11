@@ -19,7 +19,10 @@ import bcrypt from "bcryptjs";
 export async function createDoctor(
     data: CreateDoctorInput,
     clinicId: string
-): Promise<{ success: true } | { success: false; error: string }> {
+): Promise<
+    { success: true; doctor: { id: string; name: string; relationshipType: CreateDoctorInput["relationshipType"] } } |
+    { success: false; error: string }
+> {
     const {
         name,
         email,
@@ -141,13 +144,23 @@ export async function createDoctor(
         });
     }
 
-    return { success: true };
+    return {
+        success: true,
+        doctor: {
+            id: newDoctor.id,
+            name,
+            relationshipType,
+        },
+    };
 }
 
 export async function updateDoctor(
     data: UpdateDoctorInput,
     clinicId: string
-): Promise<{ success: true } | { success: false; error: string }> {
+): Promise<
+    { success: true; doctor: { id: string; name: string; relationshipType: UpdateDoctorInput["relationshipType"] } } |
+    { success: false; error: string }
+> {
     const {
         id: doctorId,
         name,
@@ -288,7 +301,14 @@ export async function updateDoctor(
         }
     }
 
-    return { success: true };
+    return {
+        success: true,
+        doctor: {
+            id: doctorId,
+            name,
+            relationshipType,
+        },
+    };
 }
 
 export async function deleteDoctor(

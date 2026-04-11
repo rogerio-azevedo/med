@@ -24,4 +24,10 @@ export interface Doctor {
         longitude?: number | null;
     } | null;
     observations: string | null;
+    referredPatients?: {
+        patientId: string;
+        patientName: string;
+        createdAt: Date;
+        source: "patient_reported" | "doctor_reported" | "invite_link" | "manual";
+    }[];
 }

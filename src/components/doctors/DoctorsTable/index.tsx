@@ -90,6 +90,21 @@ export function DoctorsTable({
     const [isSavingRelationship, setIsSavingRelationship] = useState(false)
     const [isAssociating, setIsAssociating] = useState(false)
 
+    const normalizedSelectedDoctor = selectedDoctor
+        ? {
+            ...selectedDoctor,
+            address:
+                selectedDoctor.address && typeof selectedDoctor.address === "object"
+                    ? {
+                        ...selectedDoctor.address,
+                        latitude: selectedDoctor.address.latitude ?? null,
+                        longitude: selectedDoctor.address.longitude ?? null,
+                    }
+                    : null,
+            relationshipType: selectedDoctor.relationshipType ?? "linked",
+        }
+        : null
+
     const handleUnlinkDoctor = async () => {
         if (!selectedDoctor) return
 
@@ -327,29 +342,39 @@ export function DoctorsTable({
                 </Table>
             </div>
 
-            {selectedDoctor && (
+            {normalizedSelectedDoctor && (
                 <DoctorDetailsDialog
-                    doctor={{
-                        ...selectedDoctor,
-                        address: selectedDoctor.address ? {
-                            ...selectedDoctor.address,
-                            latitude: selectedDoctor.address.latitude ?? null,
-                            longitude: selectedDoctor.address.longitude ?? null
-                        } : null
-                    }}
+                    doctor={normalizedSelectedDoctor}
                     isOpen={isDetailsDialogOpen}
-                    onOpenChange={setIsDetailsDialogOpen}
+                    onOpenChange={(open) => {
+                        setIsDetailsDialogOpen(open)
+                        if (!open) {
+                            setSelectedDoctor(null)
+                        }
+                    }}
                 />
             )}
 
-            {selectedDoctor && (
+            {normalizedSelectedDoctor && (
                 <EditDoctorDialog
-                    doctor={{
-                        ...selectedDoctor,
-                        relationshipType: selectedDoctor.relationshipType ?? "linked",
-                    }}
+                    doctor={normalizedSelectedDoctor}
                     isOpen={isEditDialogOpen}
-                    onOpenChange={setIsEditDialogOpen}
+                    onReferredPatientsChange={(referredPatients) => {
+                        setSelectedDoctor((current) =>
+                            current
+                                ? {
+                                      ...current,
+                                      referredPatients,
+                                  }
+                                : current
+                        )
+                    }}
+                    onOpenChange={(open) => {
+                        setIsEditDialogOpen(open)
+                        if (!open) {
+                            setSelectedDoctor(null)
+                        }
+                    }}
                 />
             )}
 

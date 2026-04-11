@@ -140,7 +140,13 @@ const customSelectStyles: StylesConfig<SelectOption, true, GroupBase<SelectOptio
     })
 };
 
-export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.ReactNode }) {
+export function AddDoctorDialog({
+    customTrigger,
+    onSuccess,
+}: {
+    customTrigger?: React.ReactNode;
+    onSuccess?: (doctor: { id: string; name: string; relationshipType: "linked" | "partner" }) => void;
+}) {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
@@ -337,6 +343,9 @@ export function AddDoctorDialog({ customTrigger }: { customTrigger?: React.React
                 setIsOpen(false);
                 form.reset();
                 setStep("crm");
+                if (result.doctor) {
+                    onSuccess?.(result.doctor);
+                }
                 router.refresh();
             } else {
                 toast.error(result.error || "Erro ao processar requisição do médico");

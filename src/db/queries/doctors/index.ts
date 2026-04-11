@@ -11,11 +11,14 @@ import {
     healthInsurances,
     addresses,
     inviteLinks,
+    patientReferrals,
+    patients,
 } from "@/db/schema";
 import { eq, and, asc, isNull, or } from "drizzle-orm";
 import { type Doctor as DoctorListItem } from "@/types/doctor";
 
 export async function getDoctorsByClinic(clinicId: string) {
+    const referredPatients = await getReferredPatientsByClinic(clinicId);
     const rawResults = await db
         .select({
             id: doctors.id,
@@ -118,6 +121,7 @@ export async function getDoctorsByClinic(clinicId: string) {
                 specialties: [],
                 practiceAreas: [],
                 healthInsurances: [],
+                referredPatients: referredPatients.get(row.id) ?? [],
             });
         } else {
             const doctor = doctorsMap.get(row.id);
@@ -160,6 +164,49 @@ export async function getDoctorsByClinic(clinicId: string) {
     return Array.from(doctorsMap.values()).sort((a, b) =>
         (a.name || "").localeCompare(b.name || "", "pt-BR", { sensitivity: "base" })
     );
+}
+
+export async function getReferredPatientsByClinic(clinicId: string) {
+    const rows = await db
+        .select({
+            doctorId: patientReferrals.doctorId,
+            patientId: patients.id,
+            patientName: patients.name,
+            createdAt: patientReferrals.createdAt,
+            source: patientReferrals.source,
+        })
+        .from(patientReferrals)
+        .innerJoin(patients, eq(patientReferrals.patientId, patients.id))
+        .where(
+            and(
+                eq(patientReferrals.clinicId, clinicId),
+                eq(patientReferrals.status, "active")
+            )
+        )
+        .orderBy(asc(patients.name));
+
+    const grouped = new Map<
+        string,
+        {
+            patientId: string;
+            patientName: string;
+            createdAt: Date;
+            source: "patient_reported" | "doctor_reported" | "invite_link" | "manual";
+        }[]
+    >();
+
+    for (const row of rows) {
+        const current = grouped.get(row.doctorId) ?? [];
+        current.push({
+            patientId: row.patientId,
+            patientName: row.patientName,
+            createdAt: row.createdAt,
+            source: row.source,
+        });
+        grouped.set(row.doctorId, current);
+    }
+
+    return grouped;
 }
 
 export async function deleteDoctor(doctorId: string, clinicId: string) {

@@ -34,7 +34,11 @@ interface PatientForEdit {
     responsibleDoctors?: SelectedDoctorRef[];
     patientHealthInsurances?: PatientFormValues["patientHealthInsurances"];
     originType?: PatientFormValues["originType"] | null;
-    referringDoctorId?: string | null;
+    referral?: {
+        doctorId?: string | null;
+        source?: PatientFormValues["referralSource"] | null;
+        notes?: string | null;
+    } | null;
 }
 
 interface EditPatientDialogProps {
@@ -104,7 +108,9 @@ export function EditPatientDialog({
         responsibleDoctorIds: patient.responsibleDoctors?.map((d: SelectedDoctorRef) => d.id) ?? [],
         patientHealthInsurances: patient.patientHealthInsurances ?? [],
         originType: patient.originType ?? undefined,
-        referringDoctorId: patient.referringDoctorId ?? undefined,
+        referralDoctorId: patient.referral?.doctorId ?? undefined,
+        referralSource: patient.referral?.source ?? undefined,
+        referralNotes: patient.referral?.notes ?? undefined,
     } : {
         name: "",
         email: "",
@@ -120,6 +126,9 @@ export function EditPatientDialog({
         state: "",
         responsibleDoctorIds: [],
         patientHealthInsurances: [],
+        referralDoctorId: undefined,
+        referralSource: undefined,
+        referralNotes: undefined,
     };
 
     async function onSubmit(values: PatientFormValues) {
@@ -145,7 +154,9 @@ export function EditPatientDialog({
         appendScalar("city", values.city);
         appendScalar("state", values.state);
         appendScalar("originType", values.originType);
-        appendScalar("referringDoctorId", values.referringDoctorId);
+        appendScalar("referralDoctorId", values.referralDoctorId);
+        appendScalar("referralSource", values.referralSource);
+        appendScalar("referralNotes", values.referralNotes);
 
         values.responsibleDoctorIds?.forEach((id) => formData.append("responsibleDoctorIds", id));
         formData.append("patientHealthInsurances", JSON.stringify(values.patientHealthInsurances ?? []));

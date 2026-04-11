@@ -24,8 +24,18 @@ export const createPatientSchema = z.object({
     city: z.string().optional(),
     state: z.string().optional(),
     responsibleDoctorIds: z.array(z.string().uuid()).optional(),
-    originType: z.enum(["instagram", "google", "facebook", "friends_family", "medical_referral"]).optional(),
-    referringDoctorId: z.string().uuid().optional(),
+    originType: z
+        .enum(["instagram", "google", "facebook", "friends_family", "medical_referral"])
+        .optional(),
+    referralDoctorId: z.string().uuid().optional(),
+    referralSource: z
+        .enum(["patient_reported", "doctor_reported", "invite_link", "manual"])
+        .optional(),
+    referralNotes: z
+        .string()
+        .trim()
+        .max(1000, "Observação deve ter no máximo 1000 caracteres")
+        .optional(),
     patientHealthInsurances: patientHealthInsurancesSchema.optional(),
 }).refine(
     (data) => {
@@ -34,7 +44,15 @@ export const createPatientSchema = z.object({
         return hasEmail || hasPhone;
     },
     { message: "Informe ao menos um contato: email ou telefone", path: ["email"] }
-);
+).superRefine((data, ctx) => {
+    if (data.originType === "medical_referral" && !data.referralDoctorId) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["referralDoctorId"],
+            message: "Selecione o médico que indicou o paciente",
+        });
+    }
+});
 
 export const updatePatientSchema = createPatientSchema;
 

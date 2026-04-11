@@ -11,6 +11,12 @@ import {
 import { revalidatePath } from "next/cache";
 import { adminSetDoctorPasswordSchema } from "@/lib/validations/auth";
 import { adminSetDoctorPassword } from "@/services/auth";
+import { getPatientsByClinic } from "@/db/queries/patients";
+import { getDoctorsSimple } from "@/db/queries/doctors";
+import {
+    assignPatientReferralToDoctor,
+    removePatientReferralFromDoctor,
+} from "@/services/patients";
 
 export async function createDoctorAction(formData: FormData) {
     const session = await auth();
@@ -66,7 +72,7 @@ export async function createDoctorAction(formData: FormData) {
             const { ensureDoctorPatientInviteCode } = await import("@/services/invites");
             await ensureDoctorPatientInviteCode(clinicId, globalId);
             revalidatePath("/doctors");
-            return { success: true };
+            return { success: true, doctor: result.doctor };
         }
         return { error: result.error };
     }
@@ -86,7 +92,7 @@ export async function createDoctorAction(formData: FormData) {
             const { ensureDoctorPatientInviteCode } = await import("@/services/invites");
             await ensureDoctorPatientInviteCode(clinicId, globalId);
             revalidatePath("/doctors");
-            return { success: true };
+            return { success: true, doctor: result.doctor };
         }
         return { error: result.error };
     }
@@ -98,7 +104,7 @@ export async function createDoctorAction(formData: FormData) {
     }
 
     revalidatePath("/doctors");
-    return { success: true };
+    return { success: true, doctor: result.doctor };
 }
 
 export async function deleteDoctorAction(doctorId: string) {
@@ -150,7 +156,7 @@ export async function updateDoctorAction(formData: FormData) {
     }
 
     revalidatePath("/doctors");
-    return { success: true };
+    return { success: true, doctor: result.doctor };
 }
 
 export async function updateDoctorRelationshipTypeAction(
@@ -251,4 +257,133 @@ export async function setDoctorPasswordAction(formData: FormData) {
 
     revalidatePath("/doctors");
     return { success: true };
+}
+
+export async function getDoctorReferralPatientOptionsAction() {
+    const session = await auth();
+    const clinicId = session?.user?.clinicId;
+
+    if (!clinicId) {
+        throw new Error("Unauthorized: No clinic association found.");
+    }
+
+    const patients = await getPatientsByClinic(clinicId);
+    return {
+        success: true as const,
+        patients: patients.map((patient) => ({
+            id: patient.id,
+            name: patient.name,
+            cpf: patient.cpf,
+        })),
+    };
+}
+
+export async function getDoctorReferralDoctorOptionsAction() {
+    const session = await auth();
+    const clinicId = session?.user?.clinicId;
+
+    if (!clinicId) {
+        throw new Error("Unauthorized: No clinic association found.");
+    }
+
+    const doctors = await getDoctorsSimple(clinicId);
+    return {
+        success: true as const,
+        doctors: doctors.map((doctor) => ({
+            id: doctor.id,
+            name: doctor.name,
+            relationshipType: doctor.relationshipType,
+        })),
+    };
+}
+
+const assignPatientReferralSchema = z.object({
+    doctorId: z.string().uuid("Médico inválido"),
+    patientId: z.string().uuid("Paciente inválido"),
+    referralSource: z.enum(["patient_reported", "doctor_reported", "invite_link", "manual"]),
+    referralNotes: z.string().trim().max(1000).optional(),
+});
+
+export async function assignPatientReferralToDoctorAction(input: unknown) {
+    const session = await auth();
+    const clinicId = session?.user?.clinicId;
+    const actorUserId = session?.user?.id;
+
+    if (!clinicId) {
+        throw new Error("Unauthorized: No clinic association found.");
+    }
+
+    const parsed = assignPatientReferralSchema.safeParse(input);
+
+    if (!parsed.success) {
+        return { success: false as const, error: "Dados inválidos" };
+    }
+
+    const result = await assignPatientReferralToDoctor(
+        clinicId,
+        parsed.data.patientId,
+        parsed.data.doctorId,
+        parsed.data.referralSource,
+        parsed.data.referralNotes,
+        actorUserId
+    );
+
+    if (!result.success) {
+        return result;
+    }
+
+    const patients = await getPatientsByClinic(clinicId);
+    const patient = patients.find((item) => item.id === parsed.data.patientId);
+
+    revalidatePath("/doctors");
+    revalidatePath("/patients");
+
+    return {
+        success: true as const,
+        patient: patient
+            ? {
+                patientId: patient.id,
+                patientName: patient.name,
+                createdAt: new Date(),
+                source: parsed.data.referralSource,
+            }
+            : null,
+    };
+}
+
+const removePatientReferralSchema = z.object({
+    doctorId: z.string().uuid("Médico inválido"),
+    patientId: z.string().uuid("Paciente inválido"),
+});
+
+export async function removePatientReferralFromDoctorAction(input: unknown) {
+    const session = await auth();
+    const clinicId = session?.user?.clinicId;
+    const actorUserId = session?.user?.id;
+
+    if (!clinicId) {
+        throw new Error("Unauthorized: No clinic association found.");
+    }
+
+    const parsed = removePatientReferralSchema.safeParse(input);
+
+    if (!parsed.success) {
+        return { success: false as const, error: "Dados inválidos" };
+    }
+
+    const result = await removePatientReferralFromDoctor(
+        clinicId,
+        parsed.data.patientId,
+        parsed.data.doctorId,
+        actorUserId
+    );
+
+    if (!result.success) {
+        return result;
+    }
+
+    revalidatePath("/doctors");
+    revalidatePath("/patients");
+
+    return { success: true as const };
 }

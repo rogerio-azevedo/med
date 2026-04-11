@@ -41,7 +41,9 @@ export function AddPatientDialog({ doctors, children, onSuccess }: AddPatientDia
         state: "",
         responsibleDoctorIds: [],
         originType: undefined,
-        referringDoctorId: undefined,
+        referralDoctorId: undefined,
+        referralSource: undefined,
+        referralNotes: undefined,
         patientHealthInsurances: [],
     };
 
@@ -68,7 +70,9 @@ export function AddPatientDialog({ doctors, children, onSuccess }: AddPatientDia
         appendScalar("city", values.city);
         appendScalar("state", values.state);
         appendScalar("originType", values.originType);
-        appendScalar("referringDoctorId", values.referringDoctorId);
+        appendScalar("referralDoctorId", values.referralDoctorId);
+        appendScalar("referralSource", values.referralSource);
+        appendScalar("referralNotes", values.referralNotes);
 
         values.responsibleDoctorIds?.forEach((id) => formData.append("responsibleDoctorIds", id));
         formData.append("patientHealthInsurances", JSON.stringify(values.patientHealthInsurances ?? []));

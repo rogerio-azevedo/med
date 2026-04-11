@@ -3,7 +3,7 @@
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useState, useEffect, useRef } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import {
     Form,
     FormControl,
@@ -13,6 +13,7 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
     Select,
     SelectContent,
@@ -56,8 +57,7 @@ export function PatientForm({
     onCancel,
     mode = "create",
 }: PatientFormProps) {
-    const responsibleDoctors = doctors.filter((doctor) => doctor.relationshipType === "linked");
-    const referralDoctors = doctors;
+    const [availableDoctors, setAvailableDoctors] = useState(doctors);
     const [loadingCEP, setLoadingCEP] = useState(false);
     const [step, setStep] = useState<"cpf" | 1 | 2 | 3 | 4 | 5>(mode === "edit" ? 1 : "cpf");
     const [checkingCpf, setCheckingCpf] = useState(false);
@@ -65,6 +65,8 @@ export function PatientForm({
     const [existingPatientId, setExistingPatientId] = useState<string | undefined>();
     const [infoMessage, setInfoMessage] = useState<{ title: string; desc: string } | null>(null);
     const [healthInsuranceOptions, setHealthInsuranceOptions] = useState<{ value: string; label: string }[]>([]);
+    const responsibleDoctors = availableDoctors.filter((doctor) => doctor.relationshipType === "linked");
+    const referralDoctors = availableDoctors;
 
     const form = useForm<PatientFormValues>({
         resolver: zodResolver(patientFormSchema),
@@ -80,7 +82,12 @@ export function PatientForm({
     });
 
     const zipCode = form.watch("zipCode");
+    const originType = form.watch("originType");
     const skipCepLookupRef = useRef(mode === "edit");
+
+    useEffect(() => {
+        setAvailableDoctors(doctors);
+    }, [doctors]);
 
     useEffect(() => {
         const cleanCEP = zipCode?.replace(/\D/g, "");
@@ -116,6 +123,21 @@ export function PatientForm({
         });
     }, []);
 
+    useEffect(() => {
+        if (originType === "medical_referral") {
+            if (!form.getValues("referralSource")) {
+                form.setValue("referralSource", "patient_reported", {
+                    shouldDirty: true,
+                });
+            }
+            return;
+        }
+
+        form.setValue("referralDoctorId", undefined);
+        form.setValue("referralSource", undefined);
+        form.setValue("referralNotes", undefined);
+    }, [originType, form]);
+
     const markInsuranceAsPrimary = (selectedIndex: number) => {
         insuranceFields.forEach((_, index) => {
             const currentValue = form.getValues(`patientHealthInsurances.${index}`);
@@ -133,6 +155,31 @@ export function PatientForm({
                 isPrimary: index === selectedIndex,
             });
         });
+    };
+
+    const handleDoctorCreated = (doctor: {
+        id: string;
+        name: string;
+        relationshipType: "linked" | "partner";
+    }) => {
+        startTransition(() => {
+            setAvailableDoctors((current) => {
+                if (current.some((item) => item.id === doctor.id)) {
+                    return current;
+                }
+
+                return [...current, doctor].sort((a, b) =>
+                    (a.name || "").localeCompare(b.name || "", "pt-BR", { sensitivity: "base" })
+                );
+            });
+        });
+
+        form.setValue("referralDoctorId", doctor.id, {
+            shouldDirty: true,
+            shouldTouch: true,
+            shouldValidate: true,
+        });
+        toast.success("Médico selecionado na indicação.");
     };
 
     const handleCpfCheck = async () => {
@@ -554,17 +601,17 @@ export function PatientForm({
                                     />
                                 </div>
 
-                                {form.watch("originType") === "medical_referral" && (
+                                {originType === "medical_referral" && (
                                     <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                                         <FormField
                                             control={form.control}
-                                            name="referringDoctorId"
+                                            name="referralDoctorId"
                                             render={({ field }) => {
                                                 const options = referralDoctors.map(d => ({ value: d.id, label: d.name || "Sem Nome" }));
                                                 const selectedOption = options.find(o => o.value === field.value) ?? null;
                                                 return (
                                                 <FormItem>
-                                                    <FormLabel>Médico que encaminhou</FormLabel>
+                                                    <FormLabel>Médico que indicou</FormLabel>
                                                     <div>
                                                         <ReactSelect
                                                             options={options}
@@ -583,6 +630,7 @@ export function PatientForm({
                                                             Não encontrou o médico na lista?
                                                         </p>
                                                         <AddDoctorDialog
+                                                            onSuccess={handleDoctorCreated}
                                                             customTrigger={<button type="button" className="text-xs font-medium text-primary hover:underline">Adicionar novo médico</button>}
                                                         />
                                                     </div>
@@ -590,6 +638,48 @@ export function PatientForm({
                                                 </FormItem>
                                             );
                                         }}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name="referralSource"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Como essa indicação foi registrada?</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value || "patient_reported"}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="h-11 bg-muted/30 border-muted-foreground/10 focus:border-primary/30 transition-all">
+                                                                <SelectValue placeholder="Selecione a origem da informação" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="patient_reported">Informado pelo paciente</SelectItem>
+                                                            <SelectItem value="doctor_reported">Informado pelo médico</SelectItem>
+                                                            <SelectItem value="manual">Ajuste manual</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name="referralNotes"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Observações da indicação (Opcional)</FormLabel>
+                                                    <FormControl>
+                                                        <Textarea
+                                                            {...field}
+                                                            value={field.value || ""}
+                                                            placeholder="Ex.: Dr. Paulo ligou antecipando a chegada do paciente."
+                                                            className="min-h-[100px] bg-muted/30 border-muted-foreground/10 focus:border-primary/30 transition-all"
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
                                         />
                                     </div>
                                 )}
@@ -797,7 +887,7 @@ export function PatientForm({
                                     const isValid = await form.trigger(["zipCode", "street", "number", "neighborhood", "city", "state"]);
                                     if (isValid) setStep(3);
                                 } else if (step === 3) {
-                                    const isValid = await form.trigger(["originType", "referringDoctorId"]);
+                                    const isValid = await form.trigger(["originType", "referralDoctorId", "referralSource", "referralNotes"]);
                                     if (isValid) setStep(4);
                                 } else if (step === 4) {
                                     const isValid = await form.trigger("patientHealthInsurances");

@@ -10,6 +10,8 @@ import {
     integer,
     time,
     pgEnum,
+    uniqueIndex,
+    index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { users } from "./auth";
@@ -58,6 +60,16 @@ export const patientOriginTypeEnum = pgEnum("patient_origin_type", [
     "facebook",
     "friends_family",
     "medical_referral",
+]);
+export const patientReferralSourceEnum = pgEnum("patient_referral_source", [
+    "patient_reported",
+    "doctor_reported",
+    "invite_link",
+    "manual",
+]);
+export const patientReferralStatusEnum = pgEnum("patient_referral_status", [
+    "active",
+    "cancelled",
 ]);
 export const doctorClinicRelationshipTypeEnum = pgEnum("doctor_clinic_relationship_type", [
     "linked",
@@ -297,9 +309,49 @@ export const patientOrigins = pgTable("patient_origins", {
         .notNull()
         .references(() => clinics.id, { onDelete: "cascade" }),
     originType: patientOriginTypeEnum("origin_type").notNull(),
-    referringDoctorId: uuid("referring_doctor_id").references(() => doctors.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    patientClinicUniqueIdx: uniqueIndex("patient_origins_patient_clinic_unique").on(
+        table.patientId,
+        table.clinicId
+    ),
+}));
+
+export const patientReferrals = pgTable("patient_referrals", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clinicId: uuid("clinic_id")
+        .notNull()
+        .references(() => clinics.id, { onDelete: "cascade" }),
+    patientId: uuid("patient_id")
+        .notNull()
+        .references(() => patients.id, { onDelete: "cascade" }),
+    doctorId: uuid("doctor_id")
+        .notNull()
+        .references(() => doctors.id, { onDelete: "restrict" }),
+    source: patientReferralSourceEnum("source").notNull(),
+    status: patientReferralStatusEnum("status").default("active").notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+        onDelete: "set null",
+    }),
+    confirmedAt: timestamp("confirmed_at"),
+    cancelledAt: timestamp("cancelled_at"),
+    cancelledByUserId: text("cancelled_by_user_id").references(() => users.id, {
+        onDelete: "set null",
+    }),
+}, (table) => ({
+    clinicDoctorIdx: index("patient_referrals_clinic_doctor_idx").on(
+        table.clinicId,
+        table.doctorId
+    ),
+    clinicPatientIdx: index("patient_referrals_clinic_patient_idx").on(
+        table.clinicId,
+        table.patientId
+    ),
+    statusIdx: index("patient_referrals_status_idx").on(table.status),
+}));
 
 // 12. Doctor Schedules
 export const doctorSchedules = pgTable("doctor_schedules", {

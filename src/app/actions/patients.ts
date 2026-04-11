@@ -10,6 +10,7 @@ import { revalidatePath } from "next/cache";
 export async function createPatientAction(formData: FormData) {
     const session = await auth();
     const clinicId = session?.user?.clinicId;
+    const actorUserId = session?.user?.id;
 
     if (!clinicId) {
         throw new Error("Unauthorized: No clinic association found.");
@@ -20,7 +21,7 @@ export async function createPatientAction(formData: FormData) {
     const patientHealthInsurancesRaw = formData.get("patientHealthInsurances");
 
     const responsibleDoctorIdsRaw = formData.getAll("responsibleDoctorIds");
-    const data: Record<string, any> = {
+    const data: Record<string, FormDataEntryValue | string[] | unknown> = {
         ...Object.fromEntries(formData),
         responsibleDoctorIds: responsibleDoctorIdsRaw.filter(Boolean),
         patientHealthInsurances: patientHealthInsurancesRaw
@@ -28,8 +29,14 @@ export async function createPatientAction(formData: FormData) {
             : [],
     };
 
-    if (!data.referringDoctorId || data.referringDoctorId === "null" || data.referringDoctorId === "") {
-        delete data.referringDoctorId;
+    if (!data.referralDoctorId || data.referralDoctorId === "null" || data.referralDoctorId === "") {
+        delete data.referralDoctorId;
+    }
+    if (!data.referralSource || data.referralSource === "null" || data.referralSource === "") {
+        delete data.referralSource;
+    }
+    if (!data.referralNotes || data.referralNotes === "null" || data.referralNotes === "") {
+        delete data.referralNotes;
     }
     if (!data.originType || data.originType === "null" || data.originType === "") {
         delete data.originType;
@@ -44,7 +51,7 @@ export async function createPatientAction(formData: FormData) {
     }
 
     if (intent === "reactivate" && globalId) {
-        const result = await updatePatient(globalId, parsed.data, clinicId);
+        const result = await updatePatient(globalId, parsed.data, clinicId, { actorUserId });
         // also set isActive = true
         if (result.success) {
             const { db } = await import("@/db");
@@ -64,7 +71,7 @@ export async function createPatientAction(formData: FormData) {
 
     if (intent === "import" && globalId) {
         // Update the patient details globally, and link them to this clinic.
-        const result = await updatePatient(globalId, parsed.data, clinicId);
+        const result = await updatePatient(globalId, parsed.data, clinicId, { actorUserId });
         if (result.success) {
             const { db } = await import("@/db");
             const { clinicPatients } = await import("@/db/schema/medical");
@@ -78,7 +85,7 @@ export async function createPatientAction(formData: FormData) {
         return { error: result.error };
     }
 
-    const result = await createPatient(parsed.data, clinicId);
+    const result = await createPatient(parsed.data, clinicId, { actorUserId });
 
     if (!result.success) {
         return { error: result.error };
@@ -109,6 +116,7 @@ export async function deletePatientAction(patientId: string) {
 export async function updatePatientAction(patientId: string, formData: FormData) {
     const session = await auth();
     const clinicId = session?.user?.clinicId;
+    const actorUserId = session?.user?.id;
 
     if (!clinicId) {
         throw new Error("Unauthorized: No clinic association found.");
@@ -116,7 +124,7 @@ export async function updatePatientAction(patientId: string, formData: FormData)
 
     const patientHealthInsurancesRaw = formData.get("patientHealthInsurances");
     const responsibleDoctorIdsRaw = formData.getAll("responsibleDoctorIds");
-    const data: Record<string, any> = {
+    const data: Record<string, FormDataEntryValue | string[] | unknown> = {
         ...Object.fromEntries(formData),
         responsibleDoctorIds: responsibleDoctorIdsRaw.filter(
             (id) => id !== "null" && id !== ""
@@ -126,8 +134,14 @@ export async function updatePatientAction(patientId: string, formData: FormData)
             : [],
     };
 
-    if (!data.referringDoctorId || data.referringDoctorId === "null" || data.referringDoctorId === "") {
-        delete data.referringDoctorId;
+    if (!data.referralDoctorId || data.referralDoctorId === "null" || data.referralDoctorId === "") {
+        delete data.referralDoctorId;
+    }
+    if (!data.referralSource || data.referralSource === "null" || data.referralSource === "") {
+        delete data.referralSource;
+    }
+    if (!data.referralNotes || data.referralNotes === "null" || data.referralNotes === "") {
+        delete data.referralNotes;
     }
     if (!data.originType || data.originType === "null" || data.originType === "") {
         delete data.originType;
@@ -141,7 +155,7 @@ export async function updatePatientAction(patientId: string, formData: FormData)
         return { error: firstError || "Dados inválidos", details: flattened };
     }
 
-    const result = await updatePatient(patientId, parsed.data, clinicId);
+    const result = await updatePatient(patientId, parsed.data, clinicId, { actorUserId });
 
     if (!result.success) {
         return { error: result.error };
@@ -149,6 +163,7 @@ export async function updatePatientAction(patientId: string, formData: FormData)
 
     revalidatePath("/dashboard");
     revalidatePath("/patients");
+    revalidatePath("/doctors");
     return { success: true };
 }
 

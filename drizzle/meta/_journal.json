@@ -218,6 +218,20 @@
       "when": 1775864775499,
       "tag": "0030_easy_snowbird",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1778612600000,
+      "tag": "0031_red_puppet_master",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1778695200000,
+      "tag": "0032_repair_patient_referrals",
+      "breakpoints": true
     }
   ]
 }

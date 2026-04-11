@@ -11,6 +11,7 @@ import {
     addresses,
     patientDoctors,
     patientOrigins,
+    patientReferrals,
     doctorSpecialties,
 } from "@/db/schema";
 import { geocodeAddress } from "@/lib/geocode";
@@ -179,7 +180,16 @@ export async function registerUser(
                             patientId: newPatient.id,
                             clinicId: inviteData.clinicId,
                             originType: "medical_referral",
-                            referringDoctorId: inviteData.doctorId,
+                        });
+
+                        await db.insert(patientReferrals).values({
+                            clinicId: inviteData.clinicId,
+                            patientId: newPatient.id,
+                            doctorId: inviteData.doctorId,
+                            source: "invite_link",
+                            status: "active",
+                            createdByUserId: newUser.id,
+                            confirmedAt: new Date(),
                         });
 
                         const clinicDoctorLink = await db.query.clinicDoctors.findFirst({
