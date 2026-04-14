@@ -1,6 +1,7 @@
 import { getPracticeAreasAction } from "@/app/actions/practice-areas";
 import { PracticeAreasTable } from "@/components/practice-areas/PracticeAreasTable";
 import { AddPracticeAreaDialog } from "@/components/practice-areas/AddPracticeAreaDialog";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Briefcase } from "lucide-react";
 
 export default async function PracticeAreasPage() {
@@ -9,15 +10,11 @@ export default async function PracticeAreasPage() {
 
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">Áreas de Atuação</h2>
-                    <p className="text-muted-foreground font-medium mt-1">
-                        Gerencie as áreas de atuação médicas cadastradas no sistema.
-                    </p>
-                </div>
-                <AddPracticeAreaDialog />
-            </div>
+            <PageHeader
+                title="Áreas de Atuação"
+                description="Gerencie as áreas de atuação médicas cadastradas no sistema."
+                actions={<AddPracticeAreaDialog />}
+            />
 
             <div className="grid gap-6">
                 <div className="relative group">

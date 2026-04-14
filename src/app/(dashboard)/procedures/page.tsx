@@ -2,6 +2,7 @@ import { FileBadge2 } from "lucide-react";
 import { getProceduresAction } from "@/app/actions/procedures";
 import { AddProcedureDialog } from "@/components/procedures/AddProcedureDialog";
 import { ProceduresTable } from "@/components/procedures/ProceduresTable";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export default async function ProceduresPage() {
     const result = await getProceduresAction();
@@ -9,17 +10,11 @@ export default async function ProceduresPage() {
 
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">
-            <div className="flex items-center justify-between gap-4">
-                <div>
-                    <h2 className="bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
-                        Procedimentos
-                    </h2>
-                    <p className="mt-1 font-medium text-muted-foreground">
-                        Gerencie o catálogo de procedimentos para uso futuro no prontuário.
-                    </p>
-                </div>
-                <AddProcedureDialog />
-            </div>
+            <PageHeader
+                title="Procedimentos"
+                description="Gerencie o catálogo de procedimentos para uso futuro no prontuário."
+                actions={<AddProcedureDialog />}
+            />
 
             <div className="grid gap-6">
                 <div className="group relative">

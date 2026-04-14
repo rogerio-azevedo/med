@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { startOfWeek, endOfWeek } from "date-fns";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { ScheduleView } from "@/components/schedule/ScheduleView";
 import { getAppointmentsByClinic } from "@/services/appointments";
 import { getDoctorsSimple } from "@/db/queries/doctors";
@@ -49,12 +50,10 @@ export default async function SchedulePage() {
 
     return (
         <div className="flex flex-col gap-6 p-6">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">Agenda</h1>
-                <p className="text-muted-foreground text-sm">
-                    Gerencie consultas, atendimentos e exames
-                </p>
-            </div>
+            <PageHeader
+                title="Agenda"
+                description="Gerencie consultas, atendimentos e exames"
+            />
 
             <ScheduleView
                 appointments={appointments as Parameters<typeof ScheduleView>[0]["appointments"]}

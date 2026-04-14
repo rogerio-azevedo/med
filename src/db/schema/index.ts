@@ -11,3 +11,5 @@ export * from "./permissions";
 export * from "./payment-terms";
 export * from "./products";
 export * from "./proposals";
+export * from "./score-items";
+export * from "./check-ins";

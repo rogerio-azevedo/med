@@ -3,6 +3,7 @@ import { Building2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { AddHospitalDialog } from "@/components/hospitals/AddHospitalDialog";
 import { HospitalsTable } from "@/components/hospitals/HospitalsTable";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { getHospitals } from "@/db/queries/hospitals";
 
 export default async function HospitalsPage() {
@@ -17,17 +18,11 @@ export default async function HospitalsPage() {
 
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
-                        Hospitais
-                    </h2>
-                    <p className="mt-1 font-medium text-muted-foreground">
-                        Cadastre hospitais da clínica e mantenha seus endereços prontos para o mapa.
-                    </p>
-                </div>
-                <AddHospitalDialog />
-            </div>
+            <PageHeader
+                title="Hospitais"
+                description="Cadastre hospitais da clínica e mantenha seus endereços prontos para o mapa."
+                actions={<AddHospitalDialog />}
+            />
 
             <div className="relative group">
                 <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-rose-500/20 to-orange-400/20 opacity-25 blur transition duration-1000 group-hover:opacity-50" />

@@ -61,10 +61,19 @@ NEXTAUTH_URL=http://localhost:3000
 pnpm dev           # Servidor de desenvolvimento
 pnpm build         # Build de produção
 pnpm lint          # ESLint
-pnpm db:generate   # Gerar migrations (Drizzle)
-pnpm db:migrate    # Executar migrations
+pnpm db:generate   # Gerar migration com journal normalizado
+pnpm db:migrate    # Executar migration com auditoria de drift
+pnpm db:check      # Auditar journal local vs banco remoto
 pnpm db:studio     # Drizzle Studio (UI do banco)
 ```
+
+## Regra de Migrations
+
+- Nunca editar arquivos de migration já aplicados no banco.
+- Sempre usar `pnpm db:generate`, nunca `drizzle-kit generate` direto.
+- Sempre usar `pnpm db:migrate`, nunca `drizzle-kit migrate` direto.
+- Se `pnpm db:check` falhar, reconciliar o histórico antes de seguir.
+- Quando uma correção já existir no banco mas faltar no histórico, criar migration de reconciliação idempotente em vez de reescrever migrations antigas.
 
 ---
 

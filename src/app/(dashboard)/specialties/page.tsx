@@ -1,6 +1,7 @@
 import { getSpecialtiesAction } from "@/app/actions/specialties";
 import { SpecialtiesTable } from "@/components/specialties/SpecialtiesTable";
 import { AddSpecialtyDialog } from "@/components/specialties/AddSpecialtyDialog";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Tag } from "lucide-react";
 
 export default async function SpecialtiesPage() {
@@ -9,15 +10,11 @@ export default async function SpecialtiesPage() {
 
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">Especialidades</h2>
-                    <p className="text-muted-foreground font-medium mt-1">
-                        Gerencie as especialidades médicas cadastradas no sistema.
-                    </p>
-                </div>
-                <AddSpecialtyDialog />
-            </div>
+            <PageHeader
+                title="Especialidades"
+                description="Gerencie as especialidades médicas cadastradas no sistema."
+                actions={<AddSpecialtyDialog />}
+            />
 
             <div className="grid gap-6">
                 <div className="relative group">

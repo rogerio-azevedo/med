@@ -1,201 +1,214 @@
 "use client"
 
-import * as React from "react"
 import {
-    LayoutDashboard,
-    KanbanSquare,
-    Users,
-    Stethoscope,
+  LayoutDashboard,
+  KanbanSquare,
+  Users,
+  Stethoscope,
     Settings,
     Building2,
     Calendar,
     ClipboardList,
-    Map,
+    Map as MapIcon,
     ShieldCheck,
     FileText,
+    LogIn,
 } from "lucide-react"
 
 import { NavMain } from "@/components/shared/Sidebar/nav-main"
 import { NavUser } from "@/components/shared/Sidebar/nav-user"
 import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarHeader,
-    SidebarRail,
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarRail,
 } from "@/components/ui/sidebar"
 
 // This would ideally come from a central config or session
 const data = {
-    patient: [
-        {
-            title: "Dashboard",
-            url: "/dashboard",
-            icon: LayoutDashboard,
-        },
-        {
-            title: "Minhas Consultas",
-            url: "/schedule",
-            icon: Calendar,
-        },
-        {
-            title: "Mapa de Profissionais",
-            url: "/maps",
-            icon: Map,
-        },
-    ],
-    navMain: [
-        {
-            title: "Dashboard",
-            url: "/dashboard",
-            icon: LayoutDashboard,
-        },
-        {
-            title: "Tarefas",
-            url: "/tarefas",
-            icon: KanbanSquare,
-        },
-        {
-            title: "Orçamentos",
-            url: "/proposals",
-            icon: FileText,
-        },
-        {
-            title: "Cadastros",
-            url: "#",
-            icon: ClipboardList,
-            items: [
-                {
-                    title: "Pacientes",
-                    url: "/patients",
-                },
-                {
-                    title: "Médicos",
-                    url: "/doctors",
-                },
-                {
-                    title: "Hospitais",
-                    url: "/hospitals",
-                },
-                {
-                    title: "Especialidades",
-                    url: "/specialties",
-                },
-                {
-                    title: "Procedimentos",
-                    url: "/procedures",
-                },
-                {
-                    title: "Medicamentos",
-                    url: "/medications",
-                },
-                {
-                    title: "Convênios",
-                    url: "/health-insurances",
-                },
-                {
-                    title: "Áreas de Atuação",
-                    url: "/practice-areas",
-                },
-                {
-                    title: "Planos/Pacotes",
-                    url: "/packages",
-                },
-                {
-                    title: "Pagamentos",
-                    url: "/payment-terms",
-                },
-            ],
-        },
-        {
-            title: "Agenda",
-            url: "/schedule",
-            icon: Calendar,
-        },
+  patient: [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Minhas Consultas",
+      url: "/schedule",
+      icon: Calendar,
+    },
         {
             title: "Mapa de Profissionais",
             url: "/maps",
-            icon: Map,
+            icon: MapIcon,
         },
-    ],
-    admin: [
+  ],
+  navMain: [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Tarefas",
+      url: "/tarefas",
+      icon: KanbanSquare,
+    },
+    {
+      title: "Orçamentos",
+      url: "/proposals",
+      icon: FileText,
+    },
+    {
+      title: "Check-ins",
+      url: "/checkins",
+      icon: LogIn,
+    },
+    {
+      title: "Cadastros",
+      url: "#",
+      icon: ClipboardList,
+      items: [
         {
-            title: "Clínicas",
-            url: "/admin/clinics",
-            icon: Building2,
-            superAdminOnly: true,
+          title: "Pacientes",
+          url: "/patients",
         },
         {
-            title: "Médicos (Global)",
-            url: "/admin/doctors",
-            icon: Stethoscope,
-            superAdminOnly: true,
+          title: "Médicos",
+          url: "/doctors",
         },
         {
-            title: "Configuração da Clínica",
-            url: "/conta",
-            icon: Settings,
-            clinicAdminOnly: true,
+          title: "Hospitais",
+          url: "/hospitals",
         },
         {
-            title: "Usuários",
-            url: "/conta/usuarios",
-            icon: Users,
-            clinicAdminOnly: true,
+          title: "Especialidades",
+          url: "/specialties",
         },
         {
-            title: "Permissões",
-            url: "/conta/permissoes",
-            icon: ShieldCheck,
-            clinicAdminOnly: true,
+          title: "Procedimentos",
+          url: "/procedures",
         },
-    ],
+        {
+          title: "Medicamentos",
+          url: "/medications",
+        },
+        {
+          title: "Convênios",
+          url: "/health-insurances",
+        },
+        {
+          title: "Áreas de Atuação",
+          url: "/practice-areas",
+        },
+        {
+          title: "Planos/Pacotes",
+          url: "/packages",
+        },
+        {
+          title: "Pagamentos",
+          url: "/payment-terms",
+        },
+        {
+          title: "Pontuações",
+          url: "/scores",
+        },
+        {
+          title: "Tipos de Atendimento",
+          url: "/service-types",
+        },
+      ],
+    },
+    {
+      title: "Agenda",
+      url: "/schedule",
+      icon: Calendar,
+    },
+        {
+            title: "Mapa de Profissionais",
+            url: "/maps",
+            icon: MapIcon,
+        },
+  ],
+  admin: [
+    {
+      title: "Clínicas",
+      url: "/admin/clinics",
+      icon: Building2,
+      superAdminOnly: true,
+    },
+    {
+      title: "Médicos (Global)",
+      url: "/admin/doctors",
+      icon: Stethoscope,
+      superAdminOnly: true,
+    },
+    {
+      title: "Configuração da Clínica",
+      url: "/conta",
+      icon: Settings,
+      clinicAdminOnly: true,
+    },
+    {
+      title: "Usuários",
+      url: "/conta/usuarios",
+      icon: Users,
+      clinicAdminOnly: true,
+    },
+    {
+      title: "Permissões",
+      url: "/conta/permissoes",
+      icon: ShieldCheck,
+      clinicAdminOnly: true,
+    },
+  ],
 }
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-    user: {
-        name?: string | null
-        email?: string | null
-        image?: string | null
-        role?: string | null
-        clinicRole?: string | null
-    }
+  user: {
+    name?: string | null
+    email?: string | null
+    image?: string | null
+    role?: string | null
+    clinicRole?: string | null
+  }
 }
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
-    const isSuperAdmin = user.role === "super_admin"
-    const isClinicAdmin = user.clinicRole === "admin"
-    const isPatient = user.role === "patient"
+  const isSuperAdmin = user.role === "super_admin"
+  const isClinicAdmin = user.clinicRole === "admin"
+  const isPatient = user.role === "patient"
 
-    const adminItems = data.admin.filter(item => {
-        if (item.superAdminOnly && !isSuperAdmin) return false;
-        if (item.clinicAdminOnly && !isClinicAdmin && !isSuperAdmin) return false;
-        return true;
-    });
+  const adminItems = data.admin.filter((item) => {
+    if (item.superAdminOnly && !isSuperAdmin) return false
+    if (item.clinicAdminOnly && !isClinicAdmin && !isSuperAdmin) return false
+    return true
+  })
 
-    return (
-        <Sidebar collapsible="icon" {...props}>
-            <SidebarHeader className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
-                <div className="flex items-center gap-2 py-4">
-                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground group-data-[collapsible=icon]:size-8">
-                        <Stethoscope className="size-4" />
-                    </div>
-                    <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                        <span className="truncate font-semibold">Med</span>
-                        <span className="truncate text-xs">Gestão Médica</span>
-                    </div>
-                </div>
-            </SidebarHeader>
-            <SidebarContent>
-                <NavMain items={isPatient ? data.patient : data.navMain} />
-                {(isSuperAdmin || isClinicAdmin) && (
-                    <NavMain items={adminItems} label="Administração" />
-                )}
-            </SidebarContent>
-            <SidebarFooter>
-                <NavUser user={user} />
-            </SidebarFooter>
-            <SidebarRail />
-        </Sidebar>
-    )
+  return (
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
+        <div className="flex items-center gap-2 py-4">
+          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground group-data-[collapsible=icon]:size-8">
+            <Stethoscope className="size-4" />
+          </div>
+          <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+            <span className="truncate font-semibold">Med</span>
+            <span className="truncate text-xs">Gestão Médica</span>
+          </div>
+        </div>
+      </SidebarHeader>
+      <SidebarContent>
+        <NavMain items={isPatient ? data.patient : data.navMain} />
+        {(isSuperAdmin || isClinicAdmin) && (
+          <NavMain items={adminItems} label="Administração" />
+        )}
+      </SidebarContent>
+      <SidebarFooter>
+        <NavUser user={user} />
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  )
 }

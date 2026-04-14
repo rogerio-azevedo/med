@@ -2,15 +2,23 @@ import { eq, and, desc } from "drizzle-orm";
 import { db } from "@/db";
 import { clinics, clinicUsers, users } from "@/db/schema";
 import type { CreateClinicInput, UpdateClinicInput } from "@/lib/validations/clinic";
+import { seedDefaultScoreItemsForClinic } from "@/services/score-items";
+import { seedDefaultServiceTypesForClinic } from "@/services/service-types";
 
 export async function createClinic(
     data: CreateClinicInput
 ): Promise<{ success: true } | { success: false; error: string }> {
     try {
-        await db.insert(clinics).values({
-            name: data.name,
-            slug: data.slug,
-        }).returning();
+        const [createdClinic] = await db
+            .insert(clinics)
+            .values({
+                name: data.name,
+                slug: data.slug,
+            })
+            .returning({ id: clinics.id });
+
+        await seedDefaultScoreItemsForClinic(createdClinic.id);
+        await seedDefaultServiceTypesForClinic(createdClinic.id);
         return { success: true };
     } catch {
         return { success: false, error: "Failed to create clinic. Slug might be taken." };

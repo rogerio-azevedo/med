@@ -5,6 +5,7 @@ import { ShieldCheck } from "lucide-react";
 import { AddHealthInsuranceDialog } from "@/components/health-insurances/AddHealthInsuranceDialog";
 import { ClinicHealthInsuranceManager } from "@/components/health-insurances/ClinicHealthInsuranceManager";
 import { HealthInsurancesTable } from "@/components/health-insurances/HealthInsurancesTable";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export default async function HealthInsurancesPage() {
     const session = await auth();
@@ -21,17 +22,11 @@ export default async function HealthInsurancesPage() {
 
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-                        Convênios Médicos
-                    </h2>
-                    <p className="text-muted-foreground font-medium mt-1">
-                        Gerencie o catálogo de convênios e defina quais a clínica aceita.
-                    </p>
-                </div>
-                <AddHealthInsuranceDialog />
-            </div>
+            <PageHeader
+                title="Convênios Médicos"
+                description="Gerencie o catálogo de convênios e defina quais a clínica aceita."
+                actions={<AddHealthInsuranceDialog />}
+            />
 
             <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
                 <div className="relative group">

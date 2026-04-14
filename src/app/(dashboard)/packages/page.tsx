@@ -3,7 +3,8 @@ import { getProducts } from "@/db/queries/products";
 import { redirect } from "next/navigation";
 import { PackageDialog } from "./_components/package-dialog";
 import { PackagesTable } from "./_components/packages-table";
-import { Package, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Input } from "@/components/ui/input";
 
 export default async function PackagesPage() {
@@ -18,22 +19,11 @@ export default async function PackagesPage() {
 
     return (
         <div className="flex flex-col gap-6 p-8 min-h-screen bg-slate-50/50">
-            <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-primary/10 rounded-2xl text-primary shadow-inner">
-                        <Package size={32} />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-extrabold tracking-tight text-foreground/90">
-                            Planos e Pacotes
-                        </h1>
-                        <p className="text-muted-foreground font-medium">
-                            Gerencie seus produtos, serviços e planos de acompanhamento.
-                        </p>
-                    </div>
-                </div>
-                <PackageDialog />
-            </header>
+            <PageHeader
+                title="Planos e Pacotes"
+                description="Gerencie seus produtos, serviços e planos de acompanhamento."
+                actions={<PackageDialog />}
+            />
 
             <div className="flex flex-col gap-6">
                 {/* 
