@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { eq, and } from "drizzle-orm";
 import { ClinicSettingsForm } from "@/components/conta/ClinicSettingsForm";
 import { PasswordSettingsCard } from "@/components/conta/PasswordSettingsCard";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export default async function ContaPage() {
     const session = await auth();
@@ -20,6 +21,7 @@ export default async function ContaPage() {
         email: string | null;
         phone: string | null;
         cnpj: string | null;
+        proposalGeneralNotes: string | null;
     } | null = null;
     let clinicAddress: typeof addresses.$inferSelect | null = null;
 
@@ -49,28 +51,29 @@ export default async function ContaPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">Minha Conta</h1>
-                <p className="text-muted-foreground text-sm mt-1">
-                    Gerencie seu acesso e, se aplicável, as informações da clínica.
-                </p>
+        <div className="flex-1 space-y-8 p-8 pt-6">
+            <PageHeader
+                title="Minha Conta"
+                description="Gerencie seu acesso e, se aplicável, as informações da clínica."
+            />
+
+            <div className="mx-auto w-full max-w-4xl space-y-6">
+                <PasswordSettingsCard />
+
+                {clinic && (
+                    <ClinicSettingsForm
+                        clinic={{
+                            id: clinic.id,
+                            name: clinic.name,
+                            email: clinic.email,
+                            phone: clinic.phone,
+                            cnpj: clinic.cnpj,
+                            proposalGeneralNotes: clinic.proposalGeneralNotes,
+                        }}
+                        address={clinicAddress ?? null}
+                    />
+                )}
             </div>
-
-            <PasswordSettingsCard />
-
-            {clinic && (
-                <ClinicSettingsForm
-                    clinic={{
-                        id: clinic.id,
-                        name: clinic.name,
-                        email: clinic.email,
-                        phone: clinic.phone,
-                        cnpj: clinic.cnpj,
-                    }}
-                    address={clinicAddress ?? null}
-                />
-            )}
         </div>
     );
 }

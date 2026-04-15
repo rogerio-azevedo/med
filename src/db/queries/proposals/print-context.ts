@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { addresses, clinics } from "@/db/schema";
 import { formatClinicAddressLine } from "@/lib/format-clinic-address";
+import { buildProposalPaymentDisplayText } from "@/lib/format-proposal-payment-pdf";
 import { getProposalById } from "@/db/queries/proposals";
 
 export type ProposalPrintItem = {
@@ -18,8 +19,10 @@ export type ProposalPrintContext = {
     clinicLogoUrl: string | null;
     clinicPhone: string | null;
     clinicAddress: string | null;
-    /** Texto completo de condições/pagamento; se null, o PDF usa o fallback padrão no componente. */
-    proposalConditions: string | null;
+    /** OBS / condições gerais fixas da clínica no PDF; null = usar padrão do código. */
+    proposalGeneralNotes: string | null;
+    /** Condição de pagamento (prazo + modalidade + descrição) — exibida só no cabeçalho do PDF. */
+    proposalPaymentDisplay: string;
     id: string;
     number: number;
     status: string;
@@ -27,7 +30,6 @@ export type ProposalPrintContext = {
     createdAt: Date;
     validUntil: string | null;
     notes: string | null;
-    paymentTermLabel: string | null;
     patientName: string | null;
     createdByName: string | null;
     items: ProposalPrintItem[];
@@ -53,7 +55,12 @@ export async function getProposalPrintContext(
     const [clinicRow, addressLine] = await Promise.all([
         db.query.clinics.findFirst({
             where: eq(clinics.id, clinicId),
-            columns: { name: true, phone: true, logoUrl: true, proposalConditions: true },
+            columns: {
+                name: true,
+                phone: true,
+                logoUrl: true,
+                proposalGeneralNotes: true,
+            },
         }),
         resolveClinicPrimaryAddress(clinicId),
     ]);
@@ -72,7 +79,8 @@ export async function getProposalPrintContext(
         clinicLogoUrl: clinicRow?.logoUrl?.trim() || null,
         clinicPhone: clinicRow?.phone?.trim() || null,
         clinicAddress: addressLine,
-        proposalConditions: clinicRow?.proposalConditions?.trim() || null,
+        proposalGeneralNotes: clinicRow?.proposalGeneralNotes?.trim() || null,
+        proposalPaymentDisplay: buildProposalPaymentDisplayText(proposal),
         id: proposal.id,
         number: proposal.number,
         status: proposal.status,
@@ -80,7 +88,6 @@ export async function getProposalPrintContext(
         createdAt: proposal.createdAt,
         validUntil: proposal.validUntil,
         notes: proposal.notes,
-        paymentTermLabel: proposal.paymentTermLabel,
         patientName: proposal.patient?.name ?? null,
         createdByName: proposal.createdBy?.name ?? null,
         items,

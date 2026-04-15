@@ -37,6 +37,9 @@ export async function updateClinicInfo(
                 email: data.email || null,
                 phone: data.phone || null,
                 cnpj: data.cnpj || null,
+                proposalGeneralNotes: data.proposalGeneralNotes?.trim()
+                    ? data.proposalGeneralNotes.trim()
+                    : null,
             })
             .where(eq(clinics.id, clinicId));
         return { success: true };

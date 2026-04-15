@@ -20,16 +20,10 @@ const statusConfig: Record<string, string> = {
     cancelled: "Cancelada",
 };
 
-/** Fallback quando `clinics.proposal_conditions` está vazio (exportado para reutilização futura). */
+/** Fallback quando `clinics.proposal_general_notes` está vazio. */
 export const DEFAULT_PROPOSAL_CONDITIONS_GENERAL_LINES = [
     "Orçamento válido por 15 dias",
     "No caso de complicações que necessitem período maior de internação, novo orçamento será apresentado, configurando-se gastos extras.",
-] as const;
-
-export const DEFAULT_PROPOSAL_PAYMENT_LINES = [
-    "Banco Unicred · Ag. 2301 · CC 377970",
-    "PIX CNPJ - 46.072.065/0001-43",
-    "No caso de parcelamento no cartão de crédito, o valor está sujeito a juros da plataforma de pagamento.",
 ] as const;
 
 export function ProposalDocument({ data }: ProposalDocumentProps) {
@@ -53,7 +47,7 @@ export function ProposalDocument({ data }: ProposalDocumentProps) {
 
             <div className="h-0.5 w-full print:h-px" style={{ backgroundColor: ACCENT }} aria-hidden />
 
-            <div className="px-4 py-2.5 print:px-3 print:py-2" style={{ backgroundColor: LIGHT }}>
+            <div className="px-4 py-2 print:px-3 print:py-1.5" style={{ backgroundColor: LIGHT }}>
                 <div className="text-center">
                     <h1 className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: NAVY }}>
                         Proposta comercial
@@ -63,7 +57,7 @@ export function ProposalDocument({ data }: ProposalDocumentProps) {
                         </span>
                     </h1>
                 </div>
-                <dl className="mt-2 grid gap-x-4 gap-y-1.5 text-xs sm:grid-cols-2">
+                <dl className="mt-1.5 grid gap-x-3 gap-y-1 text-xs sm:grid-cols-2 sm:items-start print:gap-y-0.5">
                     <div className="min-w-0">
                         <dt className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">Paciente</dt>
                         <dd className="mt-px font-medium leading-tight" style={{ color: NAVY }}>
@@ -84,29 +78,29 @@ export function ProposalDocument({ data }: ProposalDocumentProps) {
                         <dt className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">
                             Forma de pagamento
                         </dt>
-                        <dd className="mt-px font-medium leading-tight text-slate-800">
-                            {data.paymentTermLabel || "Não definida"}
+                        <dd className="mt-px whitespace-pre-wrap font-medium leading-snug text-slate-800">
+                            {data.proposalPaymentDisplay}
                         </dd>
                     </div>
                 </dl>
             </div>
 
-            <div className="border-t border-slate-100 px-6 py-6 print:px-4 print:py-5">
+            <div className="border-t border-slate-100 px-4 py-4 print:px-3 print:py-3">
                 <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">Itens do orçamento</h2>
-                <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-                    <table className="w-full text-sm">
+                <div className="mt-2 overflow-hidden rounded-lg border border-slate-200 print:mt-1.5">
+                    <table className="w-full text-sm print:text-xs">
                         <thead className="bg-slate-50 text-left">
                             <tr>
-                                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600 print:py-2">
+                                <th className="px-2 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-600 print:px-2 print:py-1">
                                     Item
                                 </th>
-                                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600 print:py-2">
+                                <th className="px-2 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-600 print:px-2 print:py-1">
                                     Qtd
                                 </th>
-                                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600 print:py-2">
+                                <th className="px-2 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-600 print:px-2 print:py-1">
                                     Unitário
                                 </th>
-                                <th className="px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-600 print:py-2">
+                                <th className="px-2 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-600 print:px-2 print:py-1">
                                     Total
                                 </th>
                             </tr>
@@ -114,14 +108,14 @@ export function ProposalDocument({ data }: ProposalDocumentProps) {
                         <tbody>
                             {data.items.map((item) => (
                                 <tr key={item.id} className="border-t border-slate-100">
-                                    <td className="px-3 py-3 font-medium text-slate-900 print:py-2">
+                                    <td className="px-2 py-2 font-medium text-slate-900 print:py-1">
                                         {item.description || item.productName || "Item sem descrição"}
                                     </td>
-                                    <td className="px-3 py-3 text-slate-700 print:py-2">{item.quantity}</td>
-                                    <td className="px-3 py-3 text-slate-700 print:py-2">
+                                    <td className="px-2 py-2 text-slate-700 print:py-1">{item.quantity}</td>
+                                    <td className="px-2 py-2 text-slate-700 print:py-1">
                                         {formatCurrency(item.unitPrice)}
                                     </td>
-                                    <td className="px-3 py-3 text-right font-semibold text-slate-900 print:py-2">
+                                    <td className="px-2 py-2 text-right font-semibold text-slate-900 print:py-1">
                                         {formatCurrency(item.totalPrice)}
                                     </td>
                                 </tr>
@@ -131,64 +125,50 @@ export function ProposalDocument({ data }: ProposalDocumentProps) {
                 </div>
             </div>
 
-            <div className="grid gap-6 border-t border-slate-100 px-6 py-6 sm:grid-cols-[1fr_minmax(0,220px)] print:px-4 print:py-5">
-                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-4">
+            <div className="grid gap-4 border-t border-slate-100 px-4 py-4 sm:grid-cols-[1fr_minmax(0,220px)] print:gap-3 print:px-3 print:py-3">
+                <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2.5 print:py-2">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Observações</p>
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                    <p className="mt-1.5 whitespace-pre-wrap text-sm leading-snug text-slate-700 print:text-xs print:leading-relaxed">
                         {data.notes || "Nenhuma observação registrada."}
                     </p>
                 </div>
-                <div className="flex flex-col justify-center rounded-xl border border-slate-200 bg-slate-50/90 px-3 py-3">
+                <div className="flex flex-col justify-center rounded-lg border border-slate-200 bg-slate-50/90 px-3 py-2.5 print:py-2">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Valor total</p>
-                    <p className="mt-1 text-lg font-semibold tabular-nums text-slate-800">
+                    <p className="mt-0.5 text-lg font-semibold tabular-nums text-slate-800 print:text-base">
                         {formatCurrency(data.totalAmount)}
                     </p>
-                    <p className="mt-2 text-xs text-slate-600">
+                    <p className="mt-1.5 text-xs text-slate-600 print:mt-1">
                         Elaborado por <span className="font-medium text-slate-800">{data.createdByName || "—"}</span>
                     </p>
                 </div>
             </div>
 
             <section
-                className="border-t border-slate-100 px-6 py-5 print:px-4 print:py-4 print:break-inside-avoid"
-                aria-label="Condições gerais e informações para pagamento"
+                className="border-t border-slate-100 px-4 py-3 print:px-3 print:py-2 print:break-inside-avoid"
+                aria-label="Observações da clínica"
             >
-                {data.proposalConditions?.trim() ? (
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
-                        <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-slate-700">
-                            {data.proposalConditions.trim()}
+                <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2 print:py-1.5">
+                    <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                        Observações da clínica
+                    </h3>
+                    {data.proposalGeneralNotes?.trim() ? (
+                        <p className="mt-1.5 whitespace-pre-wrap text-[11px] leading-snug text-slate-700 print:mt-1">
+                            {data.proposalGeneralNotes.trim()}
                         </p>
-                    </div>
-                ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
-                        <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
-                            <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                                Condições gerais
-                            </h3>
-                            <ul className="mt-2 list-disc space-y-1.5 pl-4 text-[11px] leading-relaxed text-slate-700">
-                                {DEFAULT_PROPOSAL_CONDITIONS_GENERAL_LINES.map((line) => (
-                                    <li key={line}>{line}</li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
-                            <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                                Informações para pagamento
-                            </h3>
-                            <div className="mt-2 space-y-2 text-[11px] leading-relaxed text-slate-700">
-                                {DEFAULT_PROPOSAL_PAYMENT_LINES.map((line) => (
-                                    <p key={line}>{line}</p>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )}
+                    ) : (
+                        <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[11px] leading-snug text-slate-700 print:mt-1 print:space-y-0.5">
+                            {DEFAULT_PROPOSAL_CONDITIONS_GENERAL_LINES.map((line) => (
+                                <li key={line}>{line}</li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
             </section>
 
-            <footer className="flex flex-col gap-6 border-t border-slate-200 px-6 py-6 sm:flex-row sm:items-end sm:justify-between print:px-4 print:py-5">
+            <footer className="flex flex-col gap-4 border-t border-slate-200 px-4 py-4 sm:flex-row sm:items-end sm:justify-between print:gap-3 print:px-3 print:py-3">
                 <div className="max-w-xs flex-1">
                     <div className="h-px w-52 border-t-2 border-slate-400" />
-                    <p className="mt-2 text-xs text-slate-600">Assinatura e carimbo (quando aplicável)</p>
+                    <p className="mt-1.5 text-xs text-slate-600 print:mt-1">Assinatura e carimbo (quando aplicável)</p>
                 </div>
                 <p className="text-right text-[10px] leading-tight text-slate-500 sm:max-w-[200px]">
                     Documento gerado eletronicamente. Conferir valores e condições antes da aceitação.

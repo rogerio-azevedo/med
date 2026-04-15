@@ -63,6 +63,7 @@ export async function updateClinicInfoAction(formData: FormData) {
         email: (formData.get("email") as string) || "",
         phone: (formData.get("phone") as string) || "",
         cnpj: (formData.get("cnpj") as string) || "",
+        proposalGeneralNotes: (formData.get("proposalGeneralNotes") as string) ?? "",
     };
 
     const validated = updateClinicSchema.safeParse(raw);
@@ -80,6 +81,7 @@ export async function updateClinicInfoAction(formData: FormData) {
     }
 
     revalidatePath("/conta");
+    revalidatePath("/proposals");
     return { success: true };
 }
 
