@@ -67,6 +67,7 @@ export async function createProposalAction(data: CreateProposalInput) {
                 status: "sent", // Start as sent for a realistic flow, or "draft" if preferred.
                 totalAmount,
                 notes: data.notes || null,
+                judicialSummary: data.judicialSummary?.trim() || null,
                 validUntil: data.validUntil || null,
                 paymentTermId: paymentTerm?.id || null,
                 paymentTermLabel: paymentTerm?.name || data.paymentTermLabel || null,
@@ -141,6 +142,7 @@ export async function updateProposalAction(data: UpdateProposalInput) {
                 patientId: data.patientId,
                 totalAmount,
                 notes: data.notes || null,
+                judicialSummary: data.judicialSummary?.trim() || null,
                 validUntil: data.validUntil || null,
                 paymentTermId: paymentTerm?.id || null,
                 paymentTermLabel: paymentTerm?.name || data.paymentTermLabel || null,

@@ -19,6 +19,7 @@ interface ProposalDetailClientProps {
         totalAmount: number;
         validUntil: string | null;
         notes: string | null;
+        judicialSummary: string | null;
         paymentTermId: string | null;
         paymentTermLabel: string | null;
         patientId: string;
@@ -57,6 +58,7 @@ export function ProposalDetailClient({
         patientId: proposal.patientId,
         validUntil: proposal.validUntil || "",
         notes: proposal.notes || "",
+        judicialSummary: proposal.judicialSummary ?? "",
         paymentTermId: proposal.paymentTermId || "",
         paymentTermLabel: proposal.paymentTermLabel || "",
         items: proposal.items.map((item) => ({

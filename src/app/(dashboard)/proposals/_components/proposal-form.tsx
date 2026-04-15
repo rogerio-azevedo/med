@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ReactSelect from "react-select";
@@ -16,6 +16,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
     Select,
     SelectContent,
@@ -82,16 +84,17 @@ function toFormValues(initialData?: Partial<CreateProposalInput>): CreateProposa
         patientId: initialData?.patientId || "",
         validUntil: initialData?.validUntil || "",
         notes: initialData?.notes || "",
+        judicialSummary: initialData?.judicialSummary ?? "",
         paymentTermId: initialData?.paymentTermId || "",
         paymentTermLabel: initialData?.paymentTermLabel || "",
         items: initialData?.items?.length
             ? initialData.items.map((item) => ({
-                  productId: item.productId || "",
-                  description: item.description || "",
-                  quantity: item.quantity || 1,
-                  unitPrice: item.unitPrice || 0,
-                  totalPrice: item.totalPrice || 0,
-              }))
+                productId: item.productId || "",
+                description: item.description || "",
+                quantity: item.quantity || 1,
+                unitPrice: item.unitPrice || 0,
+                totalPrice: item.totalPrice || 0,
+            }))
             : [{ ...EMPTY_ITEM }],
     };
 }
@@ -108,6 +111,10 @@ export function ProposalForm({
 }: ProposalFormProps) {
     const defaultFormValues = useMemo(() => toFormValues(initialData), [initialData]);
 
+    const [liminarJudicialEnabled, setLiminarJudicialEnabled] = useState(() =>
+        Boolean(initialData?.judicialSummary?.trim())
+    );
+
     const form = useForm<CreateProposalInput>({
         resolver: zodResolver(createProposalSchema),
         defaultValues: defaultFormValues,
@@ -116,6 +123,13 @@ export function ProposalForm({
     useEffect(() => {
         form.reset(defaultFormValues);
     }, [defaultFormValues, form]);
+
+    /** Sincroniza quando o texto salvo no servidor muda (ex.: após refresh). Em criação não há `initialData`. */
+    useEffect(() => {
+        if (initialData === undefined) return;
+        setLiminarJudicialEnabled(Boolean(initialData.judicialSummary?.trim()));
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- só reage ao valor persistido, não ao objeto `initialData` a cada render
+    }, [initialData?.judicialSummary]);
 
     const { fields, append, remove } = useFieldArray({
         control: form.control,
@@ -454,14 +468,62 @@ export function ProposalForm({
 
                                 <div className="col-span-12 rounded-lg bg-background/80 px-3 py-2 text-sm text-muted-foreground">
                                     {watchedItems?.[index]?.productId
-                                        ? `Resumo do item: ${formatCurrency(watchedItems[index]?.unitPrice || 0)} x ${
-                                              watchedItems[index]?.quantity || 1
-                                          } = ${formatCurrency(watchedItems[index]?.totalPrice || 0)}`
+                                        ? `Resumo do item: ${formatCurrency(watchedItems[index]?.unitPrice || 0)} x ${watchedItems[index]?.quantity || 1
+                                        } = ${formatCurrency(watchedItems[index]?.totalPrice || 0)}`
                                         : "Selecione um produto para iniciar o item."}
                                 </div>
                             </div>
                         ))}
                     </div>
+                </div>
+
+                <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="space-y-1">
+                            <Label htmlFor="liminar-judicial" className="text-base">
+                                Atendimento por Liminar Judicial
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                                Ative para registrar resumo do caso e justificativa; o conteúdo aparece no PDF do orçamento.
+                            </p>
+                        </div>
+                        <Switch
+                            id="liminar-judicial"
+                            checked={liminarJudicialEnabled}
+                            onCheckedChange={(checked) => {
+                                setLiminarJudicialEnabled(checked);
+                                if (!checked) {
+                                    form.setValue("judicialSummary", "", {
+                                        shouldValidate: true,
+                                        shouldDirty: true,
+                                    });
+                                }
+                            }}
+                            disabled={isPending}
+                            className="shrink-0"
+                        />
+                    </div>
+                    {liminarJudicialEnabled ? (
+                        <FormField
+                            control={form.control}
+                            name="judicialSummary"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Resumo do caso e justificativa judicial</FormLabel>
+                                    <FormControl>
+                                        <Textarea
+                                            placeholder="Descreva o contexto judicial, o que foi determinado na liminar e a justificativa dos procedimentos solicitados..."
+                                            className="min-h-[160px] resize-y text-sm"
+                                            {...field}
+                                            value={field.value ?? ""}
+                                            disabled={isPending}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    ) : null}
                 </div>
 
                 <FormField

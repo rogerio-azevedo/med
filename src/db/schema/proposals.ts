@@ -36,6 +36,8 @@ export const proposals = pgTable("proposals", {
     totalAmount: integer("total_amount").default(0).notNull(), // Centavos
     validUntil: date("valid_until"),
     notes: text("notes"),
+    /** Resumo e justificativa quando a cirurgia é por liminar judicial (PDF e formulário condicionais). */
+    judicialSummary: text("judicial_summary"),
     paymentTermId: uuid("payment_term_id").references(() => paymentTerms.id, {
         onDelete: "set null",
     }),

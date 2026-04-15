@@ -30,6 +30,8 @@ export type ProposalPrintContext = {
     createdAt: Date;
     validUntil: string | null;
     notes: string | null;
+    /** Resumo judicial / liminar — exibido no PDF apenas se preenchido. */
+    judicialSummary: string | null;
     patientName: string | null;
     createdByName: string | null;
     items: ProposalPrintItem[];
@@ -88,6 +90,7 @@ export async function getProposalPrintContext(
         createdAt: proposal.createdAt,
         validUntil: proposal.validUntil,
         notes: proposal.notes,
+        judicialSummary: proposal.judicialSummary,
         patientName: proposal.patient?.name ?? null,
         createdByName: proposal.createdBy?.name ?? null,
         items,

@@ -47,7 +47,7 @@ export function ProposalDocument({ data }: ProposalDocumentProps) {
 
             <div className="h-0.5 w-full print:h-px" style={{ backgroundColor: ACCENT }} aria-hidden />
 
-            <div className="px-4 py-2 print:px-3 print:py-1.5" style={{ backgroundColor: LIGHT }}>
+            <div className="px-4 py-2 print:px-3 print:py-2" style={{ backgroundColor: LIGHT }}>
                 <div className="text-center">
                     <h1 className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: NAVY }}>
                         Proposta comercial
@@ -57,7 +57,7 @@ export function ProposalDocument({ data }: ProposalDocumentProps) {
                         </span>
                     </h1>
                 </div>
-                <dl className="mt-1.5 grid gap-x-3 gap-y-1 text-xs sm:grid-cols-2 sm:items-start print:gap-y-0.5">
+                <dl className="mt-1.5 grid gap-x-3 gap-y-1.5 text-xs sm:grid-cols-2 sm:items-start print:gap-y-1">
                     <div className="min-w-0">
                         <dt className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">Paciente</dt>
                         <dd className="mt-px font-medium leading-tight" style={{ color: NAVY }}>
@@ -142,6 +142,22 @@ export function ProposalDocument({ data }: ProposalDocumentProps) {
                     </p>
                 </div>
             </div>
+
+            {data.judicialSummary?.trim() ? (
+                <section
+                    className="border-t border-slate-100 px-4 py-3 print:px-3 print:py-2 print:break-inside-avoid"
+                    aria-label="Liminar judicial"
+                >
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 print:py-1.5">
+                        <h3 className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+                            Atendimento por Liminar Judicial — Resumo e Justificativa
+                        </h3>
+                        <p className="mt-1.5 whitespace-pre-wrap text-[11px] leading-snug text-slate-700 print:mt-1">
+                            {data.judicialSummary.trim()}
+                        </p>
+                    </div>
+                </section>
+            ) : null}
 
             <section
                 className="border-t border-slate-100 px-4 py-3 print:px-3 print:py-2 print:break-inside-avoid"
