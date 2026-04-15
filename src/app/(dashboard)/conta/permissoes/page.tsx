@@ -46,7 +46,7 @@ export default async function PermissoesPage() {
         <div className="flex-1 space-y-8 p-8 pt-6">
             <PageHeader
                 title="Permissões de Acesso"
-                description="Configure as permissões por módulo para cada membro da clínica. Para administradores, enquanto não houver registro salvo para um módulo, o acesso permanece total; após ajustar os interruptores daquele módulo, passam a valer apenas as ações marcadas."
+                description="Defina o que cada pessoa pode ver e fazer por módulo."
             />
 
             <PermissionsGrid 
