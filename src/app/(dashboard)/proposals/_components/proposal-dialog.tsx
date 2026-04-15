@@ -57,8 +57,8 @@ export function ProposalDialog({ patients, products, paymentTerms, children }: P
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl bg-white/95 backdrop-blur-md">
-                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-8 pb-6 border-b">
+            <DialogContent className="flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden border-none bg-white/95 p-0 shadow-2xl backdrop-blur-md sm:max-w-4xl">
+                <div className="shrink-0 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-8 pb-6">
                     <div className="flex items-center gap-5">
                         <div className="p-4 bg-primary/10 rounded-2xl text-primary shadow-inner">
                             <FileText size={32} />
@@ -74,7 +74,7 @@ export function ProposalDialog({ patients, products, paymentTerms, children }: P
                     </div>
                 </div>
 
-                <div className="p-8">
+                <div className="min-h-0 flex-1 overflow-y-auto p-8">
                     <ProposalForm
                         key={isOpen ? "proposal-form-open" : "proposal-form-closed"}
                         patients={patients}
