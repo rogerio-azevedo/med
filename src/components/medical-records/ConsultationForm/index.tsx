@@ -31,7 +31,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     getServiceTypeWorkflowLabel,
     type ServiceTypeWorkflow,
@@ -467,13 +466,13 @@ export function ConsultationForm({
                                 </TabsList>
                             </div>
 
-                            <ScrollArea className="flex-1 px-6 py-4">
+                            <div className="flex-1 overflow-y-auto px-6 py-4">
                                 <TabsContent value="subjective" className="mt-0 space-y-4">
                                     <div className="space-y-2">
                                         <Label className="text-lg font-semibold">Queixa Principal e História (HDA)</Label>
                                         <Textarea
                                             placeholder="Descreva o motivo da consulta, sintomas e histórico atual..."
-                                            className="min-h-[300px] text-base"
+                                            className="min-h-[400px] text-base"
                                             value={soap.subjective}
                                             onChange={(e) => setSoap({ ...soap, subjective: e.target.value })}
                                         />
@@ -507,7 +506,7 @@ export function ConsultationForm({
                                         <Label className="text-lg font-semibold">Exame Físico</Label>
                                         <Textarea
                                             placeholder="Descreva os achados do exame físico..."
-                                            className="min-h-[200px]"
+                                            className="min-h-[300px]"
                                             value={soap.objective}
                                             onChange={(e) => setSoap({ ...soap, objective: e.target.value })}
                                         />
@@ -536,7 +535,7 @@ export function ConsultationForm({
                                             <Label className="text-lg font-semibold">Avaliação Clínica / Observações</Label>
                                             <Textarea
                                                 placeholder="Discuta o raciocínio clínico, gravidade e prognóstico..."
-                                                className="min-h-[200px]"
+                                                className="min-h-[300px]"
                                                 value={soap.assessment}
                                                 onChange={(e) => setSoap({ ...soap, assessment: e.target.value })}
                                             />
@@ -553,7 +552,7 @@ export function ConsultationForm({
                                         clinicId={clinicId}
                                     />
                                 </TabsContent>
-                            </ScrollArea>
+                            </div>
                         </Tabs>
 
                         <DialogFooter className="gap-3 border-t p-6">
@@ -577,7 +576,7 @@ export function ConsultationForm({
                     </>
                 ) : (
                     <>
-                        <ScrollArea className="flex-1 px-6 py-4">
+                        <div className="flex-1 overflow-y-auto px-6 py-4">
                             <div className="space-y-6">
                                 <Card className="border-dashed">
                                     <CardContent className="space-y-2 p-4 text-sm text-muted-foreground">
@@ -602,7 +601,7 @@ export function ConsultationForm({
                                     <Label className="text-lg font-semibold">{recordMeta.primaryLabel}</Label>
                                     <Textarea
                                         placeholder={recordMeta.primaryPlaceholder}
-                                        className="min-h-[220px]"
+                                        className="min-h-[300px]"
                                         value={soap.assessment}
                                         onChange={(e) => setSoap({ ...soap, assessment: e.target.value })}
                                     />
@@ -612,13 +611,13 @@ export function ConsultationForm({
                                     <Label className="text-lg font-semibold">{recordMeta.secondaryLabel}</Label>
                                     <Textarea
                                         placeholder={recordMeta.secondaryPlaceholder}
-                                        className="min-h-[180px]"
+                                        className="min-h-[250px]"
                                         value={soap.plan}
                                         onChange={(e) => setSoap({ ...soap, plan: e.target.value })}
                                     />
                                 </div>
                             </div>
-                        </ScrollArea>
+                        </div>
 
                         <DialogFooter className="gap-3 border-t p-6">
                             <Button variant="outline" onClick={onClose}>Cancelar</Button>

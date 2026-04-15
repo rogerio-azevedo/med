@@ -295,6 +295,13 @@
       "when": 1778695200009,
       "tag": "0041_prescription_catalog_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1778695200010,
+      "tag": "0042_soap_text_enforce",
+      "breakpoints": true
     }
   ]
 }

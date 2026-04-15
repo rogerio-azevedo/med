@@ -120,7 +120,7 @@ export function PlanTab({
                 </Label>
                 <Textarea
                     placeholder="Descreva as orientações, próximas etapas e plano de cuidado..."
-                    className="min-h-[200px]"
+                    className="min-h-[300px]"
                     value={planValue}
                     onChange={(e) => onPlanChange(e.target.value)}
                 />
