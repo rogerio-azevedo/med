@@ -3,6 +3,7 @@ import { getClinicUsers } from "@/services/clinics";
 import { getAllClinicPermissions } from "@/services/permissions";
 import { redirect } from "next/navigation";
 import { PermissionsGrid } from "@/components/conta/PermissionsGrid";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export default async function PermissoesPage() {
     const session = await auth();
@@ -42,14 +43,11 @@ export default async function PermissoesPage() {
     }));
 
     return (
-        <div className="flex-1 space-y-4 p-8 pt-6">
-            <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Permissões de Acesso</h2>
-            </div>
-            
-            <p className="text-muted-foreground mb-6">
-                Configure as permissões granulares por tipo de funcionalidade para cada membro da clínica. Administradores possuem acesso total por padrão.
-            </p>
+        <div className="flex-1 space-y-8 p-8 pt-6">
+            <PageHeader
+                title="Permissões de Acesso"
+                description="Configure as permissões granulares por tipo de funcionalidade para cada membro da clínica. Administradores possuem acesso total por padrão."
+            />
 
             <PermissionsGrid 
                 users={typedUsers} 

@@ -1,7 +1,8 @@
 import { auth } from "@/auth";
 import { getClinicUsers } from "@/services/clinics";
 import { redirect } from "next/navigation";
-import { ClinicUsersTable } from "@/components/conta/ClinicUsersTable";
+import { ClinicUsersPageContent } from "@/components/conta/ClinicUsersPageContent";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export default async function UsuariosPage() {
     const session = await auth();
@@ -42,18 +43,15 @@ export default async function UsuariosPage() {
     }));
 
     return (
-        <div className="flex-1 space-y-4 p-8 pt-6">
-            <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Usuários da Clínica</h2>
-            </div>
-            
-            <p className="text-muted-foreground mb-6">
-                Gerencie os usuários e seus papéis dentro da clínica.
-            </p>
+        <div className="flex-1 space-y-8 p-8 pt-6">
+            <PageHeader
+                title="Usuários da Clínica"
+                description="Gerencie os usuários e seus papéis dentro da clínica."
+            />
 
-            <ClinicUsersTable 
-                users={typedUsers} 
-                currentClinicUserId={currentClinicUserId} 
+            <ClinicUsersPageContent
+                users={typedUsers}
+                currentClinicUserId={currentClinicUserId}
             />
         </div>
     );

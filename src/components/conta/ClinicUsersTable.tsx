@@ -21,7 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-interface ClinicUser {
+export interface ClinicUser {
     id: string;
     clinicId: string;
     role: "admin" | "doctor" | "receptionist" | "nurse" | "patient";
@@ -37,6 +37,7 @@ interface ClinicUser {
 interface ClinicUsersTableProps {
     users: ClinicUser[];
     currentClinicUserId: string;
+    emptyMessage?: string;
 }
 
 const roleNames = {
@@ -47,7 +48,11 @@ const roleNames = {
     patient: "Paciente",
 };
 
-export function ClinicUsersTable({ users, currentClinicUserId }: ClinicUsersTableProps) {
+export function ClinicUsersTable({
+    users,
+    currentClinicUserId,
+    emptyMessage = "Nenhum usuário encontrado.",
+}: ClinicUsersTableProps) {
     const [loadingId, setLoadingId] = useState<string | null>(null);
 
     const handleRoleChange = async (userId: string, newRole: string) => {
@@ -135,7 +140,7 @@ export function ClinicUsersTable({ users, currentClinicUserId }: ClinicUsersTabl
                     {users.length === 0 && (
                         <TableRow>
                             <TableCell colSpan={4} className="h-24 text-center">
-                                Nenhum usuário encontrado.
+                                {emptyMessage}
                             </TableCell>
                         </TableRow>
                     )}
