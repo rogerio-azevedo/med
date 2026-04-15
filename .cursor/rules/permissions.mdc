@@ -23,4 +23,4 @@ Ao adicionar ou mover uma **nova área** em `src/app/(dashboard)/` (novo `page.t
 
 4. **Sub-rotas** (`[id]`, nested layouts): se forem acessíveis sem passar pela listagem, repetir o mesmo `can("<slug>", "can_read")` nelas para não haver bypass por URL.
 
-Administradores da clínica (`clinicRole === "admin"`) já têm acesso total via `can()`. Não duplicar lógica de admin nas páginas.
+Em `can()` / `getPermissions`: super admin tem acesso total; admin da clínica só é total por módulo **enquanto não existir linha** em `clinic_user_permissions` para aquele slug — depois que alguém salva permissões daquele módulo, vale o que está no banco. Não duplicar essa lógica nas páginas.

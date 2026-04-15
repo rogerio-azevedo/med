@@ -14,7 +14,22 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ALL_FEATURES, ALL_ACTIONS, FEATURE_CATEGORIES, type FeatureSlug, type PermissionAction } from "@/lib/features";
+import {
+    ALL_FEATURES,
+    ALL_ACTIONS,
+    FEATURE_CATEGORIES,
+    type FeatureSlug,
+    type PermissionAction,
+} from "@/lib/features";
+
+const IMPLICIT_ADMIN_ACTIONS: PermissionAction[] = ALL_ACTIONS.map((a) => a.action);
+
+function getEffectiveActions(user: User, perm: UserPermission | undefined): PermissionAction[] {
+    if (user.role === "admin" && !perm) {
+        return [...IMPLICIT_ADMIN_ACTIONS];
+    }
+    return (perm?.actions as PermissionAction[]) ?? [];
+}
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -72,7 +87,13 @@ export function PermissionsGrid({ users, permissions, currentClinicUserId }: Per
         return localPermissions.find(p => p.clinicUserId === userId && p.featureSlug === featureSlug);
     };
 
-    const handleToggle = async (userId: string, featureSlug: FeatureSlug, action: PermissionAction, currentValue: boolean) => {
+    const handleToggle = async (
+        userId: string,
+        featureSlug: FeatureSlug,
+        action: PermissionAction,
+        currentValue: boolean,
+        baselineActions: PermissionAction[],
+    ) => {
         if (userId === currentClinicUserId && (featureSlug === "users" || featureSlug === "clinic-settings")) {
             toast.error("Você não pode alterar suas permissões para este módulo.");
             return;
@@ -85,7 +106,7 @@ export function PermissionsGrid({ users, permissions, currentClinicUserId }: Per
         const newValue = !oldValue;
 
         const currentPerm = getPermission(userId, featureSlug);
-        const currentActions = currentPerm?.actions || [];
+        const currentActions = [...baselineActions];
         
         let newActions: string[];
         if (newValue) {
@@ -177,6 +198,7 @@ export function PermissionsGrid({ users, permissions, currentClinicUserId }: Per
                                                     const isAdmin = user.role === "admin";
                                                     const userAvatarName = user.name?.charAt(0) ?? "U";
                                                     const perm = getPermission(user.id, feature.slug);
+                                                    const effective = getEffectiveActions(user, perm);
 
                                                     return (
                                                         <TableRow key={user.id}>
@@ -198,11 +220,10 @@ export function PermissionsGrid({ users, permissions, currentClinicUserId }: Per
                                                                 </div>
                                                             </TableCell>
                                                             {ALL_ACTIONS.map((a) => {
-                                                                const isChecked = isAdmin ? true : (perm?.actions.includes(a.action) ?? false);
+                                                                const isChecked = effective.includes(a.action);
                                                                 const updateKey = `${user.id}-${feature.slug}-${a.action}`;
                                                                 const isUpdating = updatingParams === updateKey;
-                                                                // Disable toggle if user is admin (admins have full access)
-                                                                const disabled = isAdmin || isUpdating;
+                                                                const disabled = isUpdating;
 
                                                                 return (
                                                                     <TableCell key={a.action}>
@@ -214,7 +235,8 @@ export function PermissionsGrid({ users, permissions, currentClinicUserId }: Per
                                                                                     user.id,
                                                                                     feature.slug as FeatureSlug,
                                                                                     a.action,
-                                                                                    isChecked
+                                                                                    isChecked,
+                                                                                    effective,
                                                                                 )
                                                                             }
                                                                         />

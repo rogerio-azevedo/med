@@ -4,9 +4,17 @@ import { clinicUserPermissions } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import type { FeatureSlug, PermissionAction } from "./features";
 
+const ALL_PERMISSION_ACTIONS: PermissionAction[] = [
+    "can_read",
+    "can_create",
+    "can_update",
+    "can_delete",
+];
+
 /**
  * Verifica se o usuário logado tem uma action específica em uma feature.
- * Admins da clínica têm acesso total.
+ * Super admin: acesso irrestrito. Admin da clínica: se existir registro no banco
+ * para o módulo, vale o que estiver salvo; caso contrário mantém acesso total (legado).
  */
 export async function can(
     featureSlug: FeatureSlug,
@@ -16,8 +24,7 @@ export async function can(
 
     if (!session?.user?.clinicId) return false;
 
-    // Admin tem acesso irrestrito
-    if (session.user.clinicRole === "admin") return true;
+    if (session.user.role === "super_admin") return true;
 
     const clinicUserId = session.user.clinicUserId;
     if (!clinicUserId) return false;
@@ -28,6 +35,11 @@ export async function can(
             eq(clinicUserPermissions.featureSlug, featureSlug),
         ),
     });
+
+    if (session.user.clinicRole === "admin") {
+        if (!permission) return true;
+        return permission.actions.includes(action);
+    }
 
     return permission?.actions.includes(action) ?? false;
 }
@@ -42,8 +54,8 @@ export async function getPermissions(
 
     if (!session?.user?.clinicId) return [];
 
-    if (session.user.clinicRole === "admin") {
-        return ["can_read", "can_create", "can_update", "can_delete"];
+    if (session.user.role === "super_admin") {
+        return [...ALL_PERMISSION_ACTIONS];
     }
 
     const clinicUserId = session.user.clinicUserId;
@@ -55,6 +67,11 @@ export async function getPermissions(
             eq(clinicUserPermissions.featureSlug, featureSlug),
         ),
     });
+
+    if (session.user.clinicRole === "admin") {
+        if (!permission) return [...ALL_PERMISSION_ACTIONS];
+        return (permission.actions ?? []) as PermissionAction[];
+    }
 
     return (permission?.actions ?? []) as PermissionAction[];
 }
