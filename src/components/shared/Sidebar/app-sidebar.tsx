@@ -1,5 +1,7 @@
 "use client"
 
+import { useMemo } from "react"
+import type { LucideIcon } from "lucide-react"
 import {
   LayoutDashboard,
   KanbanSquare,
@@ -165,6 +167,29 @@ const data = {
   ],
 }
 
+type NavMainItem = {
+  title: string
+  url: string
+  icon?: LucideIcon
+  superAdminOnly?: boolean
+  clinicAdminOnly?: boolean
+  items?: { title: string; url: string }[]
+}
+
+function filterMainNavItems(items: NavMainItem[], allowed: Set<string>): NavMainItem[] {
+  return items
+    .map((item) => {
+      if (item.items && item.items.length > 0) {
+        const filteredSub = item.items.filter((sub) => allowed.has(sub.url))
+        if (filteredSub.length === 0) return null
+        return { ...item, items: filteredSub }
+      }
+      if (allowed.has(item.url)) return item
+      return null
+    })
+    .filter((item): item is NavMainItem => item != null)
+}
+
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: {
     name?: string | null
@@ -173,18 +198,43 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
     role?: string | null
     clinicRole?: string | null
   }
+  /** null/undefined = sem filtro (paciente, super admin) */
+  mainNavAllowedPaths?: string[] | null
+  /** null/undefined = sem filtro nos links de admin da clínica */
+  adminClinicAllowedPaths?: string[] | null
 }
 
-export function AppSidebar({ user, ...props }: AppSidebarProps) {
+export function AppSidebar({
+  user,
+  mainNavAllowedPaths = null,
+  adminClinicAllowedPaths = null,
+  ...props
+}: AppSidebarProps) {
   const isSuperAdmin = user.role === "super_admin"
   const isClinicAdmin = user.clinicRole === "admin"
   const isPatient = user.role === "patient"
 
-  const adminItems = data.admin.filter((item) => {
-    if (item.superAdminOnly && !isSuperAdmin) return false
-    if (item.clinicAdminOnly && !isClinicAdmin && !isSuperAdmin) return false
-    return true
-  })
+  const mainNavItems = useMemo(() => {
+    if (isPatient) return data.patient
+    if (mainNavAllowedPaths == null) return data.navMain
+    return filterMainNavItems(data.navMain, new Set(mainNavAllowedPaths))
+  }, [isPatient, mainNavAllowedPaths])
+
+  const adminItems = useMemo(() => {
+    return data.admin.filter((item) => {
+      if (item.superAdminOnly && !isSuperAdmin) return false
+      if (item.clinicAdminOnly && !isClinicAdmin && !isSuperAdmin) return false
+      if (
+        item.clinicAdminOnly &&
+        isClinicAdmin &&
+        !isSuperAdmin &&
+        adminClinicAllowedPaths != null
+      ) {
+        if (!adminClinicAllowedPaths.includes(item.url)) return false
+      }
+      return true
+    })
+  }, [isSuperAdmin, isClinicAdmin, adminClinicAllowedPaths])
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -200,8 +250,8 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={isPatient ? data.patient : data.navMain} />
-        {(isSuperAdmin || isClinicAdmin) && (
+        <NavMain items={mainNavItems} />
+        {(isSuperAdmin || isClinicAdmin) && adminItems.length > 0 && (
           <NavMain items={adminItems} label="Administração" />
         )}
       </SidebarContent>
