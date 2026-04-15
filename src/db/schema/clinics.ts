@@ -24,6 +24,8 @@ export const clinics = pgTable("clinics", {
     email: varchar("email", { length: 255 }),
     /** URL pública da logo da clínica (ex.: CDN ou storage). */
     logoUrl: varchar("logo_url", { length: 500 }),
+    /** Texto livre para condições gerais e pagamento na impressão de propostas (fallback no código se vazio). */
+    proposalConditions: text("proposal_conditions"),
     isActive: boolean("is_active").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
