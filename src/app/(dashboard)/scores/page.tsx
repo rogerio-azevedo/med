@@ -1,6 +1,7 @@
 import { Activity } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { can } from "@/lib/permissions";
 import { AddScoreItemDialog } from "@/components/score-items/AddScoreItemDialog";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ScoreItemsTable } from "@/components/score-items/ScoreItemsTable";
@@ -13,6 +14,9 @@ export default async function ScoresPage() {
     if (!clinicId) {
         redirect("/dashboard");
     }
+
+    const allowed = await can("scores", "can_read");
+    if (!allowed) redirect("/dashboard");
 
     const scoreItems = await getScoreItems(clinicId);
 

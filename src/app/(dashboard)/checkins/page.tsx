@@ -1,6 +1,7 @@
 import { LogIn } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { can } from "@/lib/permissions";
 import { CheckInsPageHeader } from "@/components/check-ins/CheckInsPageHeader";
 import { CheckInsTable } from "@/components/check-ins/CheckInsTable";
 import { getCheckIns } from "@/db/queries/check-ins";
@@ -16,6 +17,9 @@ export default async function CheckInsPage() {
     if (!clinicId) {
         redirect("/dashboard");
     }
+
+    const allowed = await can("checkins", "can_read");
+    if (!allowed) redirect("/dashboard");
 
     const [checkIns, patients, serviceTypes, healthInsurances, doctors] = await Promise.all([
         getCheckIns(clinicId),

@@ -1,8 +1,10 @@
 import { Pill } from "lucide-react";
+import { redirect } from "next/navigation";
 import {
   getMedicationFilterOptionsAction,
   getMedicationsAction,
 } from "@/app/actions/medications";
+import { can } from "@/lib/permissions";
 import { AddMedicationDialog } from "@/components/medications/AddMedicationDialog";
 import { MedicationsFilters } from "@/components/medications/MedicationsFilters";
 import { MedicationsPagination } from "@/components/medications/MedicationsPagination";
@@ -30,6 +32,9 @@ export default async function MedicationsPage({
     pharmaceuticalForm?: string;
   }>;
 }) {
+  const allowed = await can("medications", "can_read");
+  if (!allowed) redirect("/dashboard");
+
   const params = await searchParams;
   const filters = {
     query: normalizeSearchParam(params.q),

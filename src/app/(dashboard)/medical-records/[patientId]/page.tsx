@@ -8,7 +8,8 @@ import { getPatientFilesTimelineSorted } from "@/db/queries/prontuario-timeline"
 import { getActiveServiceTypes } from "@/db/queries/service-types";
 import { getClinicHealthInsurances } from "@/db/queries/health-insurances";
 import { auth } from "@/auth";
-import { notFound } from "next/navigation";
+import { can } from "@/lib/permissions";
+import { notFound, redirect } from "next/navigation";
 import { ProntuarioClient } from "@/components/medical-records/ProntuarioClient";
 import { db } from "@/db";
 import { clinicUsers } from "@/db/schema";
@@ -29,6 +30,9 @@ export default async function ProntuarioPage({ params, searchParams }: Prontuari
     if (!session?.user?.clinicId) {
         return <div>Não autorizado</div>;
     }
+
+    const allowed = await can("medical-records", "can_read");
+    if (!allowed) redirect("/dashboard");
 
     const patient = await getPatientById(patientId, session.user.clinicId);
     if (!patient) {

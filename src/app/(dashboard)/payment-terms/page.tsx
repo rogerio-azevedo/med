@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { can } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { CreditCard } from "lucide-react";
 import { getPaymentTerms } from "@/db/queries/payment-terms";
@@ -13,6 +14,9 @@ export default async function PaymentTermsPage() {
     if (!clinicId) {
         redirect("/dashboard");
     }
+
+    const allowed = await can("payment-terms", "can_read");
+    if (!allowed) redirect("/dashboard");
 
     const paymentTerms = await getPaymentTerms(clinicId);
 

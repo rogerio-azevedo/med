@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { can } from "@/lib/permissions";
 import { getBoardPageData } from "@/services/kanban";
 import { redirect } from "next/navigation";
 import { KanbanBoard } from "@/components/tarefas/KanbanBoard";
@@ -14,6 +15,9 @@ export default async function TarefasPage({
     if (!clinicId) {
         redirect("/login");
     }
+
+    const allowed = await can("tasks", "can_read");
+    if (!allowed) redirect("/dashboard");
 
     const params = await searchParams;
 

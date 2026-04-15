@@ -1,6 +1,7 @@
 import { ClipboardList } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { can } from "@/lib/permissions";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AddServiceTypeDialog } from "@/components/service-types/AddServiceTypeDialog";
 import { ServiceTypesTable } from "@/components/service-types/ServiceTypesTable";
@@ -13,6 +14,9 @@ export default async function ServiceTypesPage() {
     if (!clinicId) {
         redirect("/dashboard");
     }
+
+    const allowed = await can("service-types", "can_read");
+    if (!allowed) redirect("/dashboard");
 
     const serviceTypes = await getServiceTypes(clinicId);
 

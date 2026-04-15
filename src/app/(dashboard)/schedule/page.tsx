@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { can } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { startOfWeek, endOfWeek } from "date-fns";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -20,6 +21,9 @@ export const metadata = {
 export default async function SchedulePage() {
     const session = await auth();
     if (!session?.user?.clinicId) redirect("/login");
+
+    const allowed = await can("schedule", "can_read");
+    if (!allowed) redirect("/dashboard");
 
     const clinicId = session.user.clinicId;
 

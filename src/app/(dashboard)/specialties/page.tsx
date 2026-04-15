@@ -2,9 +2,14 @@ import { getSpecialtiesAction } from "@/app/actions/specialties";
 import { SpecialtiesTable } from "@/components/specialties/SpecialtiesTable";
 import { AddSpecialtyDialog } from "@/components/specialties/AddSpecialtyDialog";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { can } from "@/lib/permissions";
 import { Tag } from "lucide-react";
+import { redirect } from "next/navigation";
 
 export default async function SpecialtiesPage() {
+    const allowed = await can("specialties", "can_read");
+    if (!allowed) redirect("/dashboard");
+
     const result = await getSpecialtiesAction();
     const specialties = result.success ? result.data || [] : [];
 

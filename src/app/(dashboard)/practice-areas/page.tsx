@@ -2,9 +2,14 @@ import { getPracticeAreasAction } from "@/app/actions/practice-areas";
 import { PracticeAreasTable } from "@/components/practice-areas/PracticeAreasTable";
 import { AddPracticeAreaDialog } from "@/components/practice-areas/AddPracticeAreaDialog";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { can } from "@/lib/permissions";
 import { Briefcase } from "lucide-react";
+import { redirect } from "next/navigation";
 
 export default async function PracticeAreasPage() {
+    const allowed = await can("practice-areas", "can_read");
+    if (!allowed) redirect("/dashboard");
+
     const result = await getPracticeAreasAction();
     const practiceAreas = result.success ? result.data || [] : [];
 

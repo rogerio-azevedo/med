@@ -1,0 +1,26 @@
+---
+description: Ao criar rotas no dashboard, registrar permissões em features, route-permissions e can() na página.
+globs: src/app/(dashboard)/**/*.tsx
+alwaysApply: false
+---
+
+# Permissões por recurso (dashboard)
+
+Ao adicionar ou mover uma **nova área** em `src/app/(dashboard)/` (novo `page.tsx` acessível pelo menu ou URL direta):
+
+1. **[`src/lib/features.ts`](src/lib/features.ts)**  
+   - Incluir o slug em `FeatureSlug`.  
+   - Adicionar entrada em `ALL_FEATURES` (nome, descrição, categoria: Cadastros | Operações | Administração).
+
+2. **[`src/lib/route-permissions.ts`](src/lib/route-permissions.ts)**  
+   - Adicionar o path base (ex.: `/nova-rota`) → mesmo slug em `ROUTE_PERMISSIONS`.
+
+3. **Página principal (`page.tsx`)**  
+   - No Server Component, antes de buscar dados sensíveis:
+   - `import { can } from "@/lib/permissions"` e `redirect` de `next/navigation`.  
+   - `const allowed = await can("<slug>", "can_read");`  
+   - `if (!allowed) redirect("/dashboard");`
+
+4. **Sub-rotas** (`[id]`, nested layouts): se forem acessíveis sem passar pela listagem, repetir o mesmo `can("<slug>", "can_read")` nelas para não haver bypass por URL.
+
+Administradores da clínica (`clinicRole === "admin"`) já têm acesso total via `can()`. Não duplicar lógica de admin nas páginas.

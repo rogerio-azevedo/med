@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { getClinicHealthInsurances, getHealthInsurances } from "@/db/queries/health-insurances";
+import { can } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import { AddHealthInsuranceDialog } from "@/components/health-insurances/AddHealthInsuranceDialog";
@@ -14,6 +15,9 @@ export default async function HealthInsurancesPage() {
     if (!clinicId) {
         redirect("/dashboard");
     }
+
+    const allowed = await can("health-insurances", "can_read");
+    if (!allowed) redirect("/dashboard");
 
     const [allHealthInsurances, clinicHealthInsurances] = await Promise.all([
         getHealthInsurances(),

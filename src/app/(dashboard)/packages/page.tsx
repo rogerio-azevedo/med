@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { getProducts } from "@/db/queries/products";
+import { can } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { PackageDialog } from "./_components/package-dialog";
 import { PackagesTable } from "./_components/packages-table";
@@ -14,6 +15,9 @@ export default async function PackagesPage() {
     if (!clinicId) {
         redirect("/dashboard");
     }
+
+    const allowed = await can("packages", "can_read");
+    if (!allowed) redirect("/dashboard");
 
     const products = await getProducts(clinicId);
 

@@ -3,6 +3,7 @@ import { getProposals, getProposalStats } from "@/db/queries/proposals";
 import { getPatientsByClinic } from "@/db/queries/patients";
 import { getProducts } from "@/db/queries/products";
 import { getActivePaymentTerms } from "@/db/queries/payment-terms";
+import { can } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { ProposalDialog } from "./_components/proposal-dialog";
 import { ProposalsTable } from "./_components/proposals-table";
@@ -17,6 +18,9 @@ export default async function ProposalsPage() {
     if (!clinicId) {
         redirect("/dashboard");
     }
+
+    const allowed = await can("proposals", "can_read");
+    if (!allowed) redirect("/dashboard");
 
     const [proposals, stats, patients, products, paymentTerms] = await Promise.all([
         getProposals(clinicId),

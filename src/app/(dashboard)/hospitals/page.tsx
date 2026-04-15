@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { Building2 } from "lucide-react";
+import { can } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { AddHospitalDialog } from "@/components/hospitals/AddHospitalDialog";
 import { HospitalsTable } from "@/components/hospitals/HospitalsTable";
@@ -13,6 +14,9 @@ export default async function HospitalsPage() {
     if (!clinicId) {
         redirect("/dashboard");
     }
+
+    const allowed = await can("hospitals", "can_read");
+    if (!allowed) redirect("/dashboard");
 
     const hospitals = await getHospitals(clinicId);
 

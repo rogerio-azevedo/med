@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { can } from "@/lib/permissions";
 import { getClinicsWithAddress, getDoctorsWithAddress, getHospitalsWithAddressForMap } from "@/db/queries/map";
 import { db } from "@/db";
 import { specialties } from "@/db/schema";
@@ -13,6 +14,9 @@ export default async function MapsPage() {
     if (!clinicId) {
         redirect("/login");
     }
+
+    const allowed = await can("map", "can_read");
+    if (!allowed) redirect("/dashboard");
 
     const [clinicsData, doctorsData, hospitalsData, allSpecialties] = await Promise.all([
         getClinicsWithAddress(clinicId),
