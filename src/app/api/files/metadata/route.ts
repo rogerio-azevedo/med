@@ -39,6 +39,7 @@ export async function POST(request: Request) {
             clinicId,
             patientId: d.patientId,
             consultationId: d.consultationId ?? null,
+            surgeryId: d.surgeryId ?? null,
             mimeType: d.mimeType,
             sizeBytes: d.sizeBytes,
             fileName: d.fileName,
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
         const row = await insertPatientFile({
             patientId: d.patientId,
             consultationId: d.consultationId ?? null,
+            surgeryId: d.surgeryId ?? null,
             clinicId,
             uploadedBy: session.user.id,
             title: d.title,

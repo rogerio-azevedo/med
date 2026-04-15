@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getActiveServiceTypes, getServiceTypes } from "@/db/queries/service-types";
-import { serviceTypeSchema } from "@/lib/validations/service-types";
+import { normalizeServiceTypePayload, serviceTypeSchema } from "@/lib/validations/service-types";
 import {
     createServiceTypeService,
     deleteServiceTypeService,
@@ -56,7 +56,7 @@ export async function createServiceTypeAction(data: unknown) {
         return { success: false, error: "Clínica não encontrada" };
     }
 
-    const parsed = serviceTypeSchema.safeParse(data);
+    const parsed = serviceTypeSchema.safeParse(normalizeServiceTypePayload(data));
     if (!parsed.success) {
         return { success: false, error: getFirstError(parsed.error) || "Dados inválidos" };
     }
@@ -68,6 +68,7 @@ export async function createServiceTypeAction(data: unknown) {
 
     revalidatePath("/service-types");
     revalidatePath("/checkins");
+    revalidatePath("/medical-records", "layout");
     return { success: true };
 }
 
@@ -79,7 +80,7 @@ export async function updateServiceTypeAction(id: string, data: unknown) {
         return { success: false, error: "Clínica não encontrada" };
     }
 
-    const parsed = serviceTypeSchema.safeParse(data);
+    const parsed = serviceTypeSchema.safeParse(normalizeServiceTypePayload(data));
     if (!parsed.success) {
         return { success: false, error: getFirstError(parsed.error) || "Dados inválidos" };
     }
@@ -91,6 +92,7 @@ export async function updateServiceTypeAction(id: string, data: unknown) {
 
     revalidatePath("/service-types");
     revalidatePath("/checkins");
+    revalidatePath("/medical-records", "layout");
     return { success: true };
 }
 
@@ -109,6 +111,7 @@ export async function deleteServiceTypeAction(id: string) {
 
     revalidatePath("/service-types");
     revalidatePath("/checkins");
+    revalidatePath("/medical-records", "layout");
     return {
         success: true,
         message: "Tipo de atendimento inativado com sucesso.",

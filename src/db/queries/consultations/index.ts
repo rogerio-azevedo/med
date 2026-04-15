@@ -11,7 +11,7 @@ import {
     patients,
     healthInsurances,
 } from "@/db/schema";
-import { eq, and, desc, or, ilike } from "drizzle-orm";
+import { eq, and, desc, or, ilike, isNull, ne } from "drizzle-orm";
 import type { consultationSchema, consultationSoapSchema, vitalSignsSchema } from "@/lib/validations/medical-records";
 import type { z } from "zod";
 
@@ -27,9 +27,16 @@ export async function getPatientConsultationsTimeline(
     clinicId: string,
     searchTerm?: string
 ) {
+    /** Cirurgias ficam apenas na tabela `surgeries` (evita duplicata e ícone/fluxo errado). */
+    const notSurgeryWorkflow = or(
+        isNull(serviceTypes.workflow),
+        ne(serviceTypes.workflow, "surgery")
+    ) as SQL;
+
     const whereConditions: SQL[] = [
         eq(consultations.patientId, patientId),
-        eq(consultations.clinicId, clinicId)
+        eq(consultations.clinicId, clinicId),
+        notSurgeryWorkflow,
     ];
 
     if (searchTerm) {
@@ -50,10 +57,15 @@ export async function getPatientConsultationsTimeline(
     return db
         .select({
             id: consultations.id,
+            serviceTypeId: consultations.serviceTypeId,
             status: consultations.status,
             startTime: consultations.startTime,
             doctorName: users.name,
             serviceTypeName: serviceTypes.name,
+            serviceTypeWorkflow: serviceTypes.workflow,
+            serviceTypeSlug: serviceTypes.slug,
+            serviceTypeTimelineIconKey: serviceTypes.timelineIconKey,
+            serviceTypeTimelineColorHex: serviceTypes.timelineColorHex,
             diagnosis: consultationSoap.diagnosisFreeText,
             cidCode: icd10Codes.code,
             cidDescription: icd10Codes.description,
@@ -75,6 +87,7 @@ export type WaitingEncounterRow = {
     startTime: Date;
     serviceTypeName: string | null;
     healthInsuranceName: string | null;
+    encounterKind: "consultation" | "surgery";
 };
 
 /**
@@ -90,7 +103,7 @@ export async function getWaitingConsultationsForClinic(
         conditions.push(eq(consultations.doctorId, doctorId));
     }
 
-    return db
+    const rows = await db
         .select({
             id: consultations.id,
             patientId: consultations.patientId,
@@ -105,6 +118,8 @@ export async function getWaitingConsultationsForClinic(
         .leftJoin(healthInsurances, eq(consultations.healthInsuranceId, healthInsurances.id))
         .where(and(...conditions))
         .orderBy(consultations.startTime);
+
+    return rows.map((r) => ({ ...r, encounterKind: "consultation" as const }));
 }
 
 /**

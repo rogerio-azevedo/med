@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ClipboardList, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { getServiceTypeTimelineIcon } from "@/lib/service-type-timeline-icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,8 @@ interface ServiceType {
     description: string | null;
     workflow: string;
     isActive: boolean;
+    timelineIconKey: string | null;
+    timelineColorHex: string | null;
 }
 
 export function ServiceTypesTable({ serviceTypes }: { serviceTypes: ServiceType[] }) {
@@ -45,6 +48,7 @@ export function ServiceTypesTable({ serviceTypes }: { serviceTypes: ServiceType[
                         <TableRow>
                             <TableHead>Nome</TableHead>
                             <TableHead>Descrição</TableHead>
+                            <TableHead className="w-[100px]">Visual</TableHead>
                             <TableHead>Fluxo</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Ações</TableHead>
@@ -53,17 +57,32 @@ export function ServiceTypesTable({ serviceTypes }: { serviceTypes: ServiceType[
                     <TableBody>
                         {serviceTypes.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-28 text-center text-muted-foreground">
+                                <TableCell colSpan={6} className="h-28 text-center text-muted-foreground">
                                     Nenhum tipo de atendimento cadastrado.
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            serviceTypes.map((item) => (
+                            serviceTypes.map((item) => {
+                                const TIcon = getServiceTypeTimelineIcon(item.timelineIconKey) ?? ClipboardList;
+                                const ringColor = item.timelineColorHex?.trim() || undefined;
+                                return (
                                 <TableRow key={item.id}>
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">
-                                            <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                                                <ClipboardList className="h-4 w-4" />
+                                            <div
+                                                className="rounded-lg border border-border/60 bg-muted/30 p-2"
+                                                style={
+                                                    ringColor
+                                                        ? {
+                                                              borderColor: ringColor,
+                                                              backgroundColor:
+                                                                  ringColor.length === 7 ? `${ringColor}22` : ringColor,
+                                                              color: ringColor,
+                                                          }
+                                                        : undefined
+                                                }
+                                            >
+                                                <TIcon className="h-4 w-4" />
                                             </div>
                                             <p>{item.name}</p>
                                         </div>
@@ -72,6 +91,16 @@ export function ServiceTypesTable({ serviceTypes }: { serviceTypes: ServiceType[
                                         <p className="line-clamp-2 text-sm text-muted-foreground">
                                             {item.description || "Sem descrição adicional"}
                                         </p>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-muted-foreground">
+                                        {item.timelineIconKey || item.timelineColorHex ? (
+                                            <span className="font-mono">
+                                                {item.timelineIconKey ?? "—"}
+                                                {item.timelineColorHex ? ` · ${item.timelineColorHex}` : ""}
+                                            </span>
+                                        ) : (
+                                            <span>Automático</span>
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="outline">{getServiceTypeWorkflowLabel(item.workflow)}</Badge>
@@ -114,7 +143,8 @@ export function ServiceTypesTable({ serviceTypes }: { serviceTypes: ServiceType[
                                         </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
-                            ))
+                            );
+                            })
                         )}
                     </TableBody>
                 </Table>

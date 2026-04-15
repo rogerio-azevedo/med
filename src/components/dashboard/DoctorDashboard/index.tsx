@@ -4,6 +4,7 @@ import {
     getDoctorTodayAppointments,
 } from "@/db/queries/dashboard";
 import { getWaitingConsultationsForClinic } from "@/db/queries/consultations";
+import { getWaitingSurgeriesForClinic } from "@/db/queries/surgeries";
 import { WaitingEncountersBanner } from "@/components/medical-records/WaitingEncountersBanner";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TodayScheduleList } from "@/components/dashboard/TodayScheduleList";
@@ -33,11 +34,16 @@ export async function DoctorDashboard({
         );
     }
 
-    const [stats, todayApts, waitingEncounters] = await Promise.all([
+    const [stats, todayApts, waitingConsultations, waitingSurgeries] = await Promise.all([
         getDoctorDashboardStats(clinicId, doctor.id),
         getDoctorTodayAppointments(clinicId, doctor.id),
         getWaitingConsultationsForClinic(clinicId, doctor.id),
+        getWaitingSurgeriesForClinic(clinicId, doctor.id),
     ]);
+
+    const waitingEncounters = [...waitingConsultations, ...waitingSurgeries].sort(
+        (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    );
 
     return (
         <div className="flex flex-col gap-8 p-6 lg:p-8">

@@ -62,14 +62,25 @@ export function assertMimeAndSize(mimeType: string, sizeBytes: number): void {
     }
 }
 
-export const filePresignBodySchema = z.object({
-    fileName: z.string().min(1).max(255),
-    mimeType: z.string().min(1).max(100),
-    sizeBytes: z.number().int().positive(),
-    category: fileCategorySchema,
-    patientId: z.string().uuid(),
-    consultationId: z.string().uuid().optional().nullable(),
-});
+export const filePresignBodySchema = z
+    .object({
+        fileName: z.string().min(1).max(255),
+        mimeType: z.string().min(1).max(100),
+        sizeBytes: z.number().int().positive(),
+        category: fileCategorySchema,
+        patientId: z.string().uuid(),
+        consultationId: z.string().uuid().optional().nullable(),
+        surgeryId: z.string().uuid().optional().nullable(),
+    })
+    .superRefine((data, ctx) => {
+        if (data.consultationId && data.surgeryId) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Informe apenas consulta ou cirurgia, não ambos.",
+                path: ["consultationId"],
+            });
+        }
+    });
 
 export const fileMetadataBodySchema = z
     .object({
@@ -80,6 +91,7 @@ export const fileMetadataBodySchema = z
         category: fileCategorySchema,
         patientId: z.string().uuid(),
         consultationId: z.string().uuid().optional().nullable(),
+        surgeryId: z.string().uuid().optional().nullable(),
         title: z.string().min(1).max(255),
         referenceDate: z.string().optional().nullable(),
         notes: z.string().max(5000).optional().nullable(),
@@ -89,6 +101,13 @@ export const fileMetadataBodySchema = z
         groupOrder: z.number().int().min(0).optional().nullable(),
     })
     .superRefine((data, ctx) => {
+        if (data.consultationId && data.surgeryId) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Informe apenas consulta ou cirurgia, não ambos.",
+                path: ["consultationId"],
+            });
+        }
         if (!categoryRequiresReferenceDate(data.category)) return;
         if (!isValidReferenceDateString(data.referenceDate)) {
             ctx.addIssue({

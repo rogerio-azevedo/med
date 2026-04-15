@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import Select from "react-select";
+import ReactSelect from "react-select";
 import {
     Dialog,
     DialogContent,
@@ -10,6 +10,13 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +45,8 @@ import {
 } from "@/lib/service-type-workflows";
 import { cn } from "@/lib/utils";
 import { startConsultationAction } from "@/app/actions/consultations";
+import { startSurgeryAction } from "@/app/actions/surgeries";
+import { isSurgeryServiceType } from "@/lib/surgery-service-type";
 
 type PatientOption = {
     id: string;
@@ -111,6 +120,8 @@ interface ConsultationFormProps {
     onClose: () => void;
     onSubmit: (data: ConsultationFormSubmitData) => void;
     initialData?: ConsultationInitialData;
+    /** Quando o tipo de atendimento é cirurgia, abre o fluxo de registro cirúrgico em vez do SOAP. */
+    onSurgeryFlowStarted?: (payload: { surgeryId: string }) => void;
 }
 
 type Option = {
@@ -125,6 +136,7 @@ function getServiceTypeIcon(name: string, workflow: ServiceTypeWorkflow) {
     if (lower.includes("ciru")) return Scissors;
     if (lower.includes("exam")) return FlaskConical;
     if (workflow === "consultation") return Stethoscope;
+    if (workflow === "surgery") return Scissors;
     if (workflow === "procedure") return ClipboardList;
     if (workflow === "exam_review") return Microscope;
     return FileText;
@@ -140,6 +152,7 @@ export function ConsultationForm({
     onClose,
     onSubmit,
     initialData,
+    onSurgeryFlowStarted,
 }: ConsultationFormProps) {
     const isEditing = !!initialData?.id;
 
@@ -194,20 +207,13 @@ export function ConsultationForm({
         [allPatients]
     );
 
-    // Opções de convênio para react-select
-    const insuranceOptions: Option[] = useMemo(
-        () => [
-            { value: "__none__", label: "Particular / Sem convênio" },
-            ...healthInsurances.map((h) => ({ value: h.id, label: h.name })),
-        ],
-        [healthInsurances]
-    );
-    const selectedInsuranceOption =
-        insuranceOptions.find((o) => o.value === (selectedHealthInsuranceId || "__none__")) ?? insuranceOptions[0];
 
     const selectedPatient = allPatients.find((item) => item.id === selectedPatientId) || patient || null;
     const selectedServiceType = serviceTypes.find((item) => item.id === selectedServiceTypeId) || null;
-    const activeWorkflow = (initialData?.serviceTypeWorkflow || selectedServiceType?.workflow || null) as ServiceTypeWorkflow | null;
+    const activeWorkflow = (initialData?.serviceTypeWorkflow || selectedServiceType?.workflow || null) as
+        | ServiceTypeWorkflow
+        | "surgery"
+        | null;
 
     const handleSelectCid = (cid: { id: string; code: string; description: string }) => {
         setSoap((prev) => ({
@@ -230,6 +236,26 @@ export function ConsultationForm({
         }
         setStartingEncounter(true);
         try {
+            if (isSurgeryServiceType(selectedServiceType)) {
+                const res = await startSurgeryAction({
+                    patientId: selectedPatientId,
+                    serviceTypeId: selectedServiceTypeId,
+                    healthInsuranceId: selectedHealthInsuranceId || "",
+                });
+                if (!res.success) {
+                    toast.error(typeof res.error === "string" ? res.error : "Erro ao iniciar cirurgia.");
+                    return;
+                }
+                const created = "data" in res ? res.data : undefined;
+                if (!created?.id) {
+                    toast.error("Resposta inválida ao iniciar cirurgia.");
+                    return;
+                }
+                onSurgeryFlowStarted?.({ surgeryId: created.id });
+                onClose();
+                return;
+            }
+
             const res = await startConsultationAction({
                 patientId: selectedPatientId,
                 serviceTypeId: selectedServiceTypeId,
@@ -251,36 +277,70 @@ export function ConsultationForm({
         }
     };
 
-    // Estilos compartilhados para react-select
-    const reactSelectStyles = {
-        control: (base: Record<string, unknown>) => ({
-            ...base,
-            borderColor: "hsl(var(--border))",
-            borderRadius: "0.5rem",
-            padding: "2px",
-            boxShadow: "none",
-            "&:hover": { borderColor: "hsl(var(--border))" },
+    // Estilos compartilhados para react-select (menu em portal evita scroll dentro do modal)
+    const reactSelectStyles = useMemo(
+        () => ({
+            control: (base: Record<string, unknown>) => ({
+                ...base,
+                borderColor: "hsl(var(--border))",
+                borderRadius: "0.5rem",
+                padding: "2px",
+                boxShadow: "none",
+                "&:hover": { borderColor: "hsl(var(--border))" },
+            }),
+            menu: (base: Record<string, unknown>) => ({
+                ...base,
+                zIndex: 9999,
+            }),
+            menuPortal: (base: Record<string, unknown>) => ({
+                ...base,
+                zIndex: 9999,
+            }),
+            menuList: (base: Record<string, unknown>) => ({
+                ...base,
+                maxHeight: "min(40vh, 260px)",
+            }),
         }),
-        menu: (base: Record<string, unknown>) => ({
-            ...base,
-            zIndex: 50,
-        }),
-    };
+        []
+    );
+
+    const isCompactSetup = !isEditing && step === "setup";
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-6xl">
+            <DialogContent
+                className={cn(
+                    "flex min-h-0 flex-col overflow-hidden p-0",
+                    isCompactSetup
+                        ? "max-h-[min(88vh,640px)] sm:max-w-2xl"
+                        : "max-h-[90vh] sm:max-w-6xl"
+                )}
+                onPointerDownOutside={(e) => {
+                    // Evita que cliques no menu portal do react-select fechem o dialog
+                    if ((e.target as HTMLElement).closest?.('[class*="rs-"]')) {
+                        e.preventDefault();
+                    }
+                }}
+            >
                 <DialogHeader
                     className={cn(
-                        "border-b p-6 pb-4",
+                        "border-b",
+                        isCompactSetup ? "p-4 pb-3" : "p-6 pb-4",
                         // Evita sobreposição com o X absoluto do DialogContent (top-4 right-4)
                         !isEditing && step === "record" && "pr-14 sm:pr-16"
                     )}
                 >
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="space-y-2">
-                            <DialogTitle className="flex items-center gap-2 text-2xl">
-                                <Stethoscope className="h-6 w-6 text-primary" />
+                        <div className={cn("space-y-2", isCompactSetup && "space-y-1")}>
+                            <DialogTitle
+                                className={cn(
+                                    "flex items-center gap-2",
+                                    isCompactSetup ? "text-xl" : "text-2xl"
+                                )}
+                            >
+                                <Stethoscope
+                                    className={cn("text-primary", isCompactSetup ? "h-5 w-5" : "h-6 w-6")}
+                                />
                                 {isEditing
                                     ? `Editar Atendimento: ${selectedPatient?.name || patient?.name || "Paciente"}`
                                     : step === "setup"
@@ -295,7 +355,7 @@ export function ConsultationForm({
                                     ) : null}
                                 </div>
                             ) : (
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-xs text-muted-foreground sm:text-sm">
                                     Selecione o paciente, o tipo de atendimento e o convênio.
                                 </p>
                             )}
@@ -310,24 +370,28 @@ export function ConsultationForm({
                 </DialogHeader>
 
                 {step === "setup" ? (
-                    <div className="space-y-6 overflow-y-auto p-6">
+                    <div className="flex min-h-0 flex-1 flex-col space-y-4 overflow-x-hidden overflow-y-auto overscroll-contain p-4 sm:p-5">
                         {/* ── Paciente ─────────────────────────────────── */}
                         {!patient ? (
                             <div className="space-y-2">
                                 <Label className="text-sm font-medium">Paciente <span className="text-destructive">*</span></Label>
-                                <Select
+                                <ReactSelect
                                     placeholder="Buscar paciente..."
                                     options={patientOptions}
                                     value={patientOptions.find((option) => option.value === selectedPatientId) ?? null}
                                     onChange={(option) => setSelectedPatientId(option?.value ?? "")}
                                     classNamePrefix="rs"
                                     styles={reactSelectStyles}
+                                    menuPortalTarget={
+                                        typeof document !== "undefined" ? document.body : undefined
+                                    }
+                                    menuPosition="fixed"
                                 />
                             </div>
                         ) : (
                             <div className="space-y-2">
                                 <Label className="text-sm font-medium">Paciente</Label>
-                                <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2.5 text-sm font-medium">
+                                <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm font-medium">
                                     <User className="h-4 w-4 text-muted-foreground" />
                                     {patient.name}
                                 </div>
@@ -335,13 +399,13 @@ export function ConsultationForm({
                         )}
 
                         {/* ── Tipo de atendimento — cards clicáveis ─────── */}
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             <Label className="text-sm font-medium">
                                 Tipo de atendimento <span className="text-destructive">*</span>
                             </Label>
                             <div
                                 className={cn(
-                                    "grid gap-3",
+                                    "grid gap-2",
                                     serviceTypes.length <= 2
                                         ? "grid-cols-2"
                                         : serviceTypes.length === 3
@@ -358,7 +422,7 @@ export function ConsultationForm({
                                             type="button"
                                             onClick={() => setSelectedServiceTypeId(st.id)}
                                             className={cn(
-                                                "group relative flex cursor-pointer flex-col items-center gap-2.5 rounded-xl border-2 px-3 py-5 text-center transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                                "group relative flex cursor-pointer flex-row items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                                                 isSelected
                                                     ? "border-primary bg-primary/8 shadow-sm"
                                                     : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
@@ -366,17 +430,17 @@ export function ConsultationForm({
                                         >
                                             <div
                                                 className={cn(
-                                                    "flex h-11 w-11 items-center justify-center rounded-full transition-colors duration-200",
+                                                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors duration-200",
                                                     isSelected
                                                         ? "bg-primary/15 text-primary"
                                                         : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
                                                 )}
                                             >
-                                                <Icon className="h-5 w-5" />
+                                                <Icon className="h-[18px] w-[18px]" />
                                             </div>
                                             <span
                                                 className={cn(
-                                                    "text-sm font-semibold leading-tight transition-colors duration-200",
+                                                    "min-w-0 flex-1 text-[13px] font-semibold leading-snug transition-colors duration-200",
                                                     isSelected
                                                         ? "text-primary"
                                                         : "text-foreground group-hover:text-primary"
@@ -385,7 +449,7 @@ export function ConsultationForm({
                                                 {st.name}
                                             </span>
                                             {isSelected && (
-                                                <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                                                <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] leading-none text-primary-foreground">
                                                     ✓
                                                 </span>
                                             )}
@@ -395,30 +459,36 @@ export function ConsultationForm({
                             </div>
                         </div>
 
-                        {/* ── Convênio — react-select ───────────────────── */}
+                        {/* ── Convênio ─────────────────────────────────── */}
                         <div className="space-y-2">
                             <Label className="text-sm font-medium">Convênio</Label>
                             <Select
-                                options={insuranceOptions}
-                                value={selectedInsuranceOption}
-                                onChange={(option) =>
-                                    setSelectedHealthInsuranceId(
-                                        !option || option.value === "__none__" ? "" : option.value
-                                    )
+                                value={selectedHealthInsuranceId || "__none__"}
+                                onValueChange={(val) =>
+                                    setSelectedHealthInsuranceId(val === "__none__" ? "" : val)
                                 }
-                                classNamePrefix="rs"
-                                styles={reactSelectStyles}
-                                placeholder="Particular / Sem convênio"
-                                isClearable={selectedHealthInsuranceId !== ""}
-                            />
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Particular / Sem convênio" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__none__">Particular / Sem convênio</SelectItem>
+                                    {healthInsurances.map((h) => (
+                                        <SelectItem key={h.id} value={h.id}>
+                                            {h.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={onClose}>
+                        <DialogFooter className="gap-2 pt-1 sm:pt-2">
+                            <Button type="button" variant="outline" size="sm" onClick={onClose}>
                                 Cancelar
                             </Button>
                             <Button
                                 type="button"
+                                size="sm"
                                 disabled={!canContinue || startingEncounter}
                                 onClick={() => void handleContinueFromSetup()}
                             >

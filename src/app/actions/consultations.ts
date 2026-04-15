@@ -159,10 +159,19 @@ export async function deleteConsultationAction(consultationId: string, patientId
         const { getConsultationDetails, deleteConsultationQuery } = await import("@/db/queries/consultations");
 
         const consultation = await getConsultationDetails(consultationId, session.user.clinicId);
-        const currentDoctorId = (session.user as { doctorId?: string }).doctorId;
+        const currentDoctorId = session.user.doctorId;
+        const isClinicAdmin =
+            session.user.clinicRole === "admin" || session.user.role === "super_admin";
+        const isAssignedDoctor =
+            !!currentDoctorId &&
+            consultation?.doctorId != null &&
+            consultation.doctorId === currentDoctorId;
 
-        if (!consultation || !currentDoctorId || consultation.doctorId !== currentDoctorId) {
-            return { success: false, error: "Apenas o médico responsável pode excluir este atendimento." };
+        if (!consultation || (!isClinicAdmin && !isAssignedDoctor)) {
+            return {
+                success: false,
+                error: "Apenas o médico responsável ou um administrador da clínica pode excluir este atendimento.",
+            };
         }
 
         const result = await deleteConsultationQuery(consultationId, session.user.clinicId);

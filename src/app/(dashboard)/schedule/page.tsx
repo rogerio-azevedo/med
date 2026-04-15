@@ -9,6 +9,7 @@ import { getDoctorsSimple } from "@/db/queries/doctors";
 import { getPatientsByClinic } from "@/db/queries/patients";
 import { getDoctorByUserId } from "@/db/queries/dashboard";
 import { getWaitingConsultationsForClinic } from "@/db/queries/consultations";
+import { getWaitingSurgeriesForClinic } from "@/db/queries/surgeries";
 import { WaitingEncountersBanner } from "@/components/medical-records/WaitingEncountersBanner";
 import { specialties as specialtiesTable } from "@/db/schema/medical";
 import { db } from "@/db";
@@ -37,16 +38,22 @@ export default async function SchedulePage() {
             ? await getDoctorByUserId(session.user.id)
             : null;
 
-    const [rawAppointments, doctors, patients, specialties, waitingEncounters] = await Promise.all([
-        getAppointmentsByClinic(clinicId, {
-            startDate: weekStart,
-            endDate: weekEnd,
-        }),
-        getDoctorsSimple(clinicId),
-        getPatientsByClinic(clinicId),
-        db.select().from(specialtiesTable),
-        doctorProfile ? getWaitingConsultationsForClinic(clinicId, doctorProfile.id) : Promise.resolve([]),
-    ]);
+    const [rawAppointments, doctors, patients, specialties, waitingConsultations, waitingSurgeries] =
+        await Promise.all([
+            getAppointmentsByClinic(clinicId, {
+                startDate: weekStart,
+                endDate: weekEnd,
+            }),
+            getDoctorsSimple(clinicId),
+            getPatientsByClinic(clinicId),
+            db.select().from(specialtiesTable),
+            doctorProfile ? getWaitingConsultationsForClinic(clinicId, doctorProfile.id) : Promise.resolve([]),
+            doctorProfile ? getWaitingSurgeriesForClinic(clinicId, doctorProfile.id) : Promise.resolve([]),
+        ]);
+
+    const waitingEncounters = [...waitingConsultations, ...waitingSurgeries].sort(
+        (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    );
 
     // Mapear para o formato esperado pelos componentes
     const appointments = rawAppointments.map((a) => ({

@@ -46,6 +46,7 @@ function getServiceTypeIcon(name: string, workflow: string) {
     if (lower.includes("ciru")) return Scissors;
     if (lower.includes("exam") || lower.includes("exame")) return FlaskConical;
     if (workflow === "consultation") return Stethoscope;
+    if (workflow === "surgery") return Scissors;
     if (workflow === "procedure") return ClipboardList;
     if (workflow === "exam_review") return Microscope;
     return FileText;

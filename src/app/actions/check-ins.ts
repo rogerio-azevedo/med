@@ -51,5 +51,8 @@ export async function createCheckInAction(data: unknown) {
     revalidatePath("/dashboard");
     revalidatePath("/schedule");
     revalidatePath(`/medical-records/${parsed.data.patientId}`);
+    if ("surgeryId" in result) {
+        return { success: true, id: result.id, surgeryId: result.surgeryId };
+    }
     return { success: true, id: result.id, consultationId: result.consultationId };
 }

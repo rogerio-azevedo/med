@@ -31,6 +31,7 @@ export async function POST(request: Request) {
             clinicId: session.user.clinicId,
             patientId: d.patientId,
             consultationId: d.consultationId ?? null,
+            surgeryId: d.surgeryId ?? null,
             mimeType: d.mimeType,
             sizeBytes: d.sizeBytes,
             fileName: d.fileName,

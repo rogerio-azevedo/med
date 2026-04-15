@@ -337,6 +337,20 @@
       "when": 1778695200015,
       "tag": "0047_proposals_judicial_summary",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1778695200016,
+      "tag": "0048_surgeries_module",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1778695200017,
+      "tag": "0049_service_types_timeline_visual",
+      "breakpoints": true
     }
   ]
 }

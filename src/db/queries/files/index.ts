@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { patientFiles, consultations, clinicPatients } from "@/db/schema";
+import { patientFiles, consultations, surgeries, clinicPatients } from "@/db/schema";
 import { and, eq, desc } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 
@@ -24,6 +24,20 @@ export async function getConsultationForPatientInClinic(
             eq(consultations.id, consultationId),
             eq(consultations.clinicId, clinicId),
             eq(consultations.patientId, patientId)
+        ),
+    });
+}
+
+export async function getSurgeryForPatientInClinic(
+    surgeryId: string,
+    clinicId: string,
+    patientId: string
+) {
+    return db.query.surgeries.findFirst({
+        where: and(
+            eq(surgeries.id, surgeryId),
+            eq(surgeries.clinicId, clinicId),
+            eq(surgeries.patientId, patientId)
         ),
     });
 }

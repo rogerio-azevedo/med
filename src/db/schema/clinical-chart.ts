@@ -9,8 +9,17 @@ import {
     integer,
     date,
 } from "drizzle-orm/pg-core";
-import { patients, doctors, appointments, prescriptionRouteEnum, examRequestTypeEnum, referralUrgencyEnum, patientAlertTypeEnum } from "./medical";
-import { clinics } from "./clinics";
+import {
+    patients,
+    doctors,
+    appointments,
+    prescriptionRouteEnum,
+    examRequestTypeEnum,
+    referralUrgencyEnum,
+    patientAlertTypeEnum,
+    procedures,
+} from "./medical";
+import { clinics, hospitals } from "./clinics";
 import { users } from "./auth";
 import { serviceTypes, checkIns } from "./check-ins";
 import { healthInsurances } from "./medical";
@@ -47,6 +56,59 @@ export const consultations = pgTable("consultations", {
     startTime: timestamp("start_time").defaultNow().notNull(),
     endTime: timestamp("end_time"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const surgeryStatusEnum = pgEnum("surgery_status", [
+    "scheduled",
+    "waiting",
+    "in_progress",
+    "finished",
+    "cancelled",
+]);
+
+export const surgeries = pgTable("surgeries", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    patientId: uuid("patient_id")
+        .notNull()
+        .references(() => patients.id, { onDelete: "cascade" }),
+    clinicId: uuid("clinic_id")
+        .notNull()
+        .references(() => clinics.id, { onDelete: "cascade" }),
+    checkInId: uuid("check_in_id").references(() => checkIns.id, { onDelete: "set null" }),
+    serviceTypeId: uuid("service_type_id").references(() => serviceTypes.id, { onDelete: "set null" }),
+    healthInsuranceId: uuid("health_insurance_id").references(() => healthInsurances.id, {
+        onDelete: "set null",
+    }),
+    hospitalId: uuid("hospital_id").references(() => hospitals.id, { onDelete: "set null" }),
+    surgeonId: uuid("surgeon_id").references(() => doctors.id, { onDelete: "set null" }),
+    firstAuxId: uuid("first_aux_id").references(() => doctors.id, { onDelete: "set null" }),
+    secondAuxId: uuid("second_aux_id").references(() => doctors.id, { onDelete: "set null" }),
+    thirdAuxId: uuid("third_aux_id").references(() => doctors.id, { onDelete: "set null" }),
+    anesthetistId: uuid("anesthetist_id").references(() => doctors.id, { onDelete: "set null" }),
+    instrumentistId: uuid("instrumentist_id").references(() => doctors.id, { onDelete: "set null" }),
+    surgeryDate: date("surgery_date"),
+    status: surgeryStatusEnum("status").notNull().default("scheduled"),
+    repasseHospital: boolean("repasse_hospital").default(false).notNull(),
+    repasseAnesthesia: boolean("repasse_anesthesia").default(false).notNull(),
+    repassePathology: boolean("repasse_pathology").default(false).notNull(),
+    repasseDoctor: boolean("repasse_doctor").default(false).notNull(),
+    repasseInstrumentist: boolean("repasse_instrumentist").default(false).notNull(),
+    repasseMedicalAux: boolean("repasse_medical_aux").default(false).notNull(),
+    usesMonitor: boolean("uses_monitor").default(false).notNull(),
+    cancerDiagnosis: boolean("cancer_diagnosis").default(false).notNull(),
+    observations: text("observations"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const surgeryProcedures = pgTable("surgery_procedures", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    surgeryId: uuid("surgery_id")
+        .notNull()
+        .references(() => surgeries.id, { onDelete: "cascade" }),
+    procedureId: uuid("procedure_id")
+        .notNull()
+        .references(() => procedures.id, { onDelete: "restrict" }),
 });
 
 // 3. SOAP documentation per consultation
@@ -176,6 +238,7 @@ export const patientFiles = pgTable("patient_files", {
         .notNull()
         .references(() => patients.id, { onDelete: "cascade" }),
     consultationId: uuid("consultation_id").references(() => consultations.id, { onDelete: "set null" }),
+    surgeryId: uuid("surgery_id").references(() => surgeries.id, { onDelete: "set null" }),
     clinicId: uuid("clinic_id")
         .notNull()
         .references(() => clinics.id, { onDelete: "cascade" }),
@@ -294,6 +357,10 @@ export const patientFilesRelations = relations(patientFiles, ({ one }) => ({
         fields: [patientFiles.consultationId],
         references: [consultations.id],
     }),
+    surgery: one(surgeries, {
+        fields: [patientFiles.surgeryId],
+        references: [surgeries.id],
+    }),
     clinic: one(clinics, {
         fields: [patientFiles.clinicId],
         references: [clinics.id],
@@ -301,5 +368,69 @@ export const patientFilesRelations = relations(patientFiles, ({ one }) => ({
     uploader: one(users, {
         fields: [patientFiles.uploadedBy],
         references: [users.id],
+    }),
+}));
+
+export const surgeriesRelations = relations(surgeries, ({ one, many }) => ({
+    patient: one(patients, {
+        fields: [surgeries.patientId],
+        references: [patients.id],
+    }),
+    clinic: one(clinics, {
+        fields: [surgeries.clinicId],
+        references: [clinics.id],
+    }),
+    checkIn: one(checkIns, {
+        fields: [surgeries.checkInId],
+        references: [checkIns.id],
+    }),
+    serviceType: one(serviceTypes, {
+        fields: [surgeries.serviceTypeId],
+        references: [serviceTypes.id],
+    }),
+    healthInsurance: one(healthInsurances, {
+        fields: [surgeries.healthInsuranceId],
+        references: [healthInsurances.id],
+    }),
+    hospital: one(hospitals, {
+        fields: [surgeries.hospitalId],
+        references: [hospitals.id],
+    }),
+    surgeon: one(doctors, {
+        fields: [surgeries.surgeonId],
+        references: [doctors.id],
+    }),
+    firstAux: one(doctors, {
+        fields: [surgeries.firstAuxId],
+        references: [doctors.id],
+    }),
+    secondAux: one(doctors, {
+        fields: [surgeries.secondAuxId],
+        references: [doctors.id],
+    }),
+    thirdAux: one(doctors, {
+        fields: [surgeries.thirdAuxId],
+        references: [doctors.id],
+    }),
+    anesthetist: one(doctors, {
+        fields: [surgeries.anesthetistId],
+        references: [doctors.id],
+    }),
+    instrumentist: one(doctors, {
+        fields: [surgeries.instrumentistId],
+        references: [doctors.id],
+    }),
+    procedureLinks: many(surgeryProcedures),
+    patientFiles: many(patientFiles),
+}));
+
+export const surgeryProceduresRelations = relations(surgeryProcedures, ({ one }) => ({
+    surgery: one(surgeries, {
+        fields: [surgeryProcedures.surgeryId],
+        references: [surgeries.id],
+    }),
+    procedure: one(procedures, {
+        fields: [surgeryProcedures.procedureId],
+        references: [procedures.id],
     }),
 }));

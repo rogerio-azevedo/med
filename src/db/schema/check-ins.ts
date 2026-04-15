@@ -22,6 +22,10 @@ export const serviceTypes = pgTable(
         slug: varchar("slug", { length: 60 }),
         description: text("description"),
         workflow: varchar("workflow", { length: 30 }).notNull().default("generic"),
+        /** Ícone na timeline / identidade visual (chave lucide mapeada no app). */
+        timelineIconKey: varchar("timeline_icon_key", { length: 40 }),
+        /** Cor #RRGGBB para ícone e badge na timeline. */
+        timelineColorHex: varchar("timeline_color_hex", { length: 7 }),
         isActive: boolean("is_active").default(true).notNull(),
         createdAt: timestamp("created_at").defaultNow().notNull(),
         updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -59,6 +63,8 @@ export const checkIns = pgTable("check_ins", {
     notes: text("notes"),
     /** Atendimento clínico criado na recepção (pré-atendimento). FK aplicada na migration para evitar import circular. */
     consultationId: uuid("consultation_id"),
+    /** Cirurgia criada na recepção (pré-atendimento). FK aplicada na migration para evitar import circular. */
+    surgeryId: uuid("surgery_id"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

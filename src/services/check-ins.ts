@@ -3,13 +3,18 @@ import { db } from "@/db";
 import { checkIns } from "@/db/schema";
 import { createCheckInQuery, getCheckInDependencies } from "@/db/queries/check-ins";
 import { createWaitingConsultationForCheckIn } from "@/services/consultations";
+import { createWaitingSurgery } from "@/services/surgeries";
 import type { CheckInInput } from "@/lib/validations/check-ins";
 
 export async function createCheckInService(
     clinicId: string,
     clinicUserId: string,
     data: CheckInInput
-): Promise<{ success: true; id: string; consultationId: string } | { success: false; error: string }> {
+): Promise<
+    | { success: true; id: string; consultationId: string }
+    | { success: true; id: string; surgeryId: string }
+    | { success: false; error: string }
+> {
     const normalizedHealthInsuranceId = data.healthInsuranceId || null;
     const normalizedNotes = data.notes?.trim() || null;
 
@@ -53,6 +58,30 @@ export async function createCheckInService(
         createdByClinicUserId: clinicUserId,
         notes: normalizedNotes,
     });
+
+    const workflow = dependencies.serviceType?.workflow ?? "generic";
+
+    if (workflow === "surgery") {
+        const encounter = await createWaitingSurgery({
+            patientId: data.patientId,
+            clinicId,
+            checkInId: created.id,
+            serviceTypeId: data.serviceTypeId,
+            healthInsuranceId: normalizedHealthInsuranceId,
+            surgeonId: data.doctorId,
+        });
+
+        if (!encounter.success || !encounter.data) {
+            return { success: false, error: encounter.error || "Erro ao criar cirurgia na fila." };
+        }
+
+        await db
+            .update(checkIns)
+            .set({ surgeryId: encounter.data.id })
+            .where(eq(checkIns.id, created.id));
+
+        return { success: true, id: created.id, surgeryId: encounter.data.id };
+    }
 
     const encounter = await createWaitingConsultationForCheckIn({
         patientId: data.patientId,

@@ -32,7 +32,10 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { SERVICE_TYPE_WORKFLOWS, getServiceTypeWorkflowLabel } from "@/lib/service-type-workflows";
+import type { Resolver } from "react-hook-form";
 import { serviceTypeSchema, type ServiceTypeInput } from "@/lib/validations/service-types";
+import { parseServiceTypeTimelineIconKey } from "@/lib/service-type-timeline-icons";
+import { ServiceTypeTimelineFields } from "./ServiceTypeTimelineFields";
 
 interface EditServiceTypeDialogProps {
     serviceType: {
@@ -40,6 +43,8 @@ interface EditServiceTypeDialogProps {
         name: string;
         description: string | null;
         workflow: string;
+        timelineIconKey: string | null;
+        timelineColorHex: string | null;
     };
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
@@ -53,11 +58,13 @@ export function EditServiceTypeDialog({
     const [isPending, setIsPending] = useState(false);
 
     const form = useForm<ServiceTypeInput>({
-        resolver: zodResolver(serviceTypeSchema),
+        resolver: zodResolver(serviceTypeSchema) as Resolver<ServiceTypeInput>,
         defaultValues: {
             name: serviceType.name,
             description: serviceType.description || "",
             workflow: serviceType.workflow as ServiceTypeInput["workflow"],
+            timelineIconKey: parseServiceTypeTimelineIconKey(serviceType.timelineIconKey),
+            timelineColorHex: serviceType.timelineColorHex ?? undefined,
         },
     });
 
@@ -67,6 +74,8 @@ export function EditServiceTypeDialog({
                 name: serviceType.name,
                 description: serviceType.description || "",
                 workflow: serviceType.workflow as ServiceTypeInput["workflow"],
+                timelineIconKey: parseServiceTypeTimelineIconKey(serviceType.timelineIconKey),
+                timelineColorHex: serviceType.timelineColorHex ?? undefined,
             });
         }
     }, [form, serviceType, isOpen]);
@@ -153,6 +162,8 @@ export function EditServiceTypeDialog({
                                 </FormItem>
                             )}
                         />
+
+                        <ServiceTypeTimelineFields control={form.control} />
 
                         <DialogFooter>
                             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>

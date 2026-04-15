@@ -104,6 +104,8 @@ interface ConsultationDetailSheetProps {
     onEdit?: (consultation: ConsultationDetailData) => void;
     patientId: string;
     currentDoctorId?: string;
+    /** Admin da clínica (ou super admin) pode excluir atendimento mesmo sem ser o médico do registro */
+    canDeleteAsAdmin?: boolean;
     /** Recarrega dados do servidor (timeline, listas) após arquivo ou exclusão de consulta */
     onTimelineRefresh?: () => void;
 }
@@ -114,6 +116,7 @@ export function ConsultationDetailSheet({
     onEdit,
     patientId,
     currentDoctorId,
+    canDeleteAsAdmin = false,
     onTimelineRefresh,
 }: ConsultationDetailSheetProps) {
     const [loading, setLoading] = useState(false);
@@ -197,7 +200,8 @@ export function ConsultationDetailSheet({
     };
 
     const isOpen = !!consultationId;
-    const isAuthor = consultation && currentDoctorId && consultation.doctorId === currentDoctorId;
+    const isAuthor = !!(consultation && currentDoctorId && consultation.doctorId === currentDoctorId);
+    const canDeleteConsultation = !!consultation && (isAuthor || canDeleteAsAdmin);
 
     return (
         <>
@@ -227,18 +231,27 @@ export function ConsultationDetailSheet({
                                             {consultation.soap?.diagnosisFreeText || "Atendimento Clínico"}
                                         </SheetTitle>
                                     </div>
-                                    {isAuthor && (
+                                    {(isAuthor && onEdit) || canDeleteConsultation ? (
                                         <div className="flex items-center gap-2">
-                                            <Button variant="outline" size="sm" className="gap-2" onClick={handleEdit}>
-                                                <Pencil className="h-4 w-4" />
-                                                Editar
-                                            </Button>
-                                            <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={() => setIsDeleteDialogOpen(true)}>
-                                                <Trash2 className="h-4 w-4" />
-                                                Excluir
-                                            </Button>
+                                            {isAuthor && onEdit ? (
+                                                <Button variant="outline" size="sm" className="gap-2" onClick={handleEdit}>
+                                                    <Pencil className="h-4 w-4" />
+                                                    Editar
+                                                </Button>
+                                            ) : null}
+                                            {canDeleteConsultation ? (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-2 text-destructive hover:text-destructive"
+                                                    onClick={() => setIsDeleteDialogOpen(true)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                    Excluir
+                                                </Button>
+                                            ) : null}
                                         </div>
-                                    )}
+                                    ) : null}
                                 </div>
 
                                      <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
@@ -330,7 +343,7 @@ export function ConsultationDetailSheet({
                                                 <FileText className="h-4 w-4" />
                                                 Arquivos desta consulta
                                             </h3>
-                                            {isAuthor ? (
+                                            {isAuthor || canDeleteAsAdmin ? (
                                                 <Button
                                                     type="button"
                                                     variant="outline"
@@ -355,7 +368,7 @@ export function ConsultationDetailSheet({
                                                         <FileCard
                                                             file={f}
                                                             onDeleted={loadFiles}
-                                                            canDelete={!!isAuthor}
+                                                            canDelete={isAuthor || canDeleteAsAdmin}
                                                         />
                                                     </li>
                                                 ))}

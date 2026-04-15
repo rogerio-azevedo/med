@@ -201,12 +201,14 @@ export function FileUploadModal({
     onOpenChange,
     patientId,
     consultationId,
+    surgeryId,
     onSuccess,
 }: {
     open: boolean;
     onOpenChange: (v: boolean) => void;
     patientId: string;
     consultationId?: string | null;
+    surgeryId?: string | null;
     onSuccess?: () => void;
 }) {
     const [mode, setMode] = useState<ModalMode>("single");
@@ -312,6 +314,7 @@ export function FileUploadModal({
                     category,
                     patientId,
                     consultationId: consultationId ?? null,
+                    surgeryId: surgeryId ?? null,
                 }),
             });
             if (!presignRes.ok) {
@@ -342,6 +345,7 @@ export function FileUploadModal({
                     category,
                     patientId,
                     consultationId: consultationId ?? null,
+                    surgeryId: surgeryId ?? null,
                     title: title.trim(),
                     referenceDate: referenceDate || null,
                     notes: notes.trim() || null,
@@ -398,6 +402,7 @@ export function FileUploadModal({
                             category: multiCategory,
                             patientId,
                             consultationId: consultationId ?? null,
+                            surgeryId: surgeryId ?? null,
                         }),
                     });
                     if (!presignRes.ok) {
@@ -430,6 +435,7 @@ export function FileUploadModal({
                             category: multiCategory,
                             patientId,
                             consultationId: consultationId ?? null,
+                            surgeryId: surgeryId ?? null,
                             title: fileTitle,
                             referenceDate: multiDate || null,
                             notes: multiNotes.trim() || null,

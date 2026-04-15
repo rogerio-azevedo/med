@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import {
     patientBelongsToClinic,
     getConsultationForPatientInClinic,
+    getSurgeryForPatientInClinic,
 } from "@/db/queries/files";
 import { assertMimeAndSize, normalizeMimeType } from "@/lib/validations/file";
 import type { FileCategory } from "@/lib/validations/file";
@@ -40,6 +41,7 @@ export async function validateFileUploadContext(input: {
     clinicId: string;
     patientId: string;
     consultationId?: string | null;
+    surgeryId?: string | null;
     mimeType: string;
     sizeBytes: number;
     fileName: string;
@@ -58,6 +60,12 @@ export async function validateFileUploadContext(input: {
         );
         if (!c) {
             throw new Error("Consulta não encontrada para este paciente");
+        }
+    }
+    if (input.surgeryId) {
+        const s = await getSurgeryForPatientInClinic(input.surgeryId, input.clinicId, input.patientId);
+        if (!s) {
+            throw new Error("Cirurgia não encontrada para este paciente");
         }
     }
     return mime;

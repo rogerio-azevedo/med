@@ -33,18 +33,22 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { SERVICE_TYPE_WORKFLOWS, getServiceTypeWorkflowLabel } from "@/lib/service-type-workflows";
+import type { Resolver } from "react-hook-form";
 import { serviceTypeSchema, type ServiceTypeInput } from "@/lib/validations/service-types";
+import { ServiceTypeTimelineFields } from "./ServiceTypeTimelineFields";
 
 export function AddServiceTypeDialog() {
     const [open, setOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
 
     const form = useForm<ServiceTypeInput>({
-        resolver: zodResolver(serviceTypeSchema),
+        resolver: zodResolver(serviceTypeSchema) as Resolver<ServiceTypeInput>,
         defaultValues: {
             name: "",
             description: "",
             workflow: "generic",
+            timelineIconKey: undefined,
+            timelineColorHex: undefined,
         },
     });
 
@@ -58,7 +62,13 @@ export function AddServiceTypeDialog() {
             }
 
             toast.success("Tipo de atendimento cadastrado com sucesso!");
-            form.reset();
+            form.reset({
+                name: "",
+                description: "",
+                workflow: "generic",
+                timelineIconKey: undefined,
+                timelineColorHex: undefined,
+            });
             setOpen(false);
         } catch {
             toast.error("Erro ao cadastrar tipo de atendimento");
@@ -141,6 +151,8 @@ export function AddServiceTypeDialog() {
                                 </FormItem>
                             )}
                         />
+
+                        <ServiceTypeTimelineFields control={form.control} />
 
                         <DialogFooter>
                             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>

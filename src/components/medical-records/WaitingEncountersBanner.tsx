@@ -33,7 +33,11 @@ export function WaitingEncountersBanner({ items }: WaitingEncountersBannerProps)
                         <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5 text-sm">
                             <div className="min-w-0 flex-1">
                                 <Link
-                                    href={`/medical-records/${row.patientId}?openConsultation=${row.id}`}
+                                    href={
+                                        row.encounterKind === "surgery"
+                                            ? `/medical-records/${row.patientId}?openSurgery=${row.id}`
+                                            : `/medical-records/${row.patientId}?openConsultation=${row.id}`
+                                    }
                                     className="font-medium text-primary hover:underline"
                                 >
                                     {row.patientName}
@@ -46,7 +50,11 @@ export function WaitingEncountersBanner({ items }: WaitingEncountersBannerProps)
                                 </p>
                             </div>
                             <Link
-                                href={`/medical-records/${row.patientId}?openConsultation=${row.id}`}
+                                href={
+                                    row.encounterKind === "surgery"
+                                        ? `/medical-records/${row.patientId}?openSurgery=${row.id}`
+                                        : `/medical-records/${row.patientId}?openConsultation=${row.id}`
+                                }
                                 className="shrink-0 text-xs font-medium text-primary hover:underline"
                             >
                                 Atender →

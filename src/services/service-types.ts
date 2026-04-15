@@ -51,6 +51,9 @@ export async function createServiceTypeService(
         clinicId,
         name: trimmedName,
         description: data.description?.trim() || null,
+        workflow: data.workflow,
+        timelineIconKey: data.timelineIconKey ?? null,
+        timelineColorHex: data.timelineColorHex ?? null,
     });
 
     return { success: true };
@@ -80,6 +83,9 @@ export async function updateServiceTypeService(
         .set({
             name: trimmedName,
             description: data.description?.trim() || null,
+            workflow: data.workflow,
+            timelineIconKey: data.timelineIconKey ?? null,
+            timelineColorHex: data.timelineColorHex ?? null,
             updatedAt: new Date(),
         })
         .where(and(eq(serviceTypes.id, id), eq(serviceTypes.clinicId, clinicId)))

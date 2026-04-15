@@ -19,6 +19,11 @@ export const SERVICE_TYPE_WORKFLOWS = [
         label: "Procedimento",
         description: "Fluxo voltado para procedimentos e intervenções.",
     },
+    {
+        value: "surgery",
+        label: "Cirurgia",
+        description: "Fluxo específico para registro e gestão de cirurgias.",
+    },
 ] as const;
 
 export type ServiceTypeWorkflow = (typeof SERVICE_TYPE_WORKFLOWS)[number]["value"];
