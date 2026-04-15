@@ -2,7 +2,6 @@
 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Badge } from "@/components/ui/badge";
 import {
     Table,
     TableBody,
@@ -18,7 +17,7 @@ interface CheckInRow {
     patient: { id: string; name: string };
     serviceType: { id: string; name: string };
     healthInsurance: { id: string | null; name: string | null } | null;
-    scoreItem: { id: string; name: string; score: number };
+    doctor: { id: string | null; name: string | null };
     createdBy: { clinicUserId: string; userId: string; name: string | null };
     notes: string | null;
 }
@@ -32,8 +31,8 @@ export function CheckInsTable({ checkIns }: { checkIns: CheckInRow[] }) {
                         <TableHead>Data/Hora</TableHead>
                         <TableHead>Paciente</TableHead>
                         <TableHead>Tipo</TableHead>
+                        <TableHead>Médico</TableHead>
                         <TableHead>Convênio</TableHead>
-                        <TableHead>Pontuação</TableHead>
                         <TableHead>Recepção</TableHead>
                         <TableHead>Observações</TableHead>
                     </TableRow>
@@ -55,12 +54,10 @@ export function CheckInsTable({ checkIns }: { checkIns: CheckInRow[] }) {
                                 </TableCell>
                                 <TableCell className="font-medium">{item.patient.name}</TableCell>
                                 <TableCell>{item.serviceType.name}</TableCell>
-                                <TableCell>{item.healthInsurance?.name || "Particular / Sem convênio"}</TableCell>
-                                <TableCell>
-                                    <Badge variant="outline">
-                                        {item.scoreItem.name} ({item.scoreItem.score})
-                                    </Badge>
+                                <TableCell className="text-sm">
+                                    {item.doctor?.name ? `Dr(a). ${item.doctor.name}` : "—"}
                                 </TableCell>
+                                <TableCell>{item.healthInsurance?.name || "Particular / Sem convênio"}</TableCell>
                                 <TableCell>{item.createdBy.name || "Usuário sem nome"}</TableCell>
                                 <TableCell className="max-w-[280px]">
                                     <p className="line-clamp-2 text-sm text-muted-foreground">

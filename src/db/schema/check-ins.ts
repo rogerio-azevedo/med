@@ -9,8 +9,7 @@ import {
     varchar,
 } from "drizzle-orm/pg-core";
 import { clinicUsers, clinics } from "./clinics";
-import { healthInsurances, patients } from "./medical";
-import { scoreItems } from "./score-items";
+import { doctors, healthInsurances, patients } from "./medical";
 
 export const serviceTypes = pgTable(
     "service_types",
@@ -20,7 +19,9 @@ export const serviceTypes = pgTable(
             .notNull()
             .references(() => clinics.id, { onDelete: "cascade" }),
         name: varchar("name", { length: 120 }).notNull(),
+        slug: varchar("slug", { length: 60 }),
         description: text("description"),
+        workflow: varchar("workflow", { length: 30 }).notNull().default("generic"),
         isActive: boolean("is_active").default(true).notNull(),
         createdAt: timestamp("created_at").defaultNow().notNull(),
         updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -29,6 +30,10 @@ export const serviceTypes = pgTable(
         clinicNameUnique: uniqueIndex("service_types_clinic_name_unique").on(
             table.clinicId,
             table.name
+        ),
+        clinicSlugUnique: uniqueIndex("service_types_clinic_slug_unique").on(
+            table.clinicId,
+            table.slug
         ),
     })
 );
@@ -47,13 +52,13 @@ export const checkIns = pgTable("check_ins", {
     healthInsuranceId: uuid("health_insurance_id").references(() => healthInsurances.id, {
         onDelete: "set null",
     }),
-    scoreItemId: uuid("score_item_id")
-        .notNull()
-        .references(() => scoreItems.id, { onDelete: "restrict" }),
+    doctorId: uuid("doctor_id").references(() => doctors.id, { onDelete: "restrict" }),
     createdByClinicUserId: uuid("created_by_clinic_user_id")
         .notNull()
         .references(() => clinicUsers.id, { onDelete: "restrict" }),
     notes: text("notes"),
+    /** Atendimento clínico criado na recepção (pré-atendimento). FK aplicada na migration para evitar import circular. */
+    consultationId: uuid("consultation_id"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -83,9 +88,9 @@ export const checkInsRelations = relations(checkIns, ({ one }) => ({
         fields: [checkIns.healthInsuranceId],
         references: [healthInsurances.id],
     }),
-    scoreItem: one(scoreItems, {
-        fields: [checkIns.scoreItemId],
-        references: [scoreItems.id],
+    doctor: one(doctors, {
+        fields: [checkIns.doctorId],
+        references: [doctors.id],
     }),
     createdByClinicUser: one(clinicUsers, {
         fields: [checkIns.createdByClinicUserId],

@@ -1,16 +1,23 @@
 import { db } from "@/db";
-import { 
-    consultations, 
-    consultationSoap, 
-    vitalSigns, 
-    prescriptions, 
-    examRequests, 
-    referrals,
+import type { SQL } from "drizzle-orm";
+import {
+    consultations,
+    consultationSoap,
+    vitalSigns,
     icd10Codes,
     doctors,
-    users
+    users,
+    serviceTypes,
+    patients,
+    healthInsurances,
 } from "@/db/schema";
-import { eq, and, desc, sql, or, ilike } from "drizzle-orm";
+import { eq, and, desc, or, ilike } from "drizzle-orm";
+import type { consultationSchema, consultationSoapSchema, vitalSignsSchema } from "@/lib/validations/medical-records";
+import type { z } from "zod";
+
+type ConsultationInsert = z.infer<typeof consultationSchema>;
+type ConsultationSoapInput = z.infer<typeof consultationSoapSchema>;
+type VitalSignsInput = z.infer<typeof vitalSignsSchema>;
 
 /**
  * Retorna o histórico de consultas de um paciente com informações básicas e busca
@@ -20,32 +27,33 @@ export async function getPatientConsultationsTimeline(
     clinicId: string,
     searchTerm?: string
 ) {
-    const whereConditions = [
+    const whereConditions: SQL[] = [
         eq(consultations.patientId, patientId),
         eq(consultations.clinicId, clinicId)
     ];
 
     if (searchTerm) {
-        whereConditions.push(
-            or(
-                ilike(consultationSoap.subjective, `%${searchTerm}%`),
-                ilike(consultationSoap.objective, `%${searchTerm}%`),
-                ilike(consultationSoap.assessment, `%${searchTerm}%`),
-                ilike(consultationSoap.plan, `%${searchTerm}%`),
-                ilike(consultationSoap.diagnosisFreeText, `%${searchTerm}%`),
-                ilike(icd10Codes.code, `%${searchTerm}%`),
-                ilike(icd10Codes.description, `%${searchTerm}%`)
-            ) as any
+        const searchFilters = or(
+            ilike(consultationSoap.subjective, `%${searchTerm}%`),
+            ilike(consultationSoap.objective, `%${searchTerm}%`),
+            ilike(consultationSoap.assessment, `%${searchTerm}%`),
+            ilike(consultationSoap.plan, `%${searchTerm}%`),
+            ilike(consultationSoap.diagnosisFreeText, `%${searchTerm}%`),
+            ilike(icd10Codes.code, `%${searchTerm}%`),
+            ilike(icd10Codes.description, `%${searchTerm}%`)
         );
+        if (searchFilters) {
+            whereConditions.push(searchFilters);
+        }
     }
 
     return db
         .select({
             id: consultations.id,
-            type: consultations.type,
             status: consultations.status,
             startTime: consultations.startTime,
             doctorName: users.name,
+            serviceTypeName: serviceTypes.name,
             diagnosis: consultationSoap.diagnosisFreeText,
             cidCode: icd10Codes.code,
             cidDescription: icd10Codes.description,
@@ -53,10 +61,50 @@ export async function getPatientConsultationsTimeline(
         .from(consultations)
         .leftJoin(consultationSoap, eq(consultations.id, consultationSoap.consultationId))
         .leftJoin(icd10Codes, eq(consultationSoap.diagnosisCidId, icd10Codes.id))
-        .innerJoin(doctors, eq(consultations.doctorId, doctors.id))
-        .innerJoin(users, eq(doctors.userId, users.id))
+        .leftJoin(serviceTypes, eq(consultations.serviceTypeId, serviceTypes.id))
+        .leftJoin(doctors, eq(consultations.doctorId, doctors.id))
+        .leftJoin(users, eq(doctors.userId, users.id))
         .where(and(...whereConditions))
         .orderBy(desc(consultations.startTime));
+}
+
+export type WaitingEncounterRow = {
+    id: string;
+    patientId: string;
+    patientName: string;
+    startTime: Date;
+    serviceTypeName: string | null;
+    healthInsuranceName: string | null;
+};
+
+/**
+ * Fila de pré-atendimento (check-in): encontros aguardando médico.
+ * Com `doctorId`, retorna apenas pacientes direcionados a esse médico.
+ */
+export async function getWaitingConsultationsForClinic(
+    clinicId: string,
+    doctorId?: string
+): Promise<WaitingEncounterRow[]> {
+    const conditions = [eq(consultations.clinicId, clinicId), eq(consultations.status, "waiting")];
+    if (doctorId) {
+        conditions.push(eq(consultations.doctorId, doctorId));
+    }
+
+    return db
+        .select({
+            id: consultations.id,
+            patientId: consultations.patientId,
+            patientName: patients.name,
+            startTime: consultations.startTime,
+            serviceTypeName: serviceTypes.name,
+            healthInsuranceName: healthInsurances.name,
+        })
+        .from(consultations)
+        .innerJoin(patients, eq(consultations.patientId, patients.id))
+        .leftJoin(serviceTypes, eq(consultations.serviceTypeId, serviceTypes.id))
+        .leftJoin(healthInsurances, eq(consultations.healthInsuranceId, healthInsurances.id))
+        .where(and(...conditions))
+        .orderBy(consultations.startTime);
 }
 
 /**
@@ -105,6 +153,8 @@ export async function getConsultationDetails(consultationId: string, clinicId: s
             prescriptions: true,
             examRequests: true,
             referrals: true,
+            serviceType: true,
+            healthInsurance: true,
         }
     });
 
@@ -130,6 +180,8 @@ export async function getConsultationDetailsWithDoctor(consultationId: string, c
             prescriptions: true,
             examRequests: true,
             referrals: true,
+            serviceType: true,
+            healthInsurance: true,
             doctor: {
                 with: {
                     user: {
@@ -149,14 +201,14 @@ export async function getConsultationDetailsWithDoctor(consultationId: string, c
 /**
  * Cria uma nova consulta (atendimento)
  */
-export async function createConsultationQuery(data: any) {
+export async function createConsultationQuery(data: ConsultationInsert) {
     return db.insert(consultations).values(data).returning();
 }
 
 /**
  * Salva/Atualiza o SOAP de uma consulta
  */
-export async function upsertConsultationSoapQuery(data: any) {
+export async function upsertConsultationSoapQuery(data: ConsultationSoapInput) {
     return db
         .insert(consultationSoap)
         .values({
@@ -182,7 +234,7 @@ export async function upsertConsultationSoapQuery(data: any) {
 /**
  * Salva/Atualiza os sinais vitais de uma consulta
  */
-export async function upsertVitalSignsQuery(data: any) {
+export async function upsertVitalSignsQuery(data: VitalSignsInput) {
     const [existingVitals] = await db
         .select({ id: vitalSigns.id })
         .from(vitalSigns)

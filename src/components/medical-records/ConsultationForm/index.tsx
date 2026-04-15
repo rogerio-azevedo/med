@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
+import Select from "react-select";
 import {
     Dialog,
     DialogContent,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogFooter
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -14,26 +15,143 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Icd10Search } from "../Icd10Search";
-import { Activity, Stethoscope, ClipboardList, Pill, Microscope, Send, FileText } from "lucide-react";
+import {
+    ArrowLeft,
+    ClipboardList,
+    Microscope,
+    Pill,
+    Stethoscope,
+    User,
+    Video,
+    Scissors,
+    FlaskConical,
+    FileText,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+    getServiceTypeWorkflowLabel,
+    type ServiceTypeWorkflow,
+} from "@/lib/service-type-workflows";
+import { cn } from "@/lib/utils";
+
+type PatientOption = {
+    id: string;
+    name: string;
+};
+
+type SoapState = {
+    subjective: string;
+    objective: string;
+    assessment: string;
+    plan: string;
+    diagnosisCidId: string | null;
+    diagnosisCode: string;
+    diagnosisDescription: string;
+    diagnosisFreeText: string;
+};
+
+type VitalsState = {
+    weight: string;
+    height: string;
+    bloodPressure: string;
+    heartRate: string;
+    temperature: string;
+};
+
+type ConsultationFormSubmitData = {
+    patientId: string;
+    serviceTypeId: string;
+    healthInsuranceId: string | null;
+    workflow: ServiceTypeWorkflow | null;
+    soap: SoapState;
+    vitals: VitalsState;
+};
+
+type ServiceTypeOption = {
+    id: string;
+    name: string;
+    workflow: ServiceTypeWorkflow;
+    slug?: string | null;
+};
+
+type HealthInsuranceOption = {
+    id: string;
+    name: string;
+};
+
+type ConsultationInitialData = {
+    id?: string;
+    soap: Partial<SoapState> & {
+        diagnosisCid?: {
+            code?: string | null;
+            description?: string | null;
+        } | null;
+    };
+    vitals: Partial<VitalsState>;
+    serviceTypeId?: string | null;
+    serviceTypeName?: string | null;
+    serviceTypeWorkflow?: ServiceTypeWorkflow | null;
+    healthInsuranceId?: string | null;
+} | null;
 
 interface ConsultationFormProps {
-    patient: any;
+    patient?: PatientOption | null;
+    patients?: PatientOption[];
+    serviceTypes: ServiceTypeOption[];
+    healthInsurances: HealthInsuranceOption[];
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (data: any) => void;
-    initialData?: {
-        id?: string;
-        soap: any;
-        vitals: any;
-    } | null;
+    onSubmit: (data: ConsultationFormSubmitData) => void;
+    initialData?: ConsultationInitialData;
 }
 
-export function ConsultationForm({ patient, isOpen, onClose, onSubmit, initialData }: ConsultationFormProps) {
+type Option = {
+    value: string;
+    label: string;
+};
+
+/** Mapeia nomes/workflows a ícones lucide-react. */
+function getServiceTypeIcon(name: string, workflow: ServiceTypeWorkflow) {
+    const lower = name.toLowerCase();
+    if (lower.includes("video") || lower.includes("vídeo")) return Video;
+    if (lower.includes("ciru")) return Scissors;
+    if (lower.includes("exam")) return FlaskConical;
+    if (workflow === "consultation") return Stethoscope;
+    if (workflow === "procedure") return ClipboardList;
+    if (workflow === "exam_review") return Microscope;
+    return FileText;
+}
+
+export function ConsultationForm({
+    patient,
+    patients = [],
+    serviceTypes,
+    healthInsurances,
+    isOpen,
+    onClose,
+    onSubmit,
+    initialData,
+}: ConsultationFormProps) {
+    const isEditing = !!initialData?.id;
+
+    // Default automático: primeiro tipo com slug === "consultation", fallback para workflow, e por último o primeiro da lista
+    const defaultServiceTypeId =
+        initialData?.serviceTypeId ||
+        serviceTypes.find((s) => s.slug === "consultation")?.id ||
+        serviceTypes.find((s) => s.workflow === "consultation")?.id ||
+        serviceTypes[0]?.id ||
+        "";
+
+    const [step, setStep] = useState<"setup" | "record">(isEditing ? "record" : "setup");
     const [activeTab, setActiveTab] = useState("subjective");
+    const [selectedPatientId, setSelectedPatientId] = useState(patient?.id || "");
+    const [selectedServiceTypeId, setSelectedServiceTypeId] = useState(defaultServiceTypeId);
+    const [selectedHealthInsuranceId, setSelectedHealthInsuranceId] = useState(
+        initialData?.healthInsuranceId || ""
+    );
     const [soap, setSoap] = useState({
         subjective: initialData?.soap?.subjective || "",
         objective: initialData?.soap?.objective || "",
@@ -44,7 +162,6 @@ export function ConsultationForm({ patient, isOpen, onClose, onSubmit, initialDa
         diagnosisDescription: initialData?.soap?.diagnosisCid?.description || "",
         diagnosisFreeText: initialData?.soap?.diagnosisFreeText || "",
     });
-
     const [vitals, setVitals] = useState({
         weight: initialData?.vitals?.weight || "",
         height: initialData?.vitals?.height || "",
@@ -53,205 +170,476 @@ export function ConsultationForm({ patient, isOpen, onClose, onSubmit, initialDa
         temperature: initialData?.vitals?.temperature || "",
     });
 
-    // Reset form when initialData changes or when reopening
-    useEffect(() => {
-        if (isOpen) {
-            setSoap({
-                subjective: initialData?.soap?.subjective || "",
-                objective: initialData?.soap?.objective || "",
-                assessment: initialData?.soap?.assessment || "",
-                plan: initialData?.soap?.plan || "",
-                diagnosisCidId: initialData?.soap?.diagnosisCidId || null,
-                diagnosisCode: initialData?.soap?.diagnosisCid?.code || "",
-                diagnosisDescription: initialData?.soap?.diagnosisCid?.description || "",
-                diagnosisFreeText: initialData?.soap?.diagnosisFreeText || "",
-            });
-            setVitals({
-                weight: initialData?.vitals?.weight || "",
-                height: initialData?.vitals?.height || "",
-                bloodPressure: initialData?.vitals?.bloodPressure || "",
-                heartRate: initialData?.vitals?.heartRate || "",
-                temperature: initialData?.vitals?.temperature || "",
-            });
-            setActiveTab("subjective");
-        }
-    }, [initialData, isOpen]);
+    const allPatients = useMemo(
+        () =>
+            patient
+                ? [{ id: patient.id, name: patient.name }, ...patients.filter((item) => item.id !== patient.id)]
+                : patients,
+        [patient, patients]
+    );
+    const patientOptions: Option[] = useMemo(
+        () => allPatients.map((item) => ({ value: item.id, label: item.name })),
+        [allPatients]
+    );
 
-    const handleSelectCid = (cid: any) => {
-        setSoap(prev => ({
+    // Opções de convênio para react-select
+    const insuranceOptions: Option[] = useMemo(
+        () => [
+            { value: "__none__", label: "Particular / Sem convênio" },
+            ...healthInsurances.map((h) => ({ value: h.id, label: h.name })),
+        ],
+        [healthInsurances]
+    );
+    const selectedInsuranceOption =
+        insuranceOptions.find((o) => o.value === (selectedHealthInsuranceId || "__none__")) ?? insuranceOptions[0];
+
+    const selectedPatient = allPatients.find((item) => item.id === selectedPatientId) || patient || null;
+    const selectedServiceType = serviceTypes.find((item) => item.id === selectedServiceTypeId) || null;
+    const activeWorkflow = (initialData?.serviceTypeWorkflow || selectedServiceType?.workflow || null) as ServiceTypeWorkflow | null;
+
+    const handleSelectCid = (cid: { id: string; code: string; description: string }) => {
+        setSoap((prev) => ({
             ...prev,
             diagnosisCidId: cid.id,
             diagnosisCode: cid.code,
-            diagnosisDescription: cid.description
+            diagnosisDescription: cid.description,
         }));
     };
 
-    const isEditing = !!initialData?.id;
+    const recordMeta = getRecordMeta(activeWorkflow);
+    // Pode continuar se paciente selecionado (tipo já tem default)
+    const canContinue = !!selectedPatientId && !!selectedServiceTypeId;
+
+    // Estilos compartilhados para react-select
+    const reactSelectStyles = {
+        control: (base: Record<string, unknown>) => ({
+            ...base,
+            borderColor: "hsl(var(--border))",
+            borderRadius: "0.5rem",
+            padding: "2px",
+            boxShadow: "none",
+            "&:hover": { borderColor: "hsl(var(--border))" },
+        }),
+        menu: (base: Record<string, unknown>) => ({
+            ...base,
+            zIndex: 50,
+        }),
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-6xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-                <DialogHeader className="p-6 pb-0">
-                    <div className="flex justify-between items-center">
-                        <DialogTitle className="text-2xl flex items-center gap-2">
-                            <Stethoscope className="h-6 w-6 text-primary" />
-                            {isEditing ? `Editar Atendimento: ${patient.name}` : `Novo Atendimento: ${patient.name}`}
-                        </DialogTitle>
-                        <Badge variant="outline" className="px-3 py-1">Consulta Clínica</Badge>
+            <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-6xl">
+                <DialogHeader className="border-b p-6 pb-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="space-y-2">
+                            <DialogTitle className="flex items-center gap-2 text-2xl">
+                                <Stethoscope className="h-6 w-6 text-primary" />
+                                {isEditing
+                                    ? `Editar Atendimento: ${selectedPatient?.name || patient?.name || "Paciente"}`
+                                    : step === "setup"
+                                      ? "Novo Atendimento"
+                                      : `Registrar Atendimento: ${selectedPatient?.name || "Paciente"}`}
+                            </DialogTitle>
+                            {step === "record" ? (
+                                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                                    <Badge variant="outline">{selectedServiceType?.name || initialData?.serviceTypeName || "Atendimento"}</Badge>
+                                    {activeWorkflow ? (
+                                        <Badge variant="secondary">{getServiceTypeWorkflowLabel(activeWorkflow)}</Badge>
+                                    ) : null}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    Selecione o paciente, o tipo de atendimento e o convênio.
+                                </p>
+                            )}
+                        </div>
+                        {!isEditing && step === "record" ? (
+                            <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setStep("setup")}>
+                                <ArrowLeft className="h-4 w-4" />
+                                Voltar
+                            </Button>
+                        ) : null}
                     </div>
                 </DialogHeader>
 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 pt-4">
-                    <div className="px-6 border-b">
-                        <TabsList className="bg-transparent h-12 w-full justify-start gap-6 rounded-none p-0">
-                            <TabsTrigger
-                                value="subjective"
-                                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-2"
-                            >
-                                <span className="mr-2 px-1.5 py-0.5 bg-muted rounded text-[10px] font-bold">S</span>
-                                Subjetivo
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="objective"
-                                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-2"
-                            >
-                                <span className="mr-2 px-1.5 py-0.5 bg-muted rounded text-[10px] font-bold">O</span>
-                                Objetivo
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="assessment"
-                                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-2"
-                            >
-                                <span className="mr-2 px-1.5 py-0.5 bg-muted rounded text-[10px] font-bold">A</span>
-                                Avaliação
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="plan"
-                                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-2"
-                            >
-                                <span className="mr-2 px-1.5 py-0.5 bg-muted rounded text-[10px] font-bold">P</span>
-                                Plano
-                            </TabsTrigger>
-                        </TabsList>
-                    </div>
-
-                    <ScrollArea className="flex-1 px-6 py-4">
-                        <TabsContent value="subjective" className="mt-0 space-y-4">
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label className="text-lg font-semibold flex items-center gap-2">
-                                        Queixa Principal e História (HDA)
-                                    </Label>
-                                    <Textarea
-                                        placeholder="Descreva o motivo da consulta, sintomas e histórico atual..."
-                                        className="min-h-[300px] text-base"
-                                        value={soap.subjective}
-                                        onChange={(e) => setSoap({ ...soap, subjective: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="objective" className="mt-0 space-y-6">
-                            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Peso (kg)</Label>
-                                    <Input placeholder="70.5" value={vitals.weight} onChange={e => setVitals({ ...vitals, weight: e.target.value })} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Altura (cm)</Label>
-                                    <Input placeholder="175" value={vitals.height} onChange={e => setVitals({ ...vitals, height: e.target.value })} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>PA (mmHg)</Label>
-                                    <Input placeholder="120/80" value={vitals.bloodPressure} onChange={e => setVitals({ ...vitals, bloodPressure: e.target.value })} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>FC (bpm)</Label>
-                                    <Input placeholder="72" value={vitals.heartRate} onChange={e => setVitals({ ...vitals, heartRate: e.target.value })} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Temp (°C)</Label>
-                                    <Input placeholder="36.5" value={vitals.temperature} onChange={e => setVitals({ ...vitals, temperature: e.target.value })} />
-                                </div>
-                            </div>
+                {step === "setup" ? (
+                    <div className="space-y-6 overflow-y-auto p-6">
+                        {/* ── Paciente ─────────────────────────────────── */}
+                        {!patient ? (
                             <div className="space-y-2">
-                                <Label className="text-lg font-semibold">Exame Físico</Label>
-                                <Textarea
-                                    placeholder="Descreva os achados do exame físico..."
-                                    className="min-h-[200px]"
-                                    value={soap.objective}
-                                    onChange={(e) => setSoap({ ...soap, objective: e.target.value })}
+                                <Label className="text-sm font-medium">Paciente <span className="text-destructive">*</span></Label>
+                                <Select
+                                    placeholder="Buscar paciente..."
+                                    options={patientOptions}
+                                    value={patientOptions.find((option) => option.value === selectedPatientId) ?? null}
+                                    onChange={(option) => setSelectedPatientId(option?.value ?? "")}
+                                    classNamePrefix="rs"
+                                    styles={reactSelectStyles}
                                 />
                             </div>
-                        </TabsContent>
-
-                        <TabsContent value="assessment" className="mt-0 space-y-6">
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label className="text-lg font-semibold italic">Diagnóstico / Hipótese Diagnóstica (CID-10)</Label>
-                                    <Icd10Search onSelect={handleSelectCid} />
-                                    {soap.diagnosisCode && (
-                                        <div className="p-3 bg-primary/5 border border-primary/20 rounded-md flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <Badge className="text-md h-8">{soap.diagnosisCode}</Badge>
-                                                <span className="font-medium">{soap.diagnosisDescription}</span>
-                                            </div>
-                                            <Button variant="ghost" size="sm" onClick={() => setSoap({ ...soap, diagnosisCidId: null, diagnosisCode: "", diagnosisDescription: "" })}>
-                                                Remover
-                                            </Button>
-                                        </div>
-                                    )}
+                        ) : (
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium">Paciente</Label>
+                                <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2.5 text-sm font-medium">
+                                    <User className="h-4 w-4 text-muted-foreground" />
+                                    {patient.name}
                                 </div>
-                                <Separator />
+                            </div>
+                        )}
+
+                        {/* ── Tipo de atendimento — cards clicáveis ─────── */}
+                        <div className="space-y-3">
+                            <Label className="text-sm font-medium">
+                                Tipo de atendimento <span className="text-destructive">*</span>
+                            </Label>
+                            <div
+                                className={cn(
+                                    "grid gap-3",
+                                    serviceTypes.length <= 2
+                                        ? "grid-cols-2"
+                                        : serviceTypes.length === 3
+                                          ? "grid-cols-3"
+                                          : "grid-cols-2 sm:grid-cols-4"
+                                )}
+                            >
+                                {serviceTypes.map((st) => {
+                                    const Icon = getServiceTypeIcon(st.name, st.workflow);
+                                    const isSelected = selectedServiceTypeId === st.id;
+                                    return (
+                                        <button
+                                            key={st.id}
+                                            type="button"
+                                            onClick={() => setSelectedServiceTypeId(st.id)}
+                                            className={cn(
+                                                "group relative flex cursor-pointer flex-col items-center gap-2.5 rounded-xl border-2 px-3 py-5 text-center transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                                isSelected
+                                                    ? "border-primary bg-primary/8 shadow-sm"
+                                                    : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
+                                            )}
+                                        >
+                                            <div
+                                                className={cn(
+                                                    "flex h-11 w-11 items-center justify-center rounded-full transition-colors duration-200",
+                                                    isSelected
+                                                        ? "bg-primary/15 text-primary"
+                                                        : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                                                )}
+                                            >
+                                                <Icon className="h-5 w-5" />
+                                            </div>
+                                            <span
+                                                className={cn(
+                                                    "text-sm font-semibold leading-tight transition-colors duration-200",
+                                                    isSelected
+                                                        ? "text-primary"
+                                                        : "text-foreground group-hover:text-primary"
+                                                )}
+                                            >
+                                                {st.name}
+                                            </span>
+                                            {isSelected && (
+                                                <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                                                    ✓
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* ── Convênio — react-select ───────────────────── */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">Convênio</Label>
+                            <Select
+                                options={insuranceOptions}
+                                value={selectedInsuranceOption}
+                                onChange={(option) =>
+                                    setSelectedHealthInsuranceId(
+                                        !option || option.value === "__none__" ? "" : option.value
+                                    )
+                                }
+                                classNamePrefix="rs"
+                                styles={reactSelectStyles}
+                                placeholder="Particular / Sem convênio"
+                                isClearable={selectedHealthInsuranceId !== ""}
+                            />
+                        </div>
+
+                        {/* ── Preview do fluxo ─────────────────────────── */}
+                        {selectedServiceType ? (
+                            <Card className="border-dashed">
+                                <CardContent className="space-y-2 p-4">
+                                    <div className="flex items-center gap-2 text-sm font-semibold">
+                                        <ClipboardList className="h-4 w-4 text-primary" />
+                                        Fluxo selecionado
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        <Badge variant="outline">{selectedServiceType.name}</Badge>
+                                        <Badge variant="secondary">{getServiceTypeWorkflowLabel(selectedServiceType.workflow)}</Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">{recordMeta.description}</p>
+                                </CardContent>
+                            </Card>
+                        ) : null}
+
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={onClose}>
+                                Cancelar
+                            </Button>
+                            <Button type="button" disabled={!canContinue} onClick={() => setStep("record")}>
+                                Continuar
+                            </Button>
+                        </DialogFooter>
+                    </div>
+                ) : activeWorkflow === "consultation" ? (
+                    <>
+                        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col pt-4">
+                            <div className="border-b px-6">
+                                <TabsList className="h-12 w-full justify-start gap-6 rounded-none bg-transparent p-0">
+                                    <TabsTrigger value="subjective" className="h-full rounded-none px-2 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                                        <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold">S</span>
+                                        Subjetivo
+                                    </TabsTrigger>
+                                    <TabsTrigger value="objective" className="h-full rounded-none px-2 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                                        <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold">O</span>
+                                        Objetivo
+                                    </TabsTrigger>
+                                    <TabsTrigger value="assessment" className="h-full rounded-none px-2 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                                        <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold">A</span>
+                                        Avaliação
+                                    </TabsTrigger>
+                                    <TabsTrigger value="plan" className="h-full rounded-none px-2 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                                        <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold">P</span>
+                                        Plano
+                                    </TabsTrigger>
+                                </TabsList>
+                            </div>
+
+                            <ScrollArea className="flex-1 px-6 py-4">
+                                <TabsContent value="subjective" className="mt-0 space-y-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-lg font-semibold">Queixa Principal e História (HDA)</Label>
+                                        <Textarea
+                                            placeholder="Descreva o motivo da consulta, sintomas e histórico atual..."
+                                            className="min-h-[300px] text-base"
+                                            value={soap.subjective}
+                                            onChange={(e) => setSoap({ ...soap, subjective: e.target.value })}
+                                        />
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="objective" className="mt-0 space-y-6">
+                                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+                                        <div className="space-y-2">
+                                            <Label>Peso (kg)</Label>
+                                            <Input placeholder="70.5" value={vitals.weight} onChange={(e) => setVitals({ ...vitals, weight: e.target.value })} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Altura (cm)</Label>
+                                            <Input placeholder="175" value={vitals.height} onChange={(e) => setVitals({ ...vitals, height: e.target.value })} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>PA (mmHg)</Label>
+                                            <Input placeholder="120/80" value={vitals.bloodPressure} onChange={(e) => setVitals({ ...vitals, bloodPressure: e.target.value })} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>FC (bpm)</Label>
+                                            <Input placeholder="72" value={vitals.heartRate} onChange={(e) => setVitals({ ...vitals, heartRate: e.target.value })} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Temp (°C)</Label>
+                                            <Input placeholder="36.5" value={vitals.temperature} onChange={(e) => setVitals({ ...vitals, temperature: e.target.value })} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-lg font-semibold">Exame Físico</Label>
+                                        <Textarea
+                                            placeholder="Descreva os achados do exame físico..."
+                                            className="min-h-[200px]"
+                                            value={soap.objective}
+                                            onChange={(e) => setSoap({ ...soap, objective: e.target.value })}
+                                        />
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="assessment" className="mt-0 space-y-6">
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-lg font-semibold italic">Diagnóstico / Hipótese Diagnóstica (CID-10)</Label>
+                                            <Icd10Search onSelect={handleSelectCid} />
+                                            {soap.diagnosisCode ? (
+                                                <div className="flex items-center justify-between rounded-md border border-primary/20 bg-primary/5 p-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <Badge className="h-8 text-md">{soap.diagnosisCode}</Badge>
+                                                        <span className="font-medium">{soap.diagnosisDescription}</span>
+                                                    </div>
+                                                    <Button variant="ghost" size="sm" onClick={() => setSoap({ ...soap, diagnosisCidId: null, diagnosisCode: "", diagnosisDescription: "" })}>
+                                                        Remover
+                                                    </Button>
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                        <Separator />
+                                        <div className="space-y-2">
+                                            <Label className="text-lg font-semibold">Avaliação Clínica / Observações</Label>
+                                            <Textarea
+                                                placeholder="Discuta o raciocínio clínico, gravidade e prognóstico..."
+                                                className="min-h-[200px]"
+                                                value={soap.assessment}
+                                                onChange={(e) => setSoap({ ...soap, assessment: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="plan" className="mt-0 space-y-6">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        <Card className="group cursor-pointer border-2 border-dashed transition-colors hover:border-primary/50">
+                                            <CardContent className="flex flex-col items-center justify-center gap-3 p-4 py-8">
+                                                <Pill className="h-8 w-8 text-muted-foreground transition-colors group-hover:text-primary" />
+                                                <p className="font-semibold text-muted-foreground group-hover:text-primary">Prescrição de Medicamentos</p>
+                                            </CardContent>
+                                        </Card>
+                                        <Card className="group cursor-pointer border-2 border-dashed transition-colors hover:border-primary/50">
+                                            <CardContent className="flex flex-col items-center justify-center gap-3 p-4 py-8">
+                                                <Microscope className="h-8 w-8 text-muted-foreground transition-colors group-hover:text-primary" />
+                                                <p className="font-semibold text-muted-foreground group-hover:text-primary">Solicitar Exames</p>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-lg font-semibold">Conduta / Orientações ao Paciente</Label>
+                                        <Textarea
+                                            placeholder="Descreva as orientações, próximas etapas e plano de cuidado..."
+                                            className="min-h-[200px]"
+                                            value={soap.plan}
+                                            onChange={(e) => setSoap({ ...soap, plan: e.target.value })}
+                                        />
+                                    </div>
+                                </TabsContent>
+                            </ScrollArea>
+                        </Tabs>
+
+                        <DialogFooter className="gap-3 border-t p-6">
+                            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+                            <Button
+                                onClick={() =>
+                                    onSubmit({
+                                        patientId: selectedPatientId,
+                                        serviceTypeId: selectedServiceTypeId,
+                                        healthInsuranceId: selectedHealthInsuranceId || null,
+                                        workflow: activeWorkflow,
+                                        soap,
+                                        vitals,
+                                    })
+                                }
+                            >
+                                Finalizar e Salvar Atendimento
+                            </Button>
+                        </DialogFooter>
+                    </>
+                ) : (
+                    <>
+                        <ScrollArea className="flex-1 px-6 py-4">
+                            <div className="space-y-6">
+                                <Card className="border-dashed">
+                                    <CardContent className="space-y-2 p-4 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2 font-semibold text-foreground">
+                                            <User className="h-4 w-4 text-primary" />
+                                            {selectedPatient?.name || "Paciente"}
+                                        </div>
+                                        <p>{recordMeta.description}</p>
+                                    </CardContent>
+                                </Card>
+
                                 <div className="space-y-2">
-                                    <Label className="text-lg font-semibold">Avaliação Clínica / Observações</Label>
+                                    <Label className="text-lg font-semibold">{recordMeta.titleLabel}</Label>
+                                    <Input
+                                        placeholder={recordMeta.titlePlaceholder}
+                                        value={soap.diagnosisFreeText}
+                                        onChange={(e) => setSoap({ ...soap, diagnosisFreeText: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label className="text-lg font-semibold">{recordMeta.primaryLabel}</Label>
                                     <Textarea
-                                        placeholder="Discuta o raciocínio clínico, gravidade e prognóstico..."
-                                        className="min-h-[200px]"
+                                        placeholder={recordMeta.primaryPlaceholder}
+                                        className="min-h-[220px]"
                                         value={soap.assessment}
                                         onChange={(e) => setSoap({ ...soap, assessment: e.target.value })}
                                     />
                                 </div>
-                            </div>
-                        </TabsContent>
 
-                        <TabsContent value="plan" className="mt-0 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Card className="border-dashed border-2 hover:border-primary/50 transition-colors cursor-pointer group">
-                                    <CardContent className="p-4 flex flex-col items-center justify-center gap-3 py-8">
-                                        <Pill className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                                        <p className="font-semibold text-muted-foreground group-hover:text-primary">Prescrição de Medicamentos</p>
-                                    </CardContent>
-                                </Card>
-                                <Card className="border-dashed border-2 hover:border-primary/50 transition-colors cursor-pointer group">
-                                    <CardContent className="p-4 flex flex-col items-center justify-center gap-3 py-8">
-                                        <Microscope className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                                        <p className="font-semibold text-muted-foreground group-hover:text-primary">Solicitar Exames</p>
-                                    </CardContent>
-                                </Card>
+                                <div className="space-y-2">
+                                    <Label className="text-lg font-semibold">{recordMeta.secondaryLabel}</Label>
+                                    <Textarea
+                                        placeholder={recordMeta.secondaryPlaceholder}
+                                        className="min-h-[180px]"
+                                        value={soap.plan}
+                                        onChange={(e) => setSoap({ ...soap, plan: e.target.value })}
+                                    />
+                                </div>
                             </div>
+                        </ScrollArea>
 
-                            <div className="space-y-2">
-                                <Label className="text-lg font-semibold">Conduta / Orientações ao Paciente</Label>
-                                <Textarea
-                                    placeholder="Descreva as orientações, próximas etapas e plano de cuidado..."
-                                    className="min-h-[200px]"
-                                    value={soap.plan}
-                                    onChange={(e) => setSoap({ ...soap, plan: e.target.value })}
-                                />
-                            </div>
-                        </TabsContent>
-                    </ScrollArea>
-                </Tabs>
-
-                <DialogFooter className="p-6 border-t gap-3">
-                    <Button variant="outline" onClick={onClose}>Cancelar</Button>
-                    <Button onClick={() => onSubmit({ soap, vitals })}>
-                        Finalizar e Salvar Prontuário
-                    </Button>
-                </DialogFooter>
+                        <DialogFooter className="gap-3 border-t p-6">
+                            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+                            <Button
+                                onClick={() =>
+                                    onSubmit({
+                                        patientId: selectedPatientId,
+                                        serviceTypeId: selectedServiceTypeId,
+                                        healthInsuranceId: selectedHealthInsuranceId || null,
+                                        workflow: activeWorkflow,
+                                        soap,
+                                        vitals,
+                                    })
+                                }
+                            >
+                                Salvar Atendimento
+                            </Button>
+                        </DialogFooter>
+                    </>
+                )}
             </DialogContent>
         </Dialog>
     );
+}
+
+function getRecordMeta(workflow: ServiceTypeWorkflow | null) {
+    switch (workflow) {
+        case "procedure":
+            return {
+                description: "Registre de forma objetiva o procedimento executado, intercorrências e orientações finais.",
+                titleLabel: "Nome do procedimento",
+                titlePlaceholder: "Ex: Infiltração articular guiada",
+                primaryLabel: "Descrição técnica",
+                primaryPlaceholder: "Descreva o procedimento realizado, materiais, técnica e evolução imediata.",
+                secondaryLabel: "Orientações e observações",
+                secondaryPlaceholder: "Registre orientações pós-procedimento, recomendações e próximos passos.",
+            };
+        case "exam_review":
+            return {
+                description: "Use este fluxo para documentar análise de exames, interpretação clínica e devolutiva ao paciente.",
+                titleLabel: "Conclusão da revisão",
+                titlePlaceholder: "Ex: Revisão de ressonância lombar",
+                primaryLabel: "Achados relevantes",
+                primaryPlaceholder: "Descreva os exames avaliados e os pontos clínicos mais importantes.",
+                secondaryLabel: "Conduta",
+                secondaryPlaceholder: "Registre devolutiva, próximos exames, retorno ou ajustes de tratamento.",
+            };
+        default:
+            return {
+                description: "Fluxo resumido para registrar atendimentos que ainda não possuem formulário clínico dedicado.",
+                titleLabel: "Resumo do atendimento",
+                titlePlaceholder: "Ex: Orientação pós-operatória",
+                primaryLabel: "Registro principal",
+                primaryPlaceholder: "Descreva o que foi realizado neste atendimento.",
+                secondaryLabel: "Observações complementares",
+                secondaryPlaceholder: "Adicione informações complementares, orientações e encaminhamentos.",
+            };
+    }
 }

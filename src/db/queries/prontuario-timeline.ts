@@ -6,7 +6,7 @@ export type ProntuarioTimelineConsultationItem = {
     sortAt: string;
     id: string;
     startTime: string;
-    type: string;
+    serviceTypeName: string | null;
     doctorName: string | null;
     diagnosis: string | null;
     cidCode: string | null;
@@ -158,7 +158,7 @@ export async function getMergedProntuarioTimeline(
             sortAt: start,
             id: c.id,
             startTime: start,
-            type: c.type,
+            serviceTypeName: c.serviceTypeName ?? null,
             doctorName: c.doctorName ?? null,
             diagnosis: c.diagnosis ?? null,
             cidCode: c.cidCode ?? null,

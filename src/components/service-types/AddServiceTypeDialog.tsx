@@ -24,7 +24,15 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { SERVICE_TYPE_WORKFLOWS, getServiceTypeWorkflowLabel } from "@/lib/service-type-workflows";
 import { serviceTypeSchema, type ServiceTypeInput } from "@/lib/validations/service-types";
 
 export function AddServiceTypeDialog() {
@@ -36,6 +44,7 @@ export function AddServiceTypeDialog() {
         defaultValues: {
             name: "",
             description: "",
+            workflow: "generic",
         },
     });
 
@@ -85,6 +94,31 @@ export function AddServiceTypeDialog() {
                                     <FormControl>
                                         <Input placeholder="Ex: Consulta" {...field} />
                                     </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="workflow"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Fluxo do atendimento</FormLabel>
+                                    <Select value={field.value} onValueChange={field.onChange}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione o fluxo" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {SERVICE_TYPE_WORKFLOWS.map((workflow) => (
+                                                <SelectItem key={workflow.value} value={workflow.value}>
+                                                    {getServiceTypeWorkflowLabel(workflow.value)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}

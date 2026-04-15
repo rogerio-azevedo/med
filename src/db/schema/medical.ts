@@ -33,14 +33,6 @@ export const appointmentStatusEnum = pgEnum("appointment_status", [
     "cancelled",
     "no_show",
 ]);
-export const serviceRecordTypeEnum = pgEnum("service_record_type", [
-    "consultation",
-    "remote",
-    "phone",
-    "whatsapp",
-    "exam_review",
-    "other",
-]);
 export const packageStatusEnum = pgEnum("package_status", [
     "active",
     "completed",
@@ -81,15 +73,6 @@ export const procedureTypeEnum = pgEnum("procedure_type", [
     "exam",
     "therapy",
     "hospitalization",
-]);
-
-export const consultationTypeEnum = pgEnum("consultation_type", [
-    "consultation",
-    "return",
-    "emergency",
-    "procedure",
-    "remote",
-    "phone",
 ]);
 
 export const prescriptionRouteEnum = pgEnum("prescription_route", [
@@ -444,50 +427,6 @@ export const appointments = pgTable("appointments", {
     modality: appointmentModalityEnum("modality").notNull(),
     status: appointmentStatusEnum("status").default("scheduled"),
     notes: text("notes"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-// 14. Service Records (Timeline)
-export const serviceRecords = pgTable("service_records", {
-    id: uuid("id").primaryKey().defaultRandom(),
-    clinicId: uuid("clinic_id")
-        .notNull()
-        .references(() => clinics.id, { onDelete: "cascade" }),
-    patientId: uuid("patient_id")
-        .notNull()
-        .references(() => patients.id, { onDelete: "cascade" }),
-    doctorId: uuid("doctor_id")
-        .notNull()
-        .references(() => doctors.id, { onDelete: "cascade" }),
-    appointmentId: uuid("appointment_id").references(() => appointments.id),
-    type: serviceRecordTypeEnum("type").notNull(),
-    occurredAt: timestamp("occurred_at").defaultNow().notNull(),
-    durationMinutes: integer("duration_minutes"),
-    summary: text("summary"),
-    attachments: jsonb("attachments"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-// 15. Medical Records (Prontuário)
-export const medicalRecords = pgTable("medical_records", {
-    id: uuid("id").primaryKey().defaultRandom(),
-    patientId: uuid("patient_id")
-        .notNull()
-        .references(() => patients.id, { onDelete: "cascade" }),
-    serviceRecordId: uuid("service_record_id")
-        .notNull()
-        .references(() => serviceRecords.id, { onDelete: "cascade" }),
-    doctorId: uuid("doctor_id")
-        .notNull()
-        .references(() => doctors.id, { onDelete: "cascade" }),
-    clinicId: uuid("clinic_id")
-        .notNull()
-        .references(() => clinics.id, { onDelete: "cascade" }),
-    anamnesis: text("anamnesis"),
-    diagnosis: text("diagnosis"),
-    cid10: varchar("cid10", { length: 10 }),
-    prescriptions: jsonb("prescriptions"),
-    observations: text("observations"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

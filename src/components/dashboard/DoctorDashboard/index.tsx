@@ -3,6 +3,8 @@ import {
     getDoctorDashboardStats,
     getDoctorTodayAppointments,
 } from "@/db/queries/dashboard";
+import { getWaitingConsultationsForClinic } from "@/db/queries/consultations";
+import { WaitingEncountersBanner } from "@/components/medical-records/WaitingEncountersBanner";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TodayScheduleList } from "@/components/dashboard/TodayScheduleList";
 import { Users, CalendarDays, ClipboardCheck } from "lucide-react";
@@ -31,9 +33,10 @@ export async function DoctorDashboard({
         );
     }
 
-    const [stats, todayApts] = await Promise.all([
+    const [stats, todayApts, waitingEncounters] = await Promise.all([
         getDoctorDashboardStats(clinicId, doctor.id),
         getDoctorTodayAppointments(clinicId, doctor.id),
+        getWaitingConsultationsForClinic(clinicId, doctor.id),
     ]);
 
     return (
@@ -46,6 +49,8 @@ export async function DoctorDashboard({
                     {userName ? ` • Olá, Dr. ${userName.split(" ")[0]}` : ""}
                 </p>
             </div>
+
+            <WaitingEncountersBanner items={waitingEncounters} />
 
             {/* Stat Cards */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">

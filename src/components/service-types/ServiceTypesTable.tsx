@@ -22,11 +22,13 @@ import {
 } from "@/components/ui/table";
 import { DeleteServiceTypeDialog } from "./DeleteServiceTypeDialog";
 import { EditServiceTypeDialog } from "./EditServiceTypeDialog";
+import { getServiceTypeWorkflowLabel } from "@/lib/service-type-workflows";
 
 interface ServiceType {
     id: string;
     name: string;
     description: string | null;
+    workflow: string;
     isActive: boolean;
 }
 
@@ -43,6 +45,7 @@ export function ServiceTypesTable({ serviceTypes }: { serviceTypes: ServiceType[
                         <TableRow>
                             <TableHead>Nome</TableHead>
                             <TableHead>Descrição</TableHead>
+                            <TableHead>Fluxo</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
@@ -50,7 +53,7 @@ export function ServiceTypesTable({ serviceTypes }: { serviceTypes: ServiceType[
                     <TableBody>
                         {serviceTypes.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} className="h-28 text-center text-muted-foreground">
+                                <TableCell colSpan={5} className="h-28 text-center text-muted-foreground">
                                     Nenhum tipo de atendimento cadastrado.
                                 </TableCell>
                             </TableRow>
@@ -69,6 +72,9 @@ export function ServiceTypesTable({ serviceTypes }: { serviceTypes: ServiceType[
                                         <p className="line-clamp-2 text-sm text-muted-foreground">
                                             {item.description || "Sem descrição adicional"}
                                         </p>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline">{getServiceTypeWorkflowLabel(item.workflow)}</Badge>
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={item.isActive ? "default" : "secondary"}>

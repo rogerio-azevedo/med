@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
     Sheet,
     SheetContent,
@@ -40,10 +40,51 @@ import { Button } from "@/components/ui/button";
 import { FileCard, type PatientFileRow } from "../FileCard";
 import { FileUploadModal } from "../FileUploadModal";
 
+export type ConsultationDetailData = {
+    id: string;
+    doctorId?: string | null;
+    status: string;
+    startTime: string | Date;
+    soap?: {
+        subjective?: string | null;
+        objective?: string | null;
+        assessment?: string | null;
+        plan?: string | null;
+        diagnosisFreeText?: string | null;
+        diagnosisCid?: {
+            code: string;
+            description: string;
+        } | null;
+    } | null;
+    vitalSigns?: Array<{
+        bloodPressure?: string | null;
+        weight?: string | null;
+        height?: string | null;
+        heartRate?: number | null;
+        temperature?: string | null;
+    }>;
+    serviceType?: {
+        name?: string | null;
+        workflow?: string | null;
+    } | null;
+    serviceTypeId?: string | null;
+    healthInsurance?: {
+        name?: string | null;
+    } | null;
+    healthInsuranceId?: string | null;
+    doctor?: {
+        user?: {
+            name?: string | null;
+        } | null;
+    } | null;
+    prescriptions?: unknown[];
+    examRequests?: unknown[];
+};
+
 interface ConsultationDetailSheetProps {
     consultationId: string | null;
     onClose: () => void;
-    onEdit?: (consultation: any) => void;
+    onEdit?: (consultation: ConsultationDetailData) => void;
     patientId: string;
     currentDoctorId?: string;
     /** Recarrega dados do servidor (timeline, listas) após arquivo ou exclusão de consulta */
@@ -59,7 +100,7 @@ export function ConsultationDetailSheet({
     onTimelineRefresh,
 }: ConsultationDetailSheetProps) {
     const [loading, setLoading] = useState(false);
-    const [consultation, setConsultation] = useState<any>(null);
+    const [consultation, setConsultation] = useState<ConsultationDetailData | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [files, setFiles] = useState<PatientFileRow[]>([]);
@@ -84,22 +125,12 @@ export function ConsultationDetailSheet({
         }
     }, [consultationId]);
 
-    useEffect(() => {
-        if (consultationId) {
-            fetchConsultation();
-            loadFiles();
-        } else {
-            setConsultation(null);
-            setFiles([]);
-        }
-    }, [consultationId, loadFiles]);
-
-    const fetchConsultation = async () => {
+    const fetchConsultation = useCallback(async () => {
         setLoading(true);
         try {
             const response = await fetch(`/api/consultations/${consultationId}`);
             if (response.ok) {
-                const data = await response.json();
+                const data = (await response.json()) as ConsultationDetailData;
                 setConsultation(data);
             }
         } catch (error) {
@@ -107,7 +138,17 @@ export function ConsultationDetailSheet({
         } finally {
             setLoading(false);
         }
-    };
+    }, [consultationId]);
+
+    useEffect(() => {
+        if (consultationId) {
+            void fetchConsultation();
+            void loadFiles();
+        } else {
+            setConsultation(null);
+            setFiles([]);
+        }
+    }, [consultationId, fetchConsultation, loadFiles]);
 
     const handleEdit = () => {
         if (onEdit && consultation) {
@@ -127,7 +168,7 @@ export function ConsultationDetailSheet({
                 onClose();
                 onTimelineRefresh?.();
             } else {
-                toast.error("Erro ao excluir atendimento: " + result.error);
+                toast.error(`Erro ao excluir atendimento: ${result.error}`);
             }
         } catch (error) {
             toast.error("Ocorreu um erro ao excluir o atendimento.");
@@ -158,11 +199,11 @@ export function ConsultationDetailSheet({
                                 <div className="flex justify-between items-start mb-4">
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
-                                            <Badge variant="outline" className="bg-background">
-                                                {translateType(consultation.type)}
-                                            </Badge>
-                                            <Badge variant={consultation.status === 'finalized' ? 'default' : 'secondary'} className="capitalize">
-                                                {consultation.status === 'finalized' ? 'Finalizado' : 'Em Andamento'}
+                                             <Badge variant="outline" className="bg-background">
+                                                {consultation.serviceType?.name || "Atendimento"}
+                                             </Badge>
+                                            <Badge variant={consultation.status === "finished" ? "default" : "secondary"} className="capitalize">
+                                                {detailStatusLabel(consultation.status)}
                                             </Badge>
                                         </div>
                                         <SheetTitle className="text-2xl font-bold">
@@ -183,7 +224,7 @@ export function ConsultationDetailSheet({
                                     )}
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                                     <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
                                     <div className="flex items-center gap-2">
                                         <Calendar className="h-4 w-4" />
                                         <span>{format(new Date(consultation.startTime), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
@@ -192,11 +233,21 @@ export function ConsultationDetailSheet({
                                         <Clock className="h-4 w-4" />
                                         <span>{format(new Date(consultation.startTime), "HH:mm")}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 col-span-2">
-                                        <User className="h-4 w-4" />
-                                        <span>Médico Responsável: <span className="text-foreground font-medium">{consultation.doctor?.user?.name}</span></span>
-                                    </div>
-                                </div>
+                                     <div className="flex items-center gap-2 col-span-2">
+                                         <User className="h-4 w-4" />
+                                         <span>Médico responsável:{" "}
+                                             <span className="text-foreground font-medium">
+                                                 {consultation.doctor?.user?.name ?? (consultation.status === "waiting" ? "Aguardando" : "—")}
+                                             </span>
+                                         </span>
+                                     </div>
+                                     {consultation.healthInsurance?.name ? (
+                                         <div className="col-span-2 flex items-center gap-2">
+                                             <FileText className="h-4 w-4" />
+                                             <span>Convênio: <span className="text-foreground font-medium">{consultation.healthInsurance.name}</span></span>
+                                         </div>
+                                     ) : null}
+                                 </div>
                             </div>
 
                             <ScrollArea className="min-h-0 flex-1">
@@ -233,25 +284,25 @@ export function ConsultationDetailSheet({
                                         <SoapSection
                                             icon={<User className="h-4 w-4" />}
                                             title="Subjetivo"
-                                            content={consultation.soap?.subjective}
+                                            content={consultation.soap?.subjective ?? null}
                                             subtitle="Queixa principal e história da doença atual"
                                         />
                                         <SoapSection
                                             icon={<Stethoscope className="h-4 w-4" />}
                                             title="Objetivo"
-                                            content={consultation.soap?.objective}
+                                            content={consultation.soap?.objective ?? null}
                                             subtitle="Achados do exame físico e exames complementares"
                                         />
                                         <SoapSection
                                             icon={<ClipboardList className="h-4 w-4" />}
                                             title="Avaliação"
-                                            content={consultation.soap?.assessment}
+                                            content={consultation.soap?.assessment ?? null}
                                             subtitle="Raciocínio clínico e hipóteses"
                                         />
                                         <SoapSection
                                             icon={<FileText className="h-4 w-4" />}
                                             title="Plano"
-                                            content={consultation.soap?.plan}
+                                            content={consultation.soap?.plan ?? null}
                                             subtitle="Condutas, orientações e encaminhamentos"
                                         />
                                     </div>
@@ -296,9 +347,10 @@ export function ConsultationDetailSheet({
                                     </div>
 
                                     {/* Prescrições e Exames (Placeholders se houver dados futuros) */}
-                                    {(consultation.prescriptions?.length > 0 || consultation.examRequests?.length > 0) && (
+                                    {((consultation.prescriptions?.length ?? 0) > 0 ||
+                                        (consultation.examRequests?.length ?? 0) > 0) && (
                                         <div className="grid grid-cols-1 gap-4 pt-4">
-                                            {consultation.prescriptions?.length > 0 && (
+                                            {(consultation.prescriptions?.length ?? 0) > 0 && (
                                                 <div className="border rounded-lg p-4 bg-muted/20">
                                                     <h4 className="font-semibold flex items-center gap-2 mb-2">
                                                         <Pill className="h-4 w-4 text-primary" />
@@ -309,7 +361,7 @@ export function ConsultationDetailSheet({
                                                     </ul>
                                                 </div>
                                             )}
-                                            {consultation.examRequests?.length > 0 && (
+                                            {(consultation.examRequests?.length ?? 0) > 0 && (
                                                 <div className="border rounded-lg p-4 bg-muted/20">
                                                     <h4 className="font-semibold flex items-center gap-2 mb-2">
                                                         <Microscope className="h-4 w-4 text-primary" />
@@ -379,16 +431,16 @@ export function ConsultationDetailSheet({
     );
 }
 
-function VitalCard({ label, value }: { label: string, value: string | null }) {
+function VitalCard({ label, value }: { label: string; value: string | null | undefined }) {
     return (
         <div className="bg-background border rounded-lg p-3 text-center">
             <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">{label}</p>
-            <p className="font-bold text-sm">{value || "--"}</p>
+            <p className="font-bold text-sm">{value ?? "--"}</p>
         </div>
     );
 }
 
-function SoapSection({ icon, title, content, subtitle }: { icon: any, title: string, content: string | null, subtitle: string }) {
+function SoapSection({ icon, title, content, subtitle }: { icon: ReactNode; title: string; content: string | null; subtitle: string }) {
     if (!content) return null;
 
     return (
@@ -409,14 +461,10 @@ function SoapSection({ icon, title, content, subtitle }: { icon: any, title: str
     );
 }
 
-function translateType(type: string) {
-    const types: Record<string, string> = {
-        consultation: "Consulta",
-        return: "Retorno",
-        emergency: "Urgência",
-        procedure: "Procedimento",
-        remote: "Telemedicina",
-        phone: "Telefone",
-    };
-    return types[type] || type;
+function detailStatusLabel(status: string) {
+    if (status === "finished") return "Finalizado";
+    if (status === "waiting") return "Na fila";
+    if (status === "cancelled") return "Cancelado";
+    if (status === "in_progress") return "Em andamento";
+    return status;
 }

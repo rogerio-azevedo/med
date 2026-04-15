@@ -48,5 +48,8 @@ export async function createCheckInAction(data: unknown) {
     }
 
     revalidatePath("/checkins");
-    return { success: true, id: result.id };
+    revalidatePath("/dashboard");
+    revalidatePath("/schedule");
+    revalidatePath(`/medical-records/${parsed.data.patientId}`);
+    return { success: true, id: result.id, consultationId: result.consultationId };
 }

@@ -14,7 +14,7 @@ import {
     patientReferrals,
     patients,
 } from "@/db/schema";
-import { eq, and, asc, isNull, or } from "drizzle-orm";
+import { eq, and, asc, inArray, isNull, or } from "drizzle-orm";
 import { type Doctor as DoctorListItem } from "@/types/doctor";
 
 export async function getDoctorsByClinic(clinicId: string) {
@@ -224,7 +224,17 @@ export async function deleteDoctor(doctorId: string, clinicId: string) {
     return { success: true };
 }
 
-export async function getDoctorsSimple(clinicId: string) {
+export type GetDoctorsSimpleOptions = {
+    /** Se omitido, inclui `linked` e `partner`. */
+    relationshipTypes?: ("linked" | "partner")[];
+};
+
+export async function getDoctorsSimple(clinicId: string, options?: GetDoctorsSimpleOptions) {
+    const relationshipFilter =
+        options?.relationshipTypes && options.relationshipTypes.length > 0
+            ? inArray(clinicDoctors.relationshipType, options.relationshipTypes)
+            : undefined;
+
     const result = await db
         .select({
             id: doctors.id,
@@ -232,16 +242,28 @@ export async function getDoctorsSimple(clinicId: string) {
             relationshipType: clinicDoctors.relationshipType,
         })
         .from(doctors)
-        .innerJoin(users, eq(doctors.userId, users.id))
-        .innerJoin(clinicDoctors, eq(clinicDoctors.doctorId, doctors.id))
-        .where(
-            and(
-                eq(clinicDoctors.clinicId, clinicId),
-                eq(clinicDoctors.isActive, true)
-            )
+        .innerJoin(
+            users,
+            and(eq(doctors.userId, users.id), eq(users.role, "doctor"))
         )
+        .innerJoin(
+            clinicDoctors,
+            and(
+                eq(clinicDoctors.doctorId, doctors.id),
+                eq(clinicDoctors.clinicId, clinicId),
+                eq(clinicDoctors.isActive, true),
+                ...(relationshipFilter ? [relationshipFilter] : [])
+            )
+        );
 
-    return result.sort((a, b) =>
+    const seen = new Set<string>();
+    const unique = result.filter((row) => {
+        if (seen.has(row.id)) return false;
+        seen.add(row.id);
+        return true;
+    });
+
+    return unique.sort((a, b) =>
         (a.name || "").localeCompare(b.name || "", "pt-BR", { sensitivity: "base" })
     );
 }

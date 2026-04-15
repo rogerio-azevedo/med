@@ -3,9 +3,9 @@ import {
     appointments,
     clinicDoctors,
     clinicPatients,
+    consultations,
     doctors,
     patients,
-    serviceRecords,
     doctorSpecialties,
     specialties,
     patientDoctors,
@@ -60,14 +60,15 @@ export async function getAdminDashboardStats(clinicId: string) {
             )
         );
 
-    const [monthServiceRecordsResult] = await db
+    const [monthConsultationsResult] = await db
         .select({ count: count() })
-        .from(serviceRecords)
+        .from(consultations)
         .where(
             and(
-                eq(serviceRecords.clinicId, clinicId),
-                gte(serviceRecords.occurredAt, monthStart),
-                lte(serviceRecords.occurredAt, monthEnd),
+                eq(consultations.clinicId, clinicId),
+                eq(consultations.status, "finished"),
+                gte(consultations.startTime, monthStart),
+                lte(consultations.startTime, monthEnd),
             )
         );
 
@@ -76,7 +77,7 @@ export async function getAdminDashboardStats(clinicId: string) {
         totalPatients: totalPatientsResult?.count ?? 0,
         totalAppointments: totalAppointmentsResult?.count ?? 0,
         todayAppointments: todayAppointmentsResult?.count ?? 0,
-        monthServiceRecords: monthServiceRecordsResult?.count ?? 0,
+        monthServiceRecords: monthConsultationsResult?.count ?? 0,
     };
 }
 
@@ -144,22 +145,23 @@ export async function getDoctorDashboardStats(clinicId: string, doctorId: string
             )
         );
 
-    const [monthServiceRecordsResult] = await db
+    const [monthConsultationsResult] = await db
         .select({ count: count() })
-        .from(serviceRecords)
+        .from(consultations)
         .where(
             and(
-                eq(serviceRecords.clinicId, clinicId),
-                eq(serviceRecords.doctorId, doctorId),
-                gte(serviceRecords.occurredAt, monthStart),
-                lte(serviceRecords.occurredAt, monthEnd),
+                eq(consultations.clinicId, clinicId),
+                eq(consultations.doctorId, doctorId),
+                eq(consultations.status, "finished"),
+                gte(consultations.startTime, monthStart),
+                lte(consultations.startTime, monthEnd),
             )
         );
 
     return {
         totalPatients: totalPatientsResult?.count ?? 0,
         todayAppointments: todayAppointmentsResult?.count ?? 0,
-        monthServiceRecords: monthServiceRecordsResult?.count ?? 0,
+        monthServiceRecords: monthConsultationsResult?.count ?? 0,
     };
 }
 
@@ -201,14 +203,11 @@ export async function getPatientByUserId(userId: string) {
 export async function getPatientDashboardStats(clinicId: string, patientId: string) {
     const now = new Date();
 
-    const [totalServiceRecordsResult] = await db
+    const [totalConsultationsResult] = await db
         .select({ count: count() })
-        .from(serviceRecords)
+        .from(consultations)
         .where(
-            and(
-                eq(serviceRecords.clinicId, clinicId),
-                eq(serviceRecords.patientId, patientId),
-            )
+            and(eq(consultations.clinicId, clinicId), eq(consultations.patientId, patientId))
         );
 
     const nextAppointment = await db
@@ -234,7 +233,7 @@ export async function getPatientDashboardStats(clinicId: string, patientId: stri
         .limit(1);
 
     return {
-        totalServiceRecords: totalServiceRecordsResult?.count ?? 0,
+        totalServiceRecords: totalConsultationsResult?.count ?? 0,
         nextAppointment: nextAppointment[0] ?? null,
     };
 }

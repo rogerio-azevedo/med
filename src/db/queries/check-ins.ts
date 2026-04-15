@@ -1,16 +1,21 @@
 import { and, asc, desc, eq } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import {
     checkIns,
+    clinicDoctors,
     clinicHealthInsurances,
     clinicPatients,
     clinicUsers,
+    doctors,
     healthInsurances,
     patients,
-    scoreItems,
     serviceTypes,
     users,
 } from "@/db/schema";
+
+const doctorUser = alias(users, "check_in_doctor_user");
+const receptionUser = alias(users, "check_in_reception_user");
 
 export async function getCheckIns(clinicId: string) {
     return db
@@ -29,24 +34,24 @@ export async function getCheckIns(clinicId: string) {
                 id: healthInsurances.id,
                 name: healthInsurances.name,
             },
-            scoreItem: {
-                id: scoreItems.id,
-                name: scoreItems.name,
-                score: scoreItems.score,
+            doctor: {
+                id: doctors.id,
+                name: doctorUser.name,
             },
             createdBy: {
                 clinicUserId: clinicUsers.id,
-                userId: users.id,
-                name: users.name,
+                userId: receptionUser.id,
+                name: receptionUser.name,
             },
             notes: checkIns.notes,
         })
         .from(checkIns)
         .innerJoin(patients, eq(checkIns.patientId, patients.id))
         .innerJoin(serviceTypes, eq(checkIns.serviceTypeId, serviceTypes.id))
-        .innerJoin(scoreItems, eq(checkIns.scoreItemId, scoreItems.id))
+        .leftJoin(doctors, eq(checkIns.doctorId, doctors.id))
+        .leftJoin(doctorUser, eq(doctors.userId, doctorUser.id))
         .innerJoin(clinicUsers, eq(checkIns.createdByClinicUserId, clinicUsers.id))
-        .innerJoin(users, eq(clinicUsers.userId, users.id))
+        .innerJoin(receptionUser, eq(clinicUsers.userId, receptionUser.id))
         .leftJoin(healthInsurances, eq(checkIns.healthInsuranceId, healthInsurances.id))
         .where(eq(checkIns.clinicId, clinicId))
         .orderBy(desc(checkIns.createdAt), asc(patients.name));
@@ -62,12 +67,12 @@ export async function getCheckInDependencies(
     payload: {
         patientId: string;
         serviceTypeId: string;
-        scoreItemId: string;
+        doctorId: string;
         healthInsuranceId?: string | null;
         createdByClinicUserId: string;
     }
 ) {
-    const [patientLink, serviceType, scoreItem, clinicUser, clinicInsurance] = await Promise.all([
+    const [patientLink, serviceType, clinicDoctor, clinicUser, clinicInsurance] = await Promise.all([
         db.query.clinicPatients.findFirst({
             where: and(
                 eq(clinicPatients.clinicId, clinicId),
@@ -82,11 +87,12 @@ export async function getCheckInDependencies(
                 eq(serviceTypes.isActive, true)
             ),
         }),
-        db.query.scoreItems.findFirst({
+        db.query.clinicDoctors.findFirst({
             where: and(
-                eq(scoreItems.clinicId, clinicId),
-                eq(scoreItems.id, payload.scoreItemId),
-                eq(scoreItems.isActive, true)
+                eq(clinicDoctors.clinicId, clinicId),
+                eq(clinicDoctors.doctorId, payload.doctorId),
+                eq(clinicDoctors.isActive, true),
+                eq(clinicDoctors.relationshipType, "linked")
             ),
         }),
         db.query.clinicUsers.findFirst({
@@ -110,7 +116,7 @@ export async function getCheckInDependencies(
     return {
         patientLink,
         serviceType,
-        scoreItem,
+        clinicDoctor,
         clinicUser,
         clinicInsurance,
     };

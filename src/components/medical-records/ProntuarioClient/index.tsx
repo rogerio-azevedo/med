@@ -7,23 +7,87 @@ import { ptBR } from "date-fns/locale";
 import { PatientContextPanel } from "../PatientContextPanel";
 import { ConsultationTimeline } from "../ConsultationTimeline";
 import { ConsultationForm } from "../ConsultationForm";
-import { startConsultationAction, saveSoapAction, saveVitalSignsAction } from "@/app/actions/consultations";
+import {
+    startConsultationAction,
+    saveSoapAction,
+    saveVitalSignsAction,
+    finishConsultationAction,
+    claimConsultationAction,
+} from "@/app/actions/consultations";
 import { toast } from "sonner";
-import { ConsultationDetailSheet } from "../ConsultationDetailSheet";
+import { ConsultationDetailSheet, type ConsultationDetailData } from "../ConsultationDetailSheet";
+import type { ServiceTypeWorkflow } from "@/lib/service-type-workflows";
 import { FileUploadModal } from "../FileUploadModal";
 import { ProntuarioTimelineToolbar } from "../ProntuarioTimelineToolbar";
 import { useHeaderStore } from "@/store/header";
 import type { ProntuarioFileTimelineEntry } from "@/db/queries/prontuario-timeline";
 
 interface ProntuarioClientProps {
-    patient: any;
-    consultations: any[];
+    patient: { id: string; name: string };
+    consultations: ConsultationTimelineItem[];
     fileTimeline: ProntuarioFileTimelineEntry[];
-    latestVitals?: any;
+    latestVitals?: Record<string, string | number | null>;
+    serviceTypes: { id: string; name: string; workflow: "consultation" | "generic" | "exam_review" | "procedure"; slug?: string | null }[];
+    healthInsurances: { id: string; name: string }[];
     isDoctor?: boolean;
     /** Anexar/remover arquivos no prontuário (médico ou admin da clínica). */
     canManagePatientFiles?: boolean;
     currentDoctorId?: string;
+    /** Abre direto o atendimento criado pelo check-in (fila). */
+    queuedConsultation?: QueuedConsultationPayload | null;
+}
+
+export type QueuedConsultationPayload = {
+    id: string;
+    status: string;
+    serviceTypeId: string | null;
+    healthInsuranceId: string | null;
+    serviceType: { name: string | null; workflow: string | null } | null;
+};
+
+type ConsultationTimelineItem = {
+    id: string;
+    startTime: string | Date;
+    doctorName?: string | null;
+    diagnosis?: string | null;
+    cidCode?: string | null;
+    serviceTypeName?: string | null;
+    status?: string | null;
+};
+
+function detailToFormInitial(c: ConsultationDetailData) {
+    const v0 = c.vitalSigns?.[0];
+    const wfRaw = c.serviceType?.workflow ?? "consultation";
+    const serviceTypeWorkflow: ServiceTypeWorkflow =
+        wfRaw === "generic" || wfRaw === "exam_review" || wfRaw === "procedure" || wfRaw === "consultation"
+            ? wfRaw
+            : "consultation";
+
+    return {
+        id: c.id,
+        soap: {
+            subjective: c.soap?.subjective ?? "",
+            objective: c.soap?.objective ?? "",
+            assessment: c.soap?.assessment ?? "",
+            plan: c.soap?.plan ?? "",
+            diagnosisCidId: null as string | null,
+            diagnosisCode: c.soap?.diagnosisCid?.code ?? "",
+            diagnosisDescription: c.soap?.diagnosisCid?.description ?? "",
+            diagnosisFreeText: c.soap?.diagnosisFreeText ?? "",
+            diagnosisCid: c.soap?.diagnosisCid,
+        },
+        vitals: {
+            weight: v0?.weight ?? "",
+            height: v0 && "height" in v0 ? String((v0 as { height?: string }).height ?? "") : "",
+            bloodPressure: v0?.bloodPressure ?? "",
+            heartRate: v0?.heartRate != null ? String(v0.heartRate) : "",
+            temperature: v0?.temperature ?? "",
+        },
+        serviceTypeId: c.serviceTypeId,
+        serviceTypeName: c.serviceType?.name,
+        serviceTypeWorkflow,
+        healthInsuranceId: c.healthInsuranceId,
+    };
 }
 
 export function ProntuarioClient({
@@ -31,9 +95,12 @@ export function ProntuarioClient({
     consultations,
     fileTimeline,
     latestVitals,
+    serviceTypes,
+    healthInsurances,
     isDoctor,
     canManagePatientFiles = false,
     currentDoctorId,
+    queuedConsultation = null,
 }: ProntuarioClientProps) {
     const router = useRouter();
     const setHeader = useHeaderStore((s) => s.setHeader);
@@ -42,14 +109,16 @@ export function ProntuarioClient({
 
     const [uploadOpen, setUploadOpen] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [formSessionKey, setFormSessionKey] = useState(0);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedConsultationId, setSelectedConsultationId] = useState<string | null>(null);
-    const [editingConsultation, setEditingConsultation] = useState<any>(null);
+    const [editingConsultation, setEditingConsultation] = useState<ConsultationDetailData | null>(null);
 
     const refreshAll = () => router.refresh();
 
     const handleStartConsultation = useCallback(() => {
         setEditingConsultation(null);
+        setFormSessionKey((value) => value + 1);
         setIsFormOpen(true);
     }, []);
 
@@ -71,56 +140,118 @@ export function ProntuarioClient({
         return () => setToolbar(null);
     }, [searchTerm, isDoctor, handleStartConsultation, setToolbar]);
 
+    useEffect(() => {
+        if (!queuedConsultation?.id || !isDoctor) return;
+
+        let cancelled = false;
+
+        (async () => {
+            const claim = await claimConsultationAction(queuedConsultation.id, patient.id);
+            if (cancelled) return;
+
+            if (!claim.success) {
+                toast.error(typeof claim.error === "string" ? claim.error : "Não foi possível assumir o atendimento.");
+                router.replace(`/medical-records/${patient.id}`, { scroll: false });
+                return;
+            }
+
+            const wfRaw = queuedConsultation.serviceType?.workflow ?? "consultation";
+            const workflow =
+                wfRaw === "generic" || wfRaw === "exam_review" || wfRaw === "procedure" || wfRaw === "consultation"
+                    ? wfRaw
+                    : "consultation";
+
+            setEditingConsultation({
+                id: queuedConsultation.id,
+                doctorId: null,
+                status: "in_progress",
+                startTime: new Date(),
+                soap: null,
+                vitalSigns: [],
+                serviceTypeId: queuedConsultation.serviceTypeId,
+                serviceType: {
+                    name: queuedConsultation.serviceType?.name ?? null,
+                    workflow,
+                },
+                healthInsuranceId: queuedConsultation.healthInsuranceId,
+            });
+            setFormSessionKey((value) => value + 1);
+            setIsFormOpen(true);
+            router.replace(`/medical-records/${patient.id}`, { scroll: false });
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [queuedConsultation?.id, isDoctor, patient.id, router]);
+
     const filteredConsultations = useMemo(() => {
         const q = searchTerm.trim().toLowerCase();
         if (!q) return consultations;
         return consultations.filter((c) => {
             const doctor = String(c.doctorName ?? "").toLowerCase();
             const diagnosis = String(c.diagnosis ?? "").toLowerCase();
-            const type = String(c.type ?? "").toLowerCase();
+            const typeLabel = String(c.serviceTypeName ?? "").toLowerCase();
             const dateStr = format(new Date(c.startTime), "dd MMM yyyy", { locale: ptBR }).toLowerCase();
             const cid = String(c.cidCode ?? "").toLowerCase();
             return (
                 doctor.includes(q) ||
                 diagnosis.includes(q) ||
-                type.includes(q) ||
+                typeLabel.includes(q) ||
                 dateStr.includes(q) ||
                 cid.includes(q)
             );
         });
     }, [consultations, searchTerm]);
 
-    const handleEditConsultation = (consultation: any) => {
+    const handleEditConsultation = (consultation: ConsultationDetailData) => {
         setEditingConsultation(consultation);
+        setFormSessionKey((value) => value + 1);
         setIsFormOpen(true);
     };
 
-    const handleSubmitConsultation = async (data: any) => {
+    const isEditing = !!editingConsultation;
+
+    const handleSubmitConsultation = async (data: {
+        patientId: string;
+        serviceTypeId: string;
+        healthInsuranceId: string | null;
+        workflow: "consultation" | "generic" | "exam_review" | "procedure" | null;
+        soap: Record<string, string | null>;
+        vitals: Record<string, string | null>;
+    }) => {
         try {
             let consultationId = editingConsultation?.id;
 
             if (!isEditing) {
                 const startResult = await startConsultationAction({
-                    patientId: patient.id,
-                    type: "consultation",
+                    patientId: data.patientId,
+                    serviceTypeId: data.serviceTypeId,
+                    healthInsuranceId: data.healthInsuranceId,
                 });
 
-                if (!startResult.success || !startResult.data) {
-                    toast.error("Erro ao iniciar consulta: " + (startResult.error || "Dados não retornados"));
+                if (!startResult.success) {
+                    toast.error(`Erro ao iniciar consulta: ${startResult.error || "Dados não retornados"}`);
                     return;
                 }
 
-                consultationId = startResult.data.id;
+                const created = "data" in startResult ? startResult.data : undefined;
+                if (!created?.id) {
+                    toast.error("Erro ao iniciar consulta: dados não retornados");
+                    return;
+                }
+
+                consultationId = created.id;
             }
 
-            const soapResult = await saveSoapAction(consultationId, patient.id, {
+            const soapResult = await saveSoapAction(consultationId!, data.patientId, {
                 ...data.soap,
                 diagnosisCidId: data.soap.diagnosisCidId,
                 diagnosisFreeText: data.soap.diagnosisFreeText,
             });
 
             if (!soapResult.success) {
-                toast.error("Erro ao salvar prontuário: " + soapResult.error);
+                toast.error(`Erro ao salvar prontuário: ${soapResult.error}`);
                 return;
             }
 
@@ -128,25 +259,31 @@ export function ProntuarioClient({
                 (value) => String(value ?? "").trim() !== ""
             );
             if (hasAnyVital) {
-                const vitalsResult = await saveVitalSignsAction(consultationId, patient.id, data.vitals);
+                const vitalsResult = await saveVitalSignsAction(consultationId!, data.patientId, data.vitals);
 
                 if (!vitalsResult.success) {
-                    toast.error("Prontuário salvo, mas houve erro ao salvar sinais vitais: " + vitalsResult.error);
+                    toast.error(`Prontuário salvo, mas houve erro ao salvar sinais vitais: ${vitalsResult.error}`);
                     return;
                 }
             }
 
-            toast.success(isEditing ? "Prontuário atualizado com sucesso!" : "Prontuário salvo com sucesso!");
+            const finishResult = await finishConsultationAction(consultationId!, data.patientId);
+            if (!finishResult.success) {
+                toast.warning(
+                    `Prontuário salvo, mas o status não foi atualizado para finalizado: ${finishResult.error || "erro desconhecido"}`
+                );
+            } else {
+                toast.success(isEditing ? "Prontuário atualizado com sucesso!" : "Prontuário salvo com sucesso!");
+            }
+
             setIsFormOpen(false);
             setEditingConsultation(null);
             refreshAll();
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.error("Ocorreu um erro inesperado.");
             console.error(error);
         }
     };
-
-    const isEditing = !!editingConsultation;
 
     return (
         <div className="flex min-h-screen w-full min-w-0 flex-col bg-background lg:flex-row">
@@ -194,22 +331,17 @@ export function ProntuarioClient({
             />
 
             <ConsultationForm
+                key={formSessionKey}
                 patient={patient}
+                serviceTypes={serviceTypes}
+                healthInsurances={healthInsurances}
                 isOpen={isFormOpen}
                 onClose={() => {
                     setIsFormOpen(false);
                     setEditingConsultation(null);
                 }}
                 onSubmit={handleSubmitConsultation}
-                initialData={
-                    editingConsultation
-                        ? {
-                              id: editingConsultation.id,
-                              soap: editingConsultation.soap,
-                              vitals: editingConsultation.vitalSigns?.[0] || {},
-                          }
-                        : null
-                }
+                initialData={editingConsultation ? detailToFormInitial(editingConsultation) : null}
             />
         </div>
     );

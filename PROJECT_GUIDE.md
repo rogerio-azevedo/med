@@ -123,7 +123,7 @@ Exemplos:
 
 ---
 
-## Modelo de Dados (18 entidades)
+## Modelo de Dados (entidades principais)
 
 ### Multi-tenant
 > Toda query **deve** filtrar por `clinic_id`. Nunca retornar dados sem escopo de tenant.
@@ -146,13 +146,13 @@ Exemplos:
 | `clinic_patients` | Vínculo patient ↔ clinic (deduplicação por CPF) |
 | `doctor_schedules` | Disponibilidade do médico por dia da semana |
 | `appointments` | Agendamentos (presencial, remoto, phone, whatsapp) |
-| `service_records` | **Timeline do paciente** — todo atendimento registrado |
-| `medical_records` | Prontuário eletrônico (1:1 com service_records clínicos) |
+| `consultations` | Atendimentos na clínica (fila, em curso, finalizados) — substitui `service_records` / `medical_records` (removidas nas migrações 0038+ / 0040) |
+| `consultation_soap` | Prontuário SOAP por consulta |
 | `care_packages` | Pacotes de acompanhamento oferecidos pela clínica |
 | `patient_packages` | Pacote comprado pelo paciente (controle de uso) |
 
-### Tipos de atendimento (`service_records.type`)
-`consultation` · `remote` · `phone` · `whatsapp` · `exam_review` · `other`
+### Tipos de atendimento (catálogo por clínica)
+Definidos em `service_types` (nome + `workflow`: `consultation`, `procedure`, `exam_review`, etc.).
 
 ### Fora do MVP
 - Financeiro (invoices, pagamentos)

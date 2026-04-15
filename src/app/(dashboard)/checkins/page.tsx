@@ -1,13 +1,12 @@
 import { LogIn } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { AddCheckInDialog } from "@/components/check-ins/AddCheckInDialog";
+import { CheckInsPageHeader } from "@/components/check-ins/CheckInsPageHeader";
 import { CheckInsTable } from "@/components/check-ins/CheckInsTable";
-import { PageHeader } from "@/components/shared/PageHeader";
 import { getCheckIns } from "@/db/queries/check-ins";
 import { getClinicHealthInsurances } from "@/db/queries/health-insurances";
+import { getDoctorsSimple } from "@/db/queries/doctors";
 import { getPatientsByClinic } from "@/db/queries/patients";
-import { getActiveScoreItems } from "@/db/queries/score-items";
 import { getActiveServiceTypes } from "@/db/queries/service-types";
 
 export default async function CheckInsPage() {
@@ -18,31 +17,31 @@ export default async function CheckInsPage() {
         redirect("/dashboard");
     }
 
-    const [checkIns, patients, serviceTypes, healthInsurances, scoreItems] = await Promise.all([
+    const [checkIns, patients, serviceTypes, healthInsurances, doctors] = await Promise.all([
         getCheckIns(clinicId),
         getPatientsByClinic(clinicId),
         getActiveServiceTypes(clinicId),
         getClinicHealthInsurances(clinicId),
-        getActiveScoreItems(clinicId),
+        getDoctorsSimple(clinicId, { relationshipTypes: ["linked"] }),
     ]);
+
+    const dialogData = {
+        patients: patients.map((item) => ({ id: item.id, name: item.name })),
+        serviceTypes: serviceTypes.map((item) => ({
+            id: item.id,
+            name: item.name,
+            workflow: item.workflow,
+        })),
+        healthInsurances: healthInsurances.map((item) => ({ id: item.id, name: item.name })),
+        doctors: doctors.map((d) => ({ id: d.id, name: d.name })),
+    };
 
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">
-            <PageHeader
+            <CheckInsPageHeader
                 title="Check-ins"
-                description="Registre a chegada do paciente na clínica e classifique o atendimento da recepção."
-                actions={
-                    <AddCheckInDialog
-                    patients={patients.map((item) => ({ id: item.id, name: item.name }))}
-                    serviceTypes={serviceTypes.map((item) => ({ id: item.id, name: item.name }))}
-                    healthInsurances={healthInsurances.map((item) => ({ id: item.id, name: item.name }))}
-                    scoreItems={scoreItems.map((item) => ({
-                        id: item.id,
-                        name: item.name,
-                        score: item.score,
-                    }))}
-                    />
-                }
+                description="Pré-atendimento na recepção: tipo de atendimento, paciente, médico e convênio."
+                dialogData={dialogData}
             />
 
             <div className="group relative">

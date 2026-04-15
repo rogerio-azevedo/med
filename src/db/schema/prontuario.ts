@@ -6,13 +6,14 @@ import {
     text,
     boolean,
     timestamp,
-    jsonb,
     integer,
     date,
 } from "drizzle-orm/pg-core";
-import { patients, doctors, appointments, consultationTypeEnum, prescriptionRouteEnum, examRequestTypeEnum, referralUrgencyEnum, patientAlertTypeEnum } from "./medical";
+import { patients, doctors, appointments, prescriptionRouteEnum, examRequestTypeEnum, referralUrgencyEnum, patientAlertTypeEnum } from "./medical";
 import { clinics } from "./clinics";
 import { users } from "./auth";
+import { serviceTypes, checkIns } from "./check-ins";
+import { healthInsurances } from "./medical";
 
 // 1. ICD-10 Codes (Tabela de Referência Oficial)
 export const icd10Codes = pgTable("icd10_codes", {
@@ -33,15 +34,15 @@ export const consultations = pgTable("consultations", {
     patientId: uuid("patient_id")
         .notNull()
         .references(() => patients.id, { onDelete: "cascade" }),
-    doctorId: uuid("doctor_id")
-        .notNull()
-        .references(() => doctors.id, { onDelete: "cascade" }),
+    doctorId: uuid("doctor_id").references(() => doctors.id, { onDelete: "cascade" }),
     clinicId: uuid("clinic_id")
         .notNull()
         .references(() => clinics.id, { onDelete: "cascade" }),
     appointmentId: uuid("appointment_id").references(() => appointments.id, { onDelete: "set null" }),
-    type: consultationTypeEnum("type").notNull().default("consultation"),
-    status: varchar("status", { length: 20 }).notNull().default("in_progress"), // in_progress, finalized, cancelled
+    serviceTypeId: uuid("service_type_id").references(() => serviceTypes.id, { onDelete: "set null" }),
+    healthInsuranceId: uuid("health_insurance_id").references(() => healthInsurances.id, { onDelete: "set null" }),
+    checkInId: uuid("check_in_id").references(() => checkIns.id, { onDelete: "set null" }),
+    status: varchar("status", { length: 20 }).notNull().default("in_progress"), // waiting, in_progress, finished, cancelled
     startTime: timestamp("start_time").defaultNow().notNull(),
     endTime: timestamp("end_time"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -209,6 +210,18 @@ export const consultationsRelations = relations(consultations, ({ one, many }) =
     appointment: one(appointments, {
         fields: [consultations.appointmentId],
         references: [appointments.id],
+    }),
+    serviceType: one(serviceTypes, {
+        fields: [consultations.serviceTypeId],
+        references: [serviceTypes.id],
+    }),
+    checkIn: one(checkIns, {
+        fields: [consultations.checkInId],
+        references: [checkIns.id],
+    }),
+    healthInsurance: one(healthInsurances, {
+        fields: [consultations.healthInsuranceId],
+        references: [healthInsurances.id],
     }),
     soap: one(consultationSoap, {
         fields: [consultations.id],

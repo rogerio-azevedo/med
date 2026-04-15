@@ -1,6 +1,12 @@
 import { getPatientById } from "@/db/queries/patients";
-import { getPatientConsultationsTimeline, getPatientLatestVitals } from "@/db/queries/consultations";
+import {
+    getPatientConsultationsTimeline,
+    getPatientLatestVitals,
+    getConsultationDetails,
+} from "@/db/queries/consultations";
 import { getPatientFilesTimelineSorted } from "@/db/queries/prontuario-timeline";
+import { getActiveServiceTypes } from "@/db/queries/service-types";
+import { getClinicHealthInsurances } from "@/db/queries/health-insurances";
 import { auth } from "@/auth";
 import { notFound } from "next/navigation";
 import { ProntuarioClient } from "@/components/medical-records/ProntuarioClient";
@@ -12,10 +18,12 @@ interface ProntuarioPageProps {
     params: Promise<{
         patientId: string;
     }>;
+    searchParams: Promise<{ openConsultation?: string }>;
 }
 
-export default async function ProntuarioPage({ params }: ProntuarioPageProps) {
+export default async function ProntuarioPage({ params, searchParams }: ProntuarioPageProps) {
     const { patientId } = await params;
+    const { openConsultation } = await searchParams;
     const session = await auth();
 
     if (!session?.user?.clinicId) {
@@ -27,11 +35,24 @@ export default async function ProntuarioPage({ params }: ProntuarioPageProps) {
         notFound();
     }
 
-    const [consultations, fileTimeline] = await Promise.all([
+    const [consultations, fileTimeline, serviceTypes, healthInsurances] = await Promise.all([
         getPatientConsultationsTimeline(patientId, session.user.clinicId),
         getPatientFilesTimelineSorted(patientId, session.user.clinicId),
+        getActiveServiceTypes(session.user.clinicId),
+        getClinicHealthInsurances(session.user.clinicId),
     ]);
-    const latestVitals = await getPatientLatestVitals(patientId, session.user.clinicId);
+    const latestVitalsRow = await getPatientLatestVitals(patientId, session.user.clinicId);
+    const latestVitals = latestVitalsRow
+        ? {
+              weight: latestVitalsRow.weight,
+              height: latestVitalsRow.height,
+              bloodPressure: latestVitalsRow.bloodPressure,
+              heartRate: latestVitalsRow.heartRate,
+              respiratoryRate: latestVitalsRow.respiratoryRate,
+              temperature: latestVitalsRow.temperature,
+              oxygenSaturation: latestVitalsRow.oxygenSaturation,
+          }
+        : undefined;
     const docId = session.user.doctorId;
 
     let clinicRole = session.user.clinicRole;
@@ -50,15 +71,45 @@ export default async function ProntuarioPage({ params }: ProntuarioPageProps) {
     const canManagePatientFiles = !!docId || clinicRole === "admin";
     const isDoctor = !!docId;
 
+    let queuedConsultation: {
+        id: string;
+        status: string;
+        serviceTypeId: string | null;
+        healthInsuranceId: string | null;
+        serviceType: { name: string | null; workflow: string | null } | null;
+    } | null = null;
+
+    if (openConsultation && docId && isDoctor) {
+        const detail = await getConsultationDetails(openConsultation, session.user.clinicId);
+        if (
+            detail &&
+            detail.patientId === patientId &&
+            detail.status === "waiting"
+        ) {
+            queuedConsultation = {
+                id: detail.id,
+                status: detail.status,
+                serviceTypeId: detail.serviceTypeId,
+                healthInsuranceId: detail.healthInsuranceId,
+                serviceType: detail.serviceType
+                    ? { name: detail.serviceType.name, workflow: detail.serviceType.workflow }
+                    : null,
+            };
+        }
+    }
+
     return (
         <ProntuarioClient
             patient={patient}
             consultations={consultations}
             fileTimeline={fileTimeline}
             latestVitals={latestVitals}
+            serviceTypes={serviceTypes as { id: string; name: string; workflow: "consultation" | "generic" | "exam_review" | "procedure"; slug?: string | null }[]}
+            healthInsurances={healthInsurances}
             isDoctor={isDoctor}
             canManagePatientFiles={canManagePatientFiles}
             currentDoctorId={docId}
+            queuedConsultation={queuedConsultation}
         />
     );
 }

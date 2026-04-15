@@ -1,18 +1,22 @@
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { checkIns } from "@/db/schema";
 import { createCheckInQuery, getCheckInDependencies } from "@/db/queries/check-ins";
+import { createWaitingConsultationForCheckIn } from "@/services/consultations";
 import type { CheckInInput } from "@/lib/validations/check-ins";
 
 export async function createCheckInService(
     clinicId: string,
     clinicUserId: string,
     data: CheckInInput
-): Promise<{ success: true; id: string } | { success: false; error: string }> {
+): Promise<{ success: true; id: string; consultationId: string } | { success: false; error: string }> {
     const normalizedHealthInsuranceId = data.healthInsuranceId || null;
     const normalizedNotes = data.notes?.trim() || null;
 
     const dependencies = await getCheckInDependencies(clinicId, {
         patientId: data.patientId,
         serviceTypeId: data.serviceTypeId,
-        scoreItemId: data.scoreItemId,
+        doctorId: data.doctorId,
         healthInsuranceId: normalizedHealthInsuranceId,
         createdByClinicUserId: clinicUserId,
     });
@@ -25,8 +29,11 @@ export async function createCheckInService(
         return { success: false, error: "Tipo de atendimento inválido ou inativo." };
     }
 
-    if (!dependencies.scoreItem) {
-        return { success: false, error: "Pontuação inválida ou inativa." };
+    if (!dependencies.clinicDoctor) {
+        return {
+            success: false,
+            error: "Selecione um médico vinculado à clínica (médicos parceiros não entram na fila pelo check-in).",
+        };
     }
 
     if (!dependencies.clinicUser) {
@@ -42,10 +49,28 @@ export async function createCheckInService(
         patientId: data.patientId,
         serviceTypeId: data.serviceTypeId,
         healthInsuranceId: normalizedHealthInsuranceId,
-        scoreItemId: data.scoreItemId,
+        doctorId: data.doctorId,
         createdByClinicUserId: clinicUserId,
         notes: normalizedNotes,
     });
 
-    return { success: true, id: created.id };
+    const encounter = await createWaitingConsultationForCheckIn({
+        patientId: data.patientId,
+        clinicId,
+        checkInId: created.id,
+        serviceTypeId: data.serviceTypeId,
+        healthInsuranceId: normalizedHealthInsuranceId,
+        doctorId: data.doctorId,
+    });
+
+    if (!encounter.success || !encounter.data) {
+        return { success: false, error: encounter.error || "Erro ao criar atendimento na fila." };
+    }
+
+    await db
+        .update(checkIns)
+        .set({ consultationId: encounter.data.id })
+        .where(eq(checkIns.id, created.id));
+
+    return { success: true, id: created.id, consultationId: encounter.data.id };
 }

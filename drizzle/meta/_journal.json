@@ -246,6 +246,48 @@
       "when": 1778695200002,
       "tag": "0034_smiling_toro",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1778695200003,
+      "tag": "0035_sleepy_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1778695200004,
+      "tag": "0036_busy_harpoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1778695200005,
+      "tag": "0037_unique_masque",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1778695200006,
+      "tag": "0038_encounter_checkin",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1778695200007,
+      "tag": "0039_checkin_doctor",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1778695200008,
+      "tag": "0040_drop_legacy_medical_service_records",
+      "breakpoints": true
     }
   ]
 }

@@ -5,7 +5,9 @@ export const consultationSchema = z.object({
     doctorId: z.string().uuid(),
     clinicId: z.string().uuid(),
     appointmentId: z.string().uuid().optional().nullable(),
-    type: z.enum(["consultation", "return", "emergency", "procedure", "remote", "phone"]),
+    serviceTypeId: z.string().uuid().optional().nullable(),
+    healthInsuranceId: z.string().uuid().optional().nullable(),
+    checkInId: z.string().uuid().optional().nullable(),
     status: z.string().optional().default("in_progress"),
 });
 

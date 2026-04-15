@@ -6,6 +6,9 @@ import { ScheduleView } from "@/components/schedule/ScheduleView";
 import { getAppointmentsByClinic } from "@/services/appointments";
 import { getDoctorsSimple } from "@/db/queries/doctors";
 import { getPatientsByClinic } from "@/db/queries/patients";
+import { getDoctorByUserId } from "@/db/queries/dashboard";
+import { getWaitingConsultationsForClinic } from "@/db/queries/consultations";
+import { WaitingEncountersBanner } from "@/components/medical-records/WaitingEncountersBanner";
 import { specialties as specialtiesTable } from "@/db/schema/medical";
 import { db } from "@/db";
 
@@ -25,7 +28,12 @@ export default async function SchedulePage() {
     const weekStart = startOfWeek(now, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
 
-    const [rawAppointments, doctors, patients, specialties] = await Promise.all([
+    const doctorProfile =
+        session.user.id && session.user.role === "doctor"
+            ? await getDoctorByUserId(session.user.id)
+            : null;
+
+    const [rawAppointments, doctors, patients, specialties, waitingEncounters] = await Promise.all([
         getAppointmentsByClinic(clinicId, {
             startDate: weekStart,
             endDate: weekEnd,
@@ -33,6 +41,7 @@ export default async function SchedulePage() {
         getDoctorsSimple(clinicId),
         getPatientsByClinic(clinicId),
         db.select().from(specialtiesTable),
+        doctorProfile ? getWaitingConsultationsForClinic(clinicId, doctorProfile.id) : Promise.resolve([]),
     ]);
 
     // Mapear para o formato esperado pelos componentes
@@ -54,6 +63,8 @@ export default async function SchedulePage() {
                 title="Agenda"
                 description="Gerencie consultas, atendimentos e exames"
             />
+
+            {doctorProfile ? <WaitingEncountersBanner items={waitingEncounters} /> : null}
 
             <ScheduleView
                 appointments={appointments as Parameters<typeof ScheduleView>[0]["appointments"]}
