@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import Select from "react-select";
 import {
     Dialog,
@@ -15,11 +16,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Icd10Search } from "../Icd10Search";
+import { PlanTab } from "./PlanTab";
 import {
     ArrowLeft,
     ClipboardList,
     Microscope,
-    Pill,
     Stethoscope,
     User,
     Video,
@@ -36,6 +37,7 @@ import {
     type ServiceTypeWorkflow,
 } from "@/lib/service-type-workflows";
 import { cn } from "@/lib/utils";
+import { startConsultationAction } from "@/app/actions/consultations";
 
 type PatientOption = {
     id: string;
@@ -61,13 +63,15 @@ type VitalsState = {
     temperature: string;
 };
 
-type ConsultationFormSubmitData = {
+export type ConsultationFormSubmitData = {
     patientId: string;
     serviceTypeId: string;
     healthInsuranceId: string | null;
     workflow: ServiceTypeWorkflow | null;
     soap: SoapState;
     vitals: VitalsState;
+    /** Present after "Continuar" on a new encounter or when editing an existing one. */
+    consultationId?: string | null;
 };
 
 type ServiceTypeOption = {
@@ -102,6 +106,7 @@ interface ConsultationFormProps {
     patients?: PatientOption[];
     serviceTypes: ServiceTypeOption[];
     healthInsurances: HealthInsuranceOption[];
+    clinicId: string;
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (data: ConsultationFormSubmitData) => void;
@@ -130,6 +135,7 @@ export function ConsultationForm({
     patients = [],
     serviceTypes,
     healthInsurances,
+    clinicId,
     isOpen,
     onClose,
     onSubmit,
@@ -169,6 +175,12 @@ export function ConsultationForm({
         heartRate: initialData?.vitals?.heartRate || "",
         temperature: initialData?.vitals?.temperature || "",
     });
+
+    /** Created when the user clicks Continue on a brand-new encounter (enables Plan / prescriptions). */
+    const [liveConsultationId, setLiveConsultationId] = useState<string | null>(null);
+    const [startingEncounter, setStartingEncounter] = useState(false);
+
+    const effectiveConsultationId = initialData?.id ?? liveConsultationId ?? null;
 
     const allPatients = useMemo(
         () =>
@@ -210,6 +222,35 @@ export function ConsultationForm({
     // Pode continuar se paciente selecionado (tipo já tem default)
     const canContinue = !!selectedPatientId && !!selectedServiceTypeId;
 
+    const handleContinueFromSetup = async () => {
+        if (!canContinue) return;
+        if (initialData?.id) {
+            setStep("record");
+            return;
+        }
+        setStartingEncounter(true);
+        try {
+            const res = await startConsultationAction({
+                patientId: selectedPatientId,
+                serviceTypeId: selectedServiceTypeId,
+                healthInsuranceId: selectedHealthInsuranceId || null,
+            });
+            if (!res.success) {
+                toast.error(typeof res.error === "string" ? res.error : "Erro ao iniciar atendimento.");
+                return;
+            }
+            const created = "data" in res ? res.data : undefined;
+            if (!created?.id) {
+                toast.error("Resposta inválida ao iniciar atendimento.");
+                return;
+            }
+            setLiveConsultationId(created.id);
+            setStep("record");
+        } finally {
+            setStartingEncounter(false);
+        }
+    };
+
     // Estilos compartilhados para react-select
     const reactSelectStyles = {
         control: (base: Record<string, unknown>) => ({
@@ -229,7 +270,13 @@ export function ConsultationForm({
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-6xl">
-                <DialogHeader className="border-b p-6 pb-4">
+                <DialogHeader
+                    className={cn(
+                        "border-b p-6 pb-4",
+                        // Evita sobreposição com o X absoluto do DialogContent (top-4 right-4)
+                        !isEditing && step === "record" && "pr-14 sm:pr-16"
+                    )}
+                >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="space-y-2">
                             <DialogTitle className="flex items-center gap-2 text-2xl">
@@ -387,8 +434,12 @@ export function ConsultationForm({
                             <Button type="button" variant="outline" onClick={onClose}>
                                 Cancelar
                             </Button>
-                            <Button type="button" disabled={!canContinue} onClick={() => setStep("record")}>
-                                Continuar
+                            <Button
+                                type="button"
+                                disabled={!canContinue || startingEncounter}
+                                onClick={() => void handleContinueFromSetup()}
+                            >
+                                {startingEncounter ? "Iniciando…" : "Continuar"}
                             </Button>
                         </DialogFooter>
                     </div>
@@ -494,30 +545,13 @@ export function ConsultationForm({
                                 </TabsContent>
 
                                 <TabsContent value="plan" className="mt-0 space-y-6">
-                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                        <Card className="group cursor-pointer border-2 border-dashed transition-colors hover:border-primary/50">
-                                            <CardContent className="flex flex-col items-center justify-center gap-3 p-4 py-8">
-                                                <Pill className="h-8 w-8 text-muted-foreground transition-colors group-hover:text-primary" />
-                                                <p className="font-semibold text-muted-foreground group-hover:text-primary">Prescrição de Medicamentos</p>
-                                            </CardContent>
-                                        </Card>
-                                        <Card className="group cursor-pointer border-2 border-dashed transition-colors hover:border-primary/50">
-                                            <CardContent className="flex flex-col items-center justify-center gap-3 p-4 py-8">
-                                                <Microscope className="h-8 w-8 text-muted-foreground transition-colors group-hover:text-primary" />
-                                                <p className="font-semibold text-muted-foreground group-hover:text-primary">Solicitar Exames</p>
-                                            </CardContent>
-                                        </Card>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-lg font-semibold">Conduta / Orientações ao Paciente</Label>
-                                        <Textarea
-                                            placeholder="Descreva as orientações, próximas etapas e plano de cuidado..."
-                                            className="min-h-[200px]"
-                                            value={soap.plan}
-                                            onChange={(e) => setSoap({ ...soap, plan: e.target.value })}
-                                        />
-                                    </div>
+                                    <PlanTab
+                                        planValue={soap.plan}
+                                        onPlanChange={(plan) => setSoap({ ...soap, plan })}
+                                        consultationId={effectiveConsultationId}
+                                        patientId={selectedPatientId}
+                                        clinicId={clinicId}
+                                    />
                                 </TabsContent>
                             </ScrollArea>
                         </Tabs>
@@ -533,6 +567,7 @@ export function ConsultationForm({
                                         workflow: activeWorkflow,
                                         soap,
                                         vitals,
+                                        consultationId: effectiveConsultationId,
                                     })
                                 }
                             >
@@ -596,6 +631,7 @@ export function ConsultationForm({
                                         workflow: activeWorkflow,
                                         soap,
                                         vitals,
+                                        consultationId: effectiveConsultationId,
                                     })
                                 }
                             >

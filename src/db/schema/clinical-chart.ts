@@ -14,8 +14,9 @@ import { clinics } from "./clinics";
 import { users } from "./auth";
 import { serviceTypes, checkIns } from "./check-ins";
 import { healthInsurances } from "./medical";
+import { medications } from "./medications";
 
-// 1. ICD-10 Codes (Tabela de Referência Oficial)
+// 1. ICD-10 reference codes
 export const icd10Codes = pgTable("icd10_codes", {
     id: uuid("id").primaryKey().defaultRandom(),
     code: varchar("code", { length: 10 }).notNull().unique(),
@@ -28,7 +29,7 @@ export const icd10Codes = pgTable("icd10_codes", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// 2. Consultations (Atendimentos Independentes)
+// 2. Consultations (encounters)
 export const consultations = pgTable("consultations", {
     id: uuid("id").primaryKey().defaultRandom(),
     patientId: uuid("patient_id")
@@ -48,49 +49,43 @@ export const consultations = pgTable("consultations", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// 3. Consultation SOAP (Estrutura do Prontuário)
+// 3. SOAP documentation per consultation
 export const consultationSoap = pgTable("consultation_soap", {
     id: uuid("id").primaryKey().defaultRandom(),
     consultationId: uuid("consultation_id")
         .notNull()
         .unique()
         .references(() => consultations.id, { onDelete: "cascade" }),
-    
-    // S - Subjetivo
-    subjective: text("subjective"), // Queixa, HDA
-    
-    // O - Objetivo
-    objective: text("objective"), // Exame físico resumido
-    
-    // A - Avaliação
-    assessment: text("assessment"), // Hipóteses, raciocínio clínico
+
+    subjective: text("subjective"),
+    objective: text("objective"),
+    assessment: text("assessment"),
     diagnosisCidId: uuid("diagnosis_cid_id").references(() => icd10Codes.id),
     diagnosisFreeText: text("diagnosis_free_text"),
-    
-    // P - Plano
-    plan: text("plan"), // Conduta geral e observações
-    
+
+    plan: text("plan"),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// 4. Vital Signs (Sinais Vitais por Consulta)
+// 4. Vital signs per consultation
 export const vitalSigns = pgTable("vital_signs", {
     id: uuid("id").primaryKey().defaultRandom(),
     consultationId: uuid("consultation_id")
         .notNull()
         .references(() => consultations.id, { onDelete: "cascade" }),
-    weight: varchar("weight", { length: 10 }), // kg
-    height: varchar("height", { length: 10 }), // cm
-    bloodPressure: varchar("blood_pressure", { length: 20 }), // ex: 120/80
-    heartRate: integer("heart_rate"), // bpm
-    respiratoryRate: integer("respiratory_rate"), // rpm
-    temperature: varchar("temperature", { length: 10 }), // °C
-    oxygenSaturation: integer("oxygen_saturation"), // %
+    weight: varchar("weight", { length: 10 }),
+    height: varchar("height", { length: 10 }),
+    bloodPressure: varchar("blood_pressure", { length: 20 }),
+    heartRate: integer("heart_rate"),
+    respiratoryRate: integer("respiratory_rate"),
+    temperature: varchar("temperature", { length: 10 }),
+    oxygenSaturation: integer("oxygen_saturation"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// 5. Prescriptions (Prescrições Estruturadas)
+// 5. Prescription line items
 export const prescriptions = pgTable("prescriptions", {
     id: uuid("id").primaryKey().defaultRandom(),
     consultationId: uuid("consultation_id")
@@ -102,18 +97,25 @@ export const prescriptions = pgTable("prescriptions", {
     clinicId: uuid("clinic_id")
         .notNull()
         .references(() => clinics.id, { onDelete: "cascade" }),
+    medicationId: uuid("medication_id").references(() => medications.id, {
+        onDelete: "set null",
+    }),
     medicineName: varchar("medicine_name", { length: 255 }).notNull(),
-    dosage: varchar("dosage", { length: 255 }), // ex: 500mg
-    frequency: varchar("frequency", { length: 255 }), // ex: de 8 em 8 horas
-    duration: varchar("duration", { length: 100 }), // ex: 7 dias
+    dosage: varchar("dosage", { length: 255 }),
+    pharmaceuticalForm: varchar("pharmaceutical_form", { length: 100 }),
+    frequency: varchar("frequency", { length: 255 }),
+    duration: varchar("duration", { length: 100 }),
+    quantity: varchar("quantity", { length: 100 }),
     route: prescriptionRouteEnum("route").default("oral"),
-    instructions: text("instructions"), // orientações adicionais
+    instructions: text("instructions"),
     isContinuous: boolean("is_continuous").default(false).notNull(),
     isActive: boolean("is_active").default(true).notNull(),
+    startDate: date("start_date"),
+    endDate: date("end_date"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// 6. Exam Requests (Solicitações de Exames)
+// 6. Exam requests
 export const examRequests = pgTable("exam_requests", {
     id: uuid("id").primaryKey().defaultRandom(),
     consultationId: uuid("consultation_id")
@@ -132,7 +134,7 @@ export const examRequests = pgTable("exam_requests", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// 7. Referrals (Encaminhamentos)
+// 7. Referrals
 export const referrals = pgTable("referrals", {
     id: uuid("id").primaryKey().defaultRandom(),
     consultationId: uuid("consultation_id")
@@ -145,7 +147,7 @@ export const referrals = pgTable("referrals", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// 8. Patient Alerts (Alergias e Alertas Críticos)
+// 8. Patient alerts (allergies, etc.)
 export const patientAlerts = pgTable("patient_alerts", {
     id: uuid("id").primaryKey().defaultRandom(),
     patientId: uuid("patient_id")
@@ -188,14 +190,13 @@ export const patientFiles = pgTable("patient_files", {
     sizeBytes: integer("size_bytes"),
     referenceDate: date("reference_date"),
     notes: text("notes"),
-    /** UUID compartilhado por todos os arquivos enviados na mesma sessão de multi-upload. */
+    /** Shared UUID for all files uploaded in the same multi-upload session. */
     uploadGroupId: uuid("upload_group_id"),
-    /** Posição do arquivo dentro do grupo (0-indexed). Usado para ordenar o carrossel. */
+    /** Position within the group (0-based); used to order the carousel. */
     groupOrder: integer("group_order"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Relacionamentos
 import { relations } from "drizzle-orm";
 
 export const consultationsRelations = relations(consultations, ({ one, many }) => ({
@@ -256,6 +257,10 @@ export const prescriptionsRelations = relations(prescriptions, ({ one }) => ({
     consultation: one(consultations, {
         fields: [prescriptions.consultationId],
         references: [consultations.id],
+    }),
+    medication: one(medications, {
+        fields: [prescriptions.medicationId],
+        references: [medications.id],
     }),
 }));
 

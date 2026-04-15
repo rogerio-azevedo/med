@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PatientContextPanel } from "../PatientContextPanel";
 import { ConsultationTimeline } from "../ConsultationTimeline";
-import { ConsultationForm } from "../ConsultationForm";
+import { ConsultationForm, type ConsultationFormSubmitData } from "../ConsultationForm";
 import {
     startConsultationAction,
     saveSoapAction,
@@ -18,22 +18,23 @@ import { toast } from "sonner";
 import { ConsultationDetailSheet, type ConsultationDetailData } from "../ConsultationDetailSheet";
 import type { ServiceTypeWorkflow } from "@/lib/service-type-workflows";
 import { FileUploadModal } from "../FileUploadModal";
-import { ProntuarioTimelineToolbar } from "../ProntuarioTimelineToolbar";
+import { MedicalRecordsTimelineToolbar } from "../MedicalRecordsTimelineToolbar";
 import { useHeaderStore } from "@/store/header";
-import type { ProntuarioFileTimelineEntry } from "@/db/queries/prontuario-timeline";
+import type { MedicalRecordsFileTimelineEntry } from "@/db/queries/medical-records-timeline";
 
-interface ProntuarioClientProps {
+interface MedicalRecordsClientProps {
+    clinicId: string;
     patient: { id: string; name: string };
     consultations: ConsultationTimelineItem[];
-    fileTimeline: ProntuarioFileTimelineEntry[];
+    fileTimeline: MedicalRecordsFileTimelineEntry[];
     latestVitals?: Record<string, string | number | null>;
     serviceTypes: { id: string; name: string; workflow: "consultation" | "generic" | "exam_review" | "procedure"; slug?: string | null }[];
     healthInsurances: { id: string; name: string }[];
     isDoctor?: boolean;
-    /** Anexar/remover arquivos no prontuário (médico ou admin da clínica). */
+    /** Attach/remove files on the chart (doctor or clinic admin). */
     canManagePatientFiles?: boolean;
     currentDoctorId?: string;
-    /** Abre direto o atendimento criado pelo check-in (fila). */
+    /** Opens the encounter created from check-in (queue) directly. */
     queuedConsultation?: QueuedConsultationPayload | null;
 }
 
@@ -90,7 +91,8 @@ function detailToFormInitial(c: ConsultationDetailData) {
     };
 }
 
-export function ProntuarioClient({
+export function MedicalRecordsClient({
+    clinicId,
     patient,
     consultations,
     fileTimeline,
@@ -101,7 +103,7 @@ export function ProntuarioClient({
     canManagePatientFiles = false,
     currentDoctorId,
     queuedConsultation = null,
-}: ProntuarioClientProps) {
+}: MedicalRecordsClientProps) {
     const router = useRouter();
     const setHeader = useHeaderStore((s) => s.setHeader);
     const setToolbar = useHeaderStore((s) => s.setToolbar);
@@ -130,7 +132,7 @@ export function ProntuarioClient({
 
     useEffect(() => {
         setToolbar(
-            <ProntuarioTimelineToolbar
+            <MedicalRecordsTimelineToolbar
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
                 onNewConsultation={handleStartConsultation}
@@ -185,6 +187,14 @@ export function ProntuarioClient({
         };
     }, [queuedConsultation?.id, isDoctor, patient.id, router]);
 
+    const patientForContext = useMemo(
+        () => ({
+            ...patient,
+            lastConsultationDate: consultations[0]?.startTime ?? null,
+        }),
+        [patient, consultations]
+    );
+
     const filteredConsultations = useMemo(() => {
         const q = searchTerm.trim().toLowerCase();
         if (!q) return consultations;
@@ -212,18 +222,11 @@ export function ProntuarioClient({
 
     const isEditing = !!editingConsultation;
 
-    const handleSubmitConsultation = async (data: {
-        patientId: string;
-        serviceTypeId: string;
-        healthInsuranceId: string | null;
-        workflow: "consultation" | "generic" | "exam_review" | "procedure" | null;
-        soap: Record<string, string | null>;
-        vitals: Record<string, string | null>;
-    }) => {
+    const handleSubmitConsultation = async (data: ConsultationFormSubmitData) => {
         try {
-            let consultationId = editingConsultation?.id;
+            let consultationId = data.consultationId ?? editingConsultation?.id ?? null;
 
-            if (!isEditing) {
+            if (!consultationId) {
                 const startResult = await startConsultationAction({
                     patientId: data.patientId,
                     serviceTypeId: data.serviceTypeId,
@@ -289,12 +292,12 @@ export function ProntuarioClient({
         <div className="flex min-h-screen w-full min-w-0 flex-col bg-background lg:flex-row">
             <aside className="flex min-h-[min(50vh,28rem)] w-full shrink-0 flex-col border-b border-border bg-background lg:h-screen lg:min-h-0 lg:w-[40%] lg:min-w-[20rem] lg:max-w-[44%] lg:border-b-0 lg:border-r">
                 <PatientContextPanel
-                    patient={patient}
+                    patient={patientForContext}
                     latestVitals={latestVitals}
                     alerts={[]}
                     fileTimeline={fileTimeline}
                     canManagePatientFiles={canManagePatientFiles}
-                    onAnexarArquivo={canManagePatientFiles ? () => setUploadOpen(true) : undefined}
+                    onAttachFile={canManagePatientFiles ? () => setUploadOpen(true) : undefined}
                     onFilesChanged={refreshAll}
                 />
             </aside>
@@ -332,6 +335,7 @@ export function ProntuarioClient({
 
             <ConsultationForm
                 key={formSessionKey}
+                clinicId={clinicId}
                 patient={patient}
                 serviceTypes={serviceTypes}
                 healthInsurances={healthInsurances}

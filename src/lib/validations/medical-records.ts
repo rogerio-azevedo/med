@@ -32,17 +32,52 @@ export const vitalSignsSchema = z.object({
     oxygenSaturation: z.number().int().max(100).optional().nullable(),
 });
 
+const prescriptionRouteValues = [
+    "oral",
+    "iv",
+    "im",
+    "sc",
+    "topical",
+    "inhaled",
+    "ophthalmic",
+    "otic",
+    "rectal",
+    "vaginal",
+    "other",
+] as const;
+
 export const prescriptionSchema = z.object({
     consultationId: z.string().uuid(),
     patientId: z.string().uuid(),
     clinicId: z.string().uuid(),
+    medicationId: z.string().uuid().optional().nullable(),
     medicineName: z.string().min(1).max(255),
     dosage: z.string().max(255).optional().nullable(),
+    pharmaceuticalForm: z.string().max(100).optional().nullable(),
     frequency: z.string().max(255).optional().nullable(),
     duration: z.string().max(100).optional().nullable(),
-    route: z.enum(["oral", "iv", "im", "sc", "topical", "inhaled", "ophthalmic", "otic", "rectal", "vaginal", "other"]).optional().default("oral"),
+    quantity: z.string().max(100).optional().nullable(),
+    route: z.enum(prescriptionRouteValues).optional().default("oral"),
     instructions: z.string().optional().nullable(),
     isContinuous: z.boolean().default(false),
+    startDate: z.string().max(10).optional().nullable(),
+    endDate: z.string().max(10).optional().nullable(),
+});
+
+/** Payload for adding a prescription line (IDs come from the server action). */
+export const prescriptionItemPayloadSchema = z.object({
+    medicationId: z.string().uuid().optional().nullable(),
+    medicineName: z.string().min(1).max(255),
+    dosage: z.string().max(255).optional().nullable(),
+    pharmaceuticalForm: z.string().max(100).optional().nullable(),
+    frequency: z.string().max(255).optional().nullable(),
+    duration: z.string().max(100).optional().nullable(),
+    quantity: z.string().max(100).optional().nullable(),
+    route: z.enum(prescriptionRouteValues).default("oral"),
+    instructions: z.string().optional().nullable(),
+    isContinuous: z.boolean().default(false),
+    startDate: z.string().max(10).optional().nullable(),
+    endDate: z.string().max(10).optional().nullable(),
 });
 
 export const examRequestSchema = z.object({

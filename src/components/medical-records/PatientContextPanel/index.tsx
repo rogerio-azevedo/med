@@ -6,16 +6,16 @@ import { Separator } from "@/components/ui/separator";
 import { AlertCircle, User, Activity, Info } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { ProntuarioFileTimelineEntry } from "@/db/queries/prontuario-timeline";
+import type { MedicalRecordsFileTimelineEntry } from "@/db/queries/medical-records-timeline";
 import { PatientFilesSidebarTimeline } from "../PatientFilesSidebarTimeline";
 
 interface PatientContextPanelProps {
     patient: any;
     latestVitals?: any;
     alerts?: any[];
-    fileTimeline?: ProntuarioFileTimelineEntry[];
+    fileTimeline?: MedicalRecordsFileTimelineEntry[];
     canManagePatientFiles?: boolean;
-    onAnexarArquivo?: () => void;
+    onAttachFile?: () => void;
     onFilesChanged?: () => void;
 }
 
@@ -25,7 +25,7 @@ export function PatientContextPanel({
     alerts = [],
     fileTimeline = [],
     canManagePatientFiles = false,
-    onAnexarArquivo,
+    onAttachFile,
     onFilesChanged,
 }: PatientContextPanelProps) {
     const age = patient.birthDate
@@ -145,7 +145,7 @@ export function PatientContextPanel({
                     <PatientFilesSidebarTimeline
                         files={fileTimeline}
                         canManagePatientFiles={canManagePatientFiles}
-                        onAnexar={onAnexarArquivo}
+                        onAttachFile={onAttachFile}
                         onFilesChanged={onFilesChanged}
                     />
                 </div>

@@ -288,6 +288,13 @@
       "when": 1778695200008,
       "tag": "0040_drop_legacy_medical_service_records",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1778695200009,
+      "tag": "0041_prescription_catalog_fields",
+      "breakpoints": true
     }
   ]
 }

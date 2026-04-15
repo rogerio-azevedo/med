@@ -39,6 +39,23 @@ import {
 import { Button } from "@/components/ui/button";
 import { FileCard, type PatientFileRow } from "../FileCard";
 import { FileUploadModal } from "../FileUploadModal";
+import { PrescriptionItemDetails } from "../PrescriptionItemDetails";
+import { PrescriptionPrintButtons } from "../PrescriptionPrintButtons";
+
+export type ConsultationPrescriptionRow = {
+    id: string;
+    medicineName: string;
+    dosage?: string | null;
+    pharmaceuticalForm?: string | null;
+    frequency?: string | null;
+    duration?: string | null;
+    quantity?: string | null;
+    route?: string | null;
+    instructions?: string | null;
+    isContinuous?: boolean | null;
+    startDate?: string | null;
+    endDate?: string | null;
+};
 
 export type ConsultationDetailData = {
     id: string;
@@ -77,7 +94,7 @@ export type ConsultationDetailData = {
             name?: string | null;
         } | null;
     } | null;
-    prescriptions?: unknown[];
+    prescriptions?: ConsultationPrescriptionRow[];
     examRequests?: unknown[];
 };
 
@@ -351,13 +368,27 @@ export function ConsultationDetailSheet({
                                         (consultation.examRequests?.length ?? 0) > 0) && (
                                         <div className="grid grid-cols-1 gap-4 pt-4">
                                             {(consultation.prescriptions?.length ?? 0) > 0 && (
-                                                <div className="border rounded-lg p-4 bg-muted/20">
-                                                    <h4 className="font-semibold flex items-center gap-2 mb-2">
-                                                        <Pill className="h-4 w-4 text-primary" />
-                                                        Prescrições
-                                                    </h4>
-                                                    <ul className="text-sm space-y-1 text-muted-foreground italic">
-                                                        <li>Consultar no módulo de prescrições</li>
+                                                <div className="rounded-xl border bg-muted/20 p-4">
+                                                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                                        <h4 className="flex items-center gap-2 font-semibold">
+                                                            <Pill className="h-4 w-4 text-primary" />
+                                                            Prescrições
+                                                        </h4>
+                                                        <PrescriptionPrintButtons
+                                                            patientId={patientId}
+                                                            consultationId={consultation.id}
+                                                            className="sm:justify-end"
+                                                        />
+                                                    </div>
+                                                    <ul className="space-y-4">
+                                                        {consultation.prescriptions!.map((rx, idx) => (
+                                                            <li
+                                                                key={rx.id}
+                                                                className="rounded-xl border bg-card p-4 shadow-sm"
+                                                            >
+                                                                <PrescriptionItemDetails item={rx} index={idx + 1} />
+                                                            </li>
+                                                        ))}
                                                     </ul>
                                                 </div>
                                             )}

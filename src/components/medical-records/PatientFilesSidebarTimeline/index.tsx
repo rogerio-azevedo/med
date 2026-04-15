@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Paperclip, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { ProntuarioFileTimelineEntry } from "@/db/queries/prontuario-timeline";
+import type { MedicalRecordsFileTimelineEntry } from "@/db/queries/medical-records-timeline";
 import { FileCard, type PatientFileRow } from "../FileCard";
 import { FileGroupCard } from "../FileGroupCard";
 import { ImageGroupCarouselModal } from "../ImageGroupCarouselModal";
 
-function entryToRow(e: ProntuarioFileTimelineEntry): PatientFileRow {
+function entryToRow(e: MedicalRecordsFileTimelineEntry): PatientFileRow {
     return {
         id: e.id,
         title: e.title,
@@ -28,12 +28,12 @@ function entryToRow(e: ProntuarioFileTimelineEntry): PatientFileRow {
 export function PatientFilesSidebarTimeline({
     files,
     canManagePatientFiles = false,
-    onAnexar,
+    onAttachFile,
     onFilesChanged,
 }: {
-    files: ProntuarioFileTimelineEntry[];
+    files: MedicalRecordsFileTimelineEntry[];
     canManagePatientFiles?: boolean;
-    onAnexar?: () => void;
+    onAttachFile?: () => void;
     onFilesChanged?: () => void;
 }) {
     const [carouselGroupId, setCarouselGroupId] = useState<string | null>(null);
@@ -56,13 +56,13 @@ export function PatientFilesSidebarTimeline({
                         <Paperclip className="size-4 shrink-0" />
                         Arquivos
                     </h3>
-                    {canManagePatientFiles && onAnexar ? (
+                    {canManagePatientFiles && onAttachFile ? (
                         <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             className="h-8 gap-1.5 px-2.5 text-xs"
-                            onClick={onAnexar}
+                            onClick={onAttachFile}
                         >
                             <Plus className="size-4" />
                             Anexar

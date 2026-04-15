@@ -5,19 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TimelineFilters } from "./TimelineFilters";
 
-interface ProntuarioTimelineToolbarProps {
+interface MedicalRecordsTimelineToolbarProps {
     searchTerm: string;
     onSearchChange: (value: string) => void;
     onNewConsultation: () => void;
     isDoctor?: boolean;
 }
 
-export function ProntuarioTimelineToolbar({
+export function MedicalRecordsTimelineToolbar({
     searchTerm,
     onSearchChange,
     onNewConsultation,
     isDoctor,
-}: ProntuarioTimelineToolbarProps) {
+}: MedicalRecordsTimelineToolbarProps) {
     return (
         <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">

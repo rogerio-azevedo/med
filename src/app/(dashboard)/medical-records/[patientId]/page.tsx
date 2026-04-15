@@ -4,25 +4,25 @@ import {
     getPatientLatestVitals,
     getConsultationDetails,
 } from "@/db/queries/consultations";
-import { getPatientFilesTimelineSorted } from "@/db/queries/prontuario-timeline";
+import { getPatientFilesTimelineSorted } from "@/db/queries/medical-records-timeline";
 import { getActiveServiceTypes } from "@/db/queries/service-types";
 import { getClinicHealthInsurances } from "@/db/queries/health-insurances";
 import { auth } from "@/auth";
 import { can } from "@/lib/permissions";
 import { notFound, redirect } from "next/navigation";
-import { ProntuarioClient } from "@/components/medical-records/ProntuarioClient";
+import { MedicalRecordsClient } from "@/components/medical-records/MedicalRecordsClient";
 import { db } from "@/db";
 import { clinicUsers } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 
-interface ProntuarioPageProps {
+interface MedicalRecordsPageProps {
     params: Promise<{
         patientId: string;
     }>;
     searchParams: Promise<{ openConsultation?: string }>;
 }
 
-export default async function ProntuarioPage({ params, searchParams }: ProntuarioPageProps) {
+export default async function MedicalRecordsPage({ params, searchParams }: MedicalRecordsPageProps) {
     const { patientId } = await params;
     const { openConsultation } = await searchParams;
     const session = await auth();
@@ -103,7 +103,8 @@ export default async function ProntuarioPage({ params, searchParams }: Prontuari
     }
 
     return (
-        <ProntuarioClient
+        <MedicalRecordsClient
+            clinicId={session.user.clinicId}
             patient={patient}
             consultations={consultations}
             fileTimeline={fileTimeline}
