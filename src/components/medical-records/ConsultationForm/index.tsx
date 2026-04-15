@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Icd10Search } from "../Icd10Search";
 import { PlanTab } from "./PlanTab";
+import { PlanActionsToolbar } from "./PlanTab/PlanActionsToolbar";
 import {
     ArrowLeft,
     ClipboardList,
@@ -412,23 +413,6 @@ export function ConsultationForm({
                             />
                         </div>
 
-                        {/* ── Preview do fluxo ─────────────────────────── */}
-                        {selectedServiceType ? (
-                            <Card className="border-dashed">
-                                <CardContent className="space-y-2 p-4">
-                                    <div className="flex items-center gap-2 text-sm font-semibold">
-                                        <ClipboardList className="h-4 w-4 text-primary" />
-                                        Fluxo selecionado
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        <Badge variant="outline">{selectedServiceType.name}</Badge>
-                                        <Badge variant="secondary">{getServiceTypeWorkflowLabel(selectedServiceType.workflow)}</Badge>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground">{recordMeta.description}</p>
-                                </CardContent>
-                            </Card>
-                        ) : null}
-
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={onClose}>
                                 Cancelar
@@ -445,8 +429,14 @@ export function ConsultationForm({
                 ) : activeWorkflow === "consultation" ? (
                     <>
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col pt-4">
-                            <div className="border-b px-6">
-                                <TabsList className="h-12 w-full justify-start gap-6 rounded-none bg-transparent p-0">
+                            <div className="border-b px-6 pb-2">
+                                <PlanActionsToolbar
+                                    consultationId={effectiveConsultationId}
+                                    patientId={selectedPatientId}
+                                    clinicId={clinicId}
+                                    className="mb-2"
+                                />
+                                <TabsList className="h-11 w-full justify-start gap-6 rounded-none bg-transparent p-0">
                                     <TabsTrigger value="subjective" className="h-full rounded-none px-2 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">
                                         <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold">S</span>
                                         Subjetivo
@@ -547,9 +537,6 @@ export function ConsultationForm({
                                     <PlanTab
                                         planValue={soap.plan}
                                         onPlanChange={(plan) => setSoap({ ...soap, plan })}
-                                        consultationId={effectiveConsultationId}
-                                        patientId={selectedPatientId}
-                                        clinicId={clinicId}
                                     />
                                 </TabsContent>
                             </div>

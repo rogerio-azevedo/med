@@ -33,13 +33,13 @@ export function PrescriptionDocumentBody({ items }: PrescriptionDocumentBodyProp
                                     {item.medicineName}
                                 </p>
                                 {rows.length > 0 ? (
-                                    <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                                    <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm sm:grid-cols-4 print:grid-cols-4">
                                         {rows.map(({ label, value }) => (
-                                            <div key={`${item.id}-${label}`}>
+                                            <div key={`${item.id}-${label}`} className="min-w-0">
                                                 <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                                                     {label}
                                                 </dt>
-                                                <dd className="mt-0.5 text-slate-800">{value}</dd>
+                                                <dd className="mt-0.5 wrap-break-word text-slate-800">{value}</dd>
                                             </div>
                                         ))}
                                     </dl>

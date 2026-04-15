@@ -21,7 +21,7 @@ export function PlanActionButton({
             type="button"
             onClick={onClick}
             className={cn(
-                "group flex flex-col items-center gap-2 rounded-xl border p-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-4",
+                "group flex flex-col items-center gap-1 rounded-lg border px-2 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-2.5 sm:py-2.5",
                 active
                     ? "border-primary bg-primary shadow-sm"
                     : "border-border bg-background hover:border-primary/40 hover:bg-muted/40",
@@ -29,7 +29,7 @@ export function PlanActionButton({
         >
             <Icon
                 className={cn(
-                    "h-6 w-6 shrink-0 transition-colors sm:h-7 sm:w-7",
+                    "h-5 w-5 shrink-0 transition-colors sm:h-5 sm:w-5",
                     active
                         ? "text-primary-foreground"
                         : "text-muted-foreground group-hover:text-primary",
@@ -37,7 +37,7 @@ export function PlanActionButton({
             />
             <span
                 className={cn(
-                    "text-center text-xs font-semibold sm:text-sm",
+                    "text-center text-[11px] font-semibold leading-tight sm:text-xs",
                     active ? "text-primary-foreground" : "text-primary",
                 )}
             >
