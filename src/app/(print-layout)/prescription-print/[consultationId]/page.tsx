@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { can } from "@/lib/permissions";
 import { getPrescriptionPrintContext } from "@/db/queries/prescriptions/print-context";
@@ -27,7 +28,14 @@ export default async function PrescriptionPrintPage({ params, searchParams }: Pr
         notFound();
     }
 
-    const data = await getPrescriptionPrintContext(consultationId, patientId, clinicId);
+    const h = await headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host");
+    const proto = h.get("x-forwarded-proto") ?? "http";
+    const requestOrigin = host ? `${proto}://${host}` : null;
+
+    const data = await getPrescriptionPrintContext(consultationId, patientId, clinicId, {
+        requestOrigin,
+    });
     if (!data) {
         notFound();
     }

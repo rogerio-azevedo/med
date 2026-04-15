@@ -22,6 +22,8 @@ export const clinics = pgTable("clinics", {
     cnpj: varchar("cnpj", { length: 18 }),
     phone: varchar("phone", { length: 20 }),
     email: varchar("email", { length: 255 }),
+    /** URL pública da logo da clínica (ex.: CDN ou storage). */
+    logoUrl: varchar("logo_url", { length: 500 }),
     isActive: boolean("is_active").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });

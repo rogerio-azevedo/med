@@ -9,18 +9,27 @@ const NAVY = "#162333";
 const LIGHT = "#F3F3F3";
 const ACCENT = "#5495D6";
 
-type PrescriptionDocumentProps = {
+type PrescriptionVerificationDocumentProps = {
     data: PrescriptionPrintContext;
+    verifiedAt: Date;
 };
 
-export function PrescriptionDocument({ data }: PrescriptionDocumentProps) {
+export function PrescriptionVerificationDocument({ data, verifiedAt }: PrescriptionVerificationDocumentProps) {
     const when = format(data.consultationDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+    const verifiedWhen = format(verifiedAt, "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR });
 
     return (
         <article
-            className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm print:max-w-none print:rounded-none print:border-0 print:shadow-none"
+            className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
             style={{ color: NAVY }}
         >
+            <div className="border-b border-emerald-200 bg-emerald-50 px-6 py-3 text-center print:px-4">
+                <p className="text-sm font-semibold text-emerald-800">Receita verificada</p>
+                <p className="mt-0.5 text-xs text-emerald-700">
+                    Consulta realizada em {when} · Verificação em {verifiedWhen}
+                </p>
+            </div>
+
             <PrescriptionClinicBanner
                 clinicName={data.clinicName}
                 clinicLogoUrl={data.clinicLogoUrl}
@@ -71,19 +80,25 @@ export function PrescriptionDocument({ data }: PrescriptionDocumentProps) {
                 </div>
             </div>
 
-            <footer className="flex flex-col gap-6 border-t border-slate-200 px-6 py-6 sm:flex-row sm:items-end sm:justify-between print:px-4 print:py-5">
-                <div className="max-w-xs flex-1">
-                    <div className="h-px w-52 border-t-2 border-slate-400" />
-                    <p className="mt-2 text-xs text-slate-600">Assinatura e carimbo (quando aplicável)</p>
+            <footer className="space-y-4 border-t border-slate-200 px-6 py-6 print:px-4 print:py-5">
+                <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="max-w-xs flex-1">
+                        <div className="h-px w-52 border-t-2 border-slate-400" />
+                        <p className="mt-2 text-xs text-slate-600">Assinatura e carimbo (quando aplicável)</p>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 sm:items-end">
+                        <PrescriptionQrCode value={data.verificationUrl} />
+                        {data.verificationUrl ? (
+                            <p className="max-w-[200px] text-center text-[10px] leading-tight text-slate-600 sm:text-right">
+                                QR Code de referência para esta receita.
+                            </p>
+                        ) : null}
+                    </div>
                 </div>
-                <div className="flex flex-col items-center gap-2 sm:items-end">
-                    <PrescriptionQrCode value={data.verificationUrl} />
-                    {data.verificationUrl ? (
-                        <p className="max-w-[200px] text-center text-[10px] leading-tight text-slate-600 sm:text-right">
-                            Escaneie para validar esta receita digitalmente.
-                        </p>
-                    ) : null}
-                </div>
+                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-center text-xs text-slate-600">
+                    Esta receita foi emitida eletronicamente pelo sistema de gestão da clínica. A verificação confirma que os
+                    dados exibidos correspondem ao registro do atendimento no momento da consulta.
+                </p>
             </footer>
         </article>
     );

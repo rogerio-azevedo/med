@@ -161,41 +161,50 @@ export async function getConsultationDetails(consultationId: string, clinicId: s
     return consultation;
 }
 
+const consultationWithDoctorRelations = {
+    soap: {
+        with: {
+            diagnosisCid: true,
+        },
+    },
+    vitalSigns: true,
+    prescriptions: true,
+    examRequests: true,
+    referrals: true,
+    serviceType: true,
+    healthInsurance: true,
+    doctor: {
+        with: {
+            user: {
+                columns: {
+                    name: true,
+                    image: true,
+                },
+            },
+        },
+    },
+} as const;
+
 /**
  * Retorna os detalhes completos de uma consulta específica, incluindo o nome do médico
  */
 export async function getConsultationDetailsWithDoctor(consultationId: string, clinicId: string) {
     const consultation = await db.query.consultations.findFirst({
-        where: and(
-            eq(consultations.id, consultationId),
-            eq(consultations.clinicId, clinicId)
-        ),
-        with: {
-            soap: {
-                with: {
-                    diagnosisCid: true,
-                }
-            },
-            vitalSigns: true,
-            prescriptions: true,
-            examRequests: true,
-            referrals: true,
-            serviceType: true,
-            healthInsurance: true,
-            doctor: {
-                with: {
-                    user: {
-                        columns: {
-                            name: true,
-                            image: true,
-                        }
-                    }
-                }
-            }
-        }
+        where: and(eq(consultations.id, consultationId), eq(consultations.clinicId, clinicId)),
+        with: consultationWithDoctorRelations,
     });
 
     return consultation;
+}
+
+/**
+ * Mesmo payload de {@link getConsultationDetailsWithDoctor}, sem filtro de clínica (uso em página pública de verificação).
+ */
+export async function getConsultationDetailsWithDoctorById(consultationId: string) {
+    return db.query.consultations.findFirst({
+        where: eq(consultations.id, consultationId),
+        with: consultationWithDoctorRelations,
+    });
 }
 
 /**

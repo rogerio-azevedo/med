@@ -302,6 +302,13 @@
       "when": 1778695200010,
       "tag": "0042_soap_text_enforce",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1778695200011,
+      "tag": "0043_clinic_logo_url",
+      "breakpoints": true
     }
   ]
 }
