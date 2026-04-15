@@ -5,6 +5,7 @@ import { doctors } from "@/db/schema/medical";
 import { patients } from "@/db/schema/medical";
 import { specialties } from "@/db/schema/medical";
 import { users } from "@/db/schema/auth";
+import { serviceTypes } from "@/db/schema/check-ins";
 
 export async function getAppointmentsByClinic(
     clinicId: string,
@@ -64,12 +65,20 @@ export async function getAppointmentsByClinic(
                 id: specialties.id,
                 name: specialties.name,
             },
+            serviceType: {
+                id: serviceTypes.id,
+                name: serviceTypes.name,
+                workflow: serviceTypes.workflow,
+                timelineIconKey: serviceTypes.timelineIconKey,
+                timelineColorHex: serviceTypes.timelineColorHex,
+            },
         })
         .from(appointments)
         .innerJoin(doctors, eq(appointments.doctorId, doctors.id))
         .innerJoin(users, eq(doctors.userId, users.id))
         .innerJoin(patients, eq(appointments.patientId, patients.id))
         .leftJoin(specialties, eq(appointments.specialtyId, specialties.id))
+        .leftJoin(serviceTypes, eq(appointments.serviceTypeId, serviceTypes.id))
         .where(and(...conditions))
         .orderBy(appointments.scheduledAt);
 }
@@ -120,6 +129,7 @@ export async function getAppointmentById(id: string, clinicId: string) {
             doctorId: appointments.doctorId,
             patientId: appointments.patientId,
             specialtyId: appointments.specialtyId,
+            serviceTypeId: appointments.serviceTypeId,
             patientPackageId: appointments.patientPackageId,
             doctor: {
                 id: doctors.id,
@@ -135,12 +145,20 @@ export async function getAppointmentById(id: string, clinicId: string) {
                 id: specialties.id,
                 name: specialties.name,
             },
+            serviceType: {
+                id: serviceTypes.id,
+                name: serviceTypes.name,
+                workflow: serviceTypes.workflow,
+                timelineIconKey: serviceTypes.timelineIconKey,
+                timelineColorHex: serviceTypes.timelineColorHex,
+            },
         })
         .from(appointments)
         .innerJoin(doctors, eq(appointments.doctorId, doctors.id))
         .innerJoin(users, eq(doctors.userId, users.id))
         .innerJoin(patients, eq(appointments.patientId, patients.id))
         .leftJoin(specialties, eq(appointments.specialtyId, specialties.id))
+        .leftJoin(serviceTypes, eq(appointments.serviceTypeId, serviceTypes.id))
         .where(and(eq(appointments.id, id), eq(appointments.clinicId, clinicId)))
         .limit(1);
 
@@ -152,6 +170,7 @@ export async function createAppointment(data: {
     doctorId: string;
     patientId: string;
     specialtyId?: string;
+    serviceTypeId?: string | null;
     patientPackageId?: string;
     scheduledAt: Date;
     durationMinutes: number;
@@ -168,10 +187,11 @@ export async function createAppointment(data: {
 export async function updateAppointment(
     id: string,
     clinicId: string,
-    data: {
+        data: {
         doctorId: string;
         patientId: string;
         specialtyId?: string;
+        serviceTypeId?: string | null;
         scheduledAt: Date;
         durationMinutes: number;
         modality: "in_person" | "remote" | "phone" | "whatsapp";
@@ -184,6 +204,7 @@ export async function updateAppointment(
             doctorId: data.doctorId,
             patientId: data.patientId,
             specialtyId: data.specialtyId ?? null,
+            serviceTypeId: data.serviceTypeId ?? null,
             scheduledAt: data.scheduledAt,
             durationMinutes: data.durationMinutes,
             modality: data.modality,

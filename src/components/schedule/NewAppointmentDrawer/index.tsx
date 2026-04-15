@@ -27,10 +27,18 @@ import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { AddPatientDialog } from "@/components/patients/AddPatientDialog";
+import { cn } from "@/lib/utils";
+import { resolveServiceTypeDisplayIcon } from "@/lib/resolve-service-type-display";
 
 type Doctor = { id: string; name: string | null; relationshipType: "linked" | "partner" | null };
 type Patient = { id: string; name: string; phone: string | null };
-type Specialty = { id: string; name: string };
+type ServiceTypeOption = {
+    id: string;
+    name: string;
+    workflow: string;
+    timelineIconKey: string | null;
+    timelineColorHex: string | null;
+};
 type TimeSlot = { startsAt: string; endsAt: string; available: boolean };
 
 const modalityLabels: Record<(typeof appointmentModalityValues)[number], string> = {
@@ -45,7 +53,7 @@ interface NewAppointmentDrawerProps {
     onOpenChange: (open: boolean) => void;
     doctors: Doctor[];
     patients: Patient[];
-    specialties: Specialty[];
+    serviceTypes: ServiceTypeOption[];
     defaultDoctorId?: string;
     defaultDate?: Date;
 }
@@ -55,7 +63,7 @@ export function NewAppointmentDrawer({
     onOpenChange,
     doctors,
     patients,
-    specialties,
+    serviceTypes,
     defaultDoctorId,
     defaultDate,
 }: NewAppointmentDrawerProps) {
@@ -63,7 +71,7 @@ export function NewAppointmentDrawer({
 
     const [doctorId, setDoctorId] = useState(defaultDoctorId ?? "");
     const [patientId, setPatientId] = useState("");
-    const [specialtyId, setSpecialtyId] = useState("");
+    const [serviceTypeId, setServiceTypeId] = useState("");
     const [date, setDate] = useState(
         defaultDate ? defaultDate.toISOString().split("T")[0] : ""
     );
@@ -72,12 +80,10 @@ export function NewAppointmentDrawer({
     const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
     const [modality, setModality] = useState<(typeof appointmentModalityValues)[number]>("in_person");
     const [notes, setNotes] = useState("");
-    
-    // timeZone atual do navegador
+
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const hasNonMidnightTime = (d: Date) => d.getHours() !== 0 || d.getMinutes() !== 0;
-
 
     const [shouldAutoSelectSlot, setShouldAutoSelectSlot] = useState(false);
 
@@ -87,7 +93,7 @@ export function NewAppointmentDrawer({
         setDoctorId(defaultDoctorId ?? "");
         setSelectedSlot(null);
         setSlots([]);
-        
+
         if (defaultDate && hasNonMidnightTime(defaultDate)) {
             setShouldAutoSelectSlot(true);
         } else {
@@ -97,12 +103,12 @@ export function NewAppointmentDrawer({
 
     function autoSelectSlot(fetchedSlots: TimeSlot[]) {
         if (!shouldAutoSelectSlot || !defaultDate) return;
-        
+
         const targetTime = format(defaultDate, "HH:mm");
         const matchingSlot = fetchedSlots.find(
             (s) => s.available && format(new Date(s.startsAt), "HH:mm") === targetTime
         );
-        
+
         if (matchingSlot) {
             setSelectedSlot(matchingSlot);
         }
@@ -147,6 +153,7 @@ export function NewAppointmentDrawer({
 
     function handleSubmit() {
         if (!patientId || !doctorId || !selectedSlot || !modality) return;
+        if (serviceTypes.length > 0 && !serviceTypeId) return;
 
         startTransition(async () => {
             const formData = new FormData();
@@ -158,7 +165,7 @@ export function NewAppointmentDrawer({
                 new Date(selectedSlot.startsAt).getTime();
             formData.set("durationMinutes", String(durationMs / 60000));
             formData.set("modality", modality);
-            if (specialtyId) formData.set("specialtyId", specialtyId);
+            if (serviceTypeId) formData.set("serviceTypeId", serviceTypeId);
             if (notes) formData.set("notes", notes);
 
             const result = await createAppointmentAction(formData);
@@ -176,7 +183,7 @@ export function NewAppointmentDrawer({
     function resetForm() {
         setDoctorId(defaultDoctorId ?? "");
         setPatientId("");
-        setSpecialtyId("");
+        setServiceTypeId("");
         setDate(defaultDate ? defaultDate.toISOString().split("T")[0] : "");
         setSlots([]);
         setSelectedSlot(null);
@@ -186,13 +193,12 @@ export function NewAppointmentDrawer({
 
     const doctorOptions = doctors.map((d) => ({ value: d.id, label: d.name }));
     const patientOptions = patients.map((p) => ({ value: p.id, label: p.name }));
-    const specialtyOptions = [
-        { value: "", label: "Sem especialidade" },
-        ...specialties.map((s) => ({ value: s.id, label: s.name })),
-    ];
 
     const availableSlots = slots.filter((s) => s.available);
-    const isFormValid = patientId && doctorId && selectedSlot && modality;
+    const needsServiceType = serviceTypes.length > 0;
+    const isFormValid =
+        Boolean(patientId && doctorId && selectedSlot && modality) &&
+        (!needsServiceType || Boolean(serviceTypeId));
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -205,8 +211,6 @@ export function NewAppointmentDrawer({
                 </SheetHeader>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-muted/30">
-
-                    {/* Sessão 1: Pessoas */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 pb-2 border-b">
                             <div className="flex items-center justify-center size-6 rounded-full bg-primary/10 text-primary">
@@ -220,16 +224,29 @@ export function NewAppointmentDrawer({
                                 <Label className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">
                                     Médico Responsável *
                                 </Label>
-                                <Select
-                                    placeholder="Buscar médico..."
-                                    options={doctorOptions}
-                                    value={doctorOptions.find((o) => o.value === doctorId) ?? null}
-                                    onChange={(opt) => handleDoctorChange(opt?.value ?? "")}
-                                    classNamePrefix="rs"
-                                    styles={{
-                                        control: (base) => ({ ...base, borderColor: 'hsl(var(--border))', borderRadius: '0.375rem', padding: '2px', boxShadow: 'none' })
-                                    }}
-                                />
+                                {doctors.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground">
+                                        Nenhum médico vinculado ativo nesta clínica (parceiros não aparecem
+                                        aqui).
+                                    </p>
+                                ) : (
+                                    <Select
+                                        placeholder="Buscar médico..."
+                                        options={doctorOptions}
+                                        value={doctorOptions.find((o) => o.value === doctorId) ?? null}
+                                        onChange={(opt) => handleDoctorChange(opt?.value ?? "")}
+                                        classNamePrefix="rs"
+                                        styles={{
+                                            control: (base) => ({
+                                                ...base,
+                                                borderColor: "hsl(var(--border))",
+                                                borderRadius: "0.375rem",
+                                                padding: "2px",
+                                                boxShadow: "none",
+                                            }),
+                                        }}
+                                    />
+                                )}
                             </div>
 
                             <div className="space-y-2">
@@ -256,14 +273,19 @@ export function NewAppointmentDrawer({
                                     onChange={(opt) => setPatientId(opt?.value ?? "")}
                                     classNamePrefix="rs"
                                     styles={{
-                                        control: (base) => ({ ...base, borderColor: 'hsl(var(--border))', borderRadius: '0.375rem', padding: '2px', boxShadow: 'none' })
+                                        control: (base) => ({
+                                            ...base,
+                                            borderColor: "hsl(var(--border))",
+                                            borderRadius: "0.375rem",
+                                            padding: "2px",
+                                            boxShadow: "none",
+                                        }),
                                     }}
                                 />
                             </div>
                         </div>
                     </div>
 
-                    {/* Sessão 2: Data e Hora */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 pb-2 border-b">
                             <div className="flex items-center justify-center size-6 rounded-full bg-primary/10 text-primary">
@@ -313,12 +335,15 @@ export function NewAppointmentDrawer({
                                                         <button
                                                             key={slot.startsAt}
                                                             type="button"
-                                                            onClick={() => setSelectedSlot(isSelected ? null : slot)}
+                                                            onClick={() =>
+                                                                setSelectedSlot(isSelected ? null : slot)
+                                                            }
                                                             className={`
                                                                 rounded-md px-3 py-1.5 text-sm font-medium border transition-all duration-200
-                                                                ${isSelected
-                                                                    ? "bg-primary text-primary-foreground border-primary shadow-md transform scale-[1.02]"
-                                                                    : "bg-background border-border hover:border-primary/50 hover:bg-primary/5 text-foreground"
+                                                                ${
+                                                                    isSelected
+                                                                        ? "bg-primary text-primary-foreground border-primary shadow-md transform scale-[1.02]"
+                                                                        : "bg-background border-border hover:border-primary/50 hover:bg-primary/5 text-foreground"
                                                                 }
                                                             `}
                                                         >
@@ -333,10 +358,15 @@ export function NewAppointmentDrawer({
                                     {selectedSlot && (
                                         <div className="mt-2 text-xs flex items-center justify-between text-muted-foreground px-1 animate-in fade-in slide-in-from-top-1">
                                             <span>
-                                                {format(new Date(selectedSlot.startsAt), "EEEE, dd/MM", { locale: ptBR })}
+                                                {format(
+                                                    new Date(selectedSlot.startsAt),
+                                                    "EEEE, dd/MM",
+                                                    { locale: ptBR }
+                                                )}
                                             </span>
                                             <span className="font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                                                {format(new Date(selectedSlot.startsAt), "HH:mm")} – {format(new Date(selectedSlot.endsAt), "HH:mm")}
+                                                {format(new Date(selectedSlot.startsAt), "HH:mm")} –{" "}
+                                                {format(new Date(selectedSlot.endsAt), "HH:mm")}
                                             </span>
                                         </div>
                                     )}
@@ -345,7 +375,6 @@ export function NewAppointmentDrawer({
                         </div>
                     </div>
 
-                    {/* Sessão 3: Detalhes */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 pb-2 border-b">
                             <div className="flex items-center justify-center size-6 rounded-full bg-primary/10 text-primary">
@@ -354,14 +383,16 @@ export function NewAppointmentDrawer({
                             <h3 className="text-sm font-semibold text-foreground">Detalhes</h3>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2 col-span-2 sm:col-span-1">
+                        <div className="space-y-4">
+                            <div className="space-y-2">
                                 <Label className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">
                                     Modalidade *
                                 </Label>
                                 <ShadSelect
                                     value={modality}
-                                    onValueChange={(v) => setModality(v as (typeof appointmentModalityValues)[number])}
+                                    onValueChange={(v) =>
+                                        setModality(v as (typeof appointmentModalityValues)[number])
+                                    }
                                 >
                                     <SelectTrigger className="bg-card shadow-sm h-10">
                                         <SelectValue />
@@ -376,27 +407,80 @@ export function NewAppointmentDrawer({
                                 </ShadSelect>
                             </div>
 
-                            {specialties.length > 0 && (
-                                <div className="space-y-2 col-span-2 sm:col-span-1">
+                            {serviceTypes.length > 0 && (
+                                <div className="space-y-2">
                                     <Label className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">
-                                        Especialidade
+                                        Tipo de atendimento *
                                     </Label>
-                                    <ShadSelect
-                                        value={specialtyId}
-                                        onValueChange={setSpecialtyId}
+                                    <div
+                                        className={cn(
+                                            "grid gap-3",
+                                            serviceTypes.length <= 2
+                                                ? "grid-cols-2"
+                                                : serviceTypes.length === 3
+                                                  ? "grid-cols-3"
+                                                  : "grid-cols-2 sm:grid-cols-4"
+                                        )}
                                     >
-                                        <SelectTrigger className="bg-card shadow-sm h-10 text-left">
-                                            <SelectValue placeholder="Selecione..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">Sem especialidade</SelectItem>
-                                            {specialties.map((s) => (
-                                                <SelectItem key={s.id} value={s.id}>
-                                                    {s.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </ShadSelect>
+                                        {serviceTypes.map((st) => {
+                                            const Icon = resolveServiceTypeDisplayIcon({
+                                                name: st.name,
+                                                workflow: st.workflow,
+                                                timelineIconKey: st.timelineIconKey,
+                                            });
+                                            const isSelected = serviceTypeId === st.id;
+                                            const accent = st.timelineColorHex ?? undefined;
+                                            return (
+                                                <button
+                                                    key={st.id}
+                                                    type="button"
+                                                    onClick={() => setServiceTypeId(st.id)}
+                                                    className={cn(
+                                                        "group relative flex cursor-pointer flex-col items-center gap-2.5 rounded-xl border-2 px-3 py-4 text-center transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                                        isSelected
+                                                            ? "border-primary bg-primary/8 shadow-sm"
+                                                            : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
+                                                    )}
+                                                >
+                                                    <div
+                                                        className={cn(
+                                                            "flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-200",
+                                                            isSelected
+                                                                ? "bg-primary/15 text-primary"
+                                                                : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                                                        )}
+                                                        style={
+                                                            accent
+                                                                ? {
+                                                                      color: accent,
+                                                                      backgroundColor: isSelected
+                                                                          ? `${accent}22`
+                                                                          : undefined,
+                                                                  }
+                                                                : undefined
+                                                        }
+                                                    >
+                                                        <Icon className="h-5 w-5" />
+                                                    </div>
+                                                    <span
+                                                        className={cn(
+                                                            "text-xs font-semibold leading-tight sm:text-sm",
+                                                            isSelected
+                                                                ? "text-primary"
+                                                                : "text-foreground group-hover:text-primary"
+                                                        )}
+                                                    >
+                                                        {st.name}
+                                                    </span>
+                                                    {isSelected ? (
+                                                        <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                                                            ✓
+                                                        </span>
+                                                    ) : null}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
                         </div>

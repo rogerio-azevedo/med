@@ -3,6 +3,7 @@
 import { format } from "date-fns";
 import { User } from "lucide-react";
 import Link from "next/link";
+import { resolveServiceTypeDisplayIcon } from "@/lib/resolve-service-type-display";
 
 type AppointmentStatus =
     | "scheduled"
@@ -20,7 +21,15 @@ export type AppointmentCardData = {
     modality: string;
     patient: { id: string; name: string; phone: string | null };
     doctor: { id: string; name: string | null }; // null possible from DB join
+    /** Legado / integrações */
     specialty: { id: string; name: string } | null;
+    serviceType: {
+        id: string;
+        name: string;
+        workflow: string;
+        timelineIconKey: string | null;
+        timelineColorHex: string | null;
+    } | null;
 };
 
 const statusColors: Record<AppointmentStatus, string> = {
@@ -70,6 +79,14 @@ export function AppointmentCard({
     compact = false,
 }: AppointmentCardProps) {
     const modStyle = modalityStyles[appointment.modality] || modalityStyles.in_person;
+    const st = appointment.serviceType;
+    const ServiceIcon = st
+        ? resolveServiceTypeDisplayIcon({
+              name: st.name,
+              workflow: st.workflow,
+              timelineIconKey: st.timelineIconKey,
+          })
+        : null;
     const statusColor = statusColors[appointment.status] || "bg-border";
     const start = new Date(appointment.scheduledAt);
     const medicalRecordHref = `/medical-records/${appointment.patient.id}`;
@@ -100,8 +117,20 @@ export function AppointmentCard({
                         <div className={`truncate text-[10px] font-bold leading-none sm:text-xs ${modStyle.text}`}>
                             {format(start, "HH:mm")}
                         </div>
-                        <div className="shrink-0 text-[10px] leading-none opacity-80">
-                            {modStyle.icon}
+                        <div className="shrink-0 text-[10px] leading-none opacity-80 flex items-center">
+                            {ServiceIcon && st ? (
+                                <span
+                                    className="flex size-4 items-center justify-center rounded"
+                                    style={{
+                                        color: st.timelineColorHex ?? undefined,
+                                    }}
+                                    title={st.name}
+                                >
+                                    <ServiceIcon className="size-3.5" />
+                                </span>
+                            ) : (
+                                modStyle.icon
+                            )}
                         </div>
                     </div>
                     <Link
@@ -125,7 +154,20 @@ export function AppointmentCard({
                             </span>
                         </div>
                         <div className="text-sm opacity-90 flex items-center gap-1.5 border px-2 py-0.5 rounded-full bg-background/50 shadow-sm">
-                            {modStyle.icon}
+                            {ServiceIcon && st ? (
+                                <span
+                                    className="flex items-center gap-1"
+                                    style={{ color: st.timelineColorHex ?? undefined }}
+                                    title={st.name}
+                                >
+                                    <ServiceIcon className="size-4 shrink-0" />
+                                    <span className="text-xs font-medium max-w-[120px] truncate">
+                                        {st.name}
+                                    </span>
+                                </span>
+                            ) : (
+                                modStyle.icon
+                            )}
                         </div>
                     </div>
 
@@ -144,7 +186,20 @@ export function AppointmentCard({
                             <span className="size-3.5 flex items-center justify-center shrink-0">👨‍⚕️</span>
                             <span className="truncate">{appointment.doctor.name}</span>
                         </div>
-                        {appointment.specialty && (
+                        {appointment.serviceType && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                {ServiceIcon && st ? (
+                                    <ServiceIcon
+                                        className="size-3.5 shrink-0"
+                                        style={{ color: st.timelineColorHex ?? undefined }}
+                                    />
+                                ) : (
+                                    <span className="size-3.5 flex items-center justify-center shrink-0">✦</span>
+                                )}
+                                <span className="truncate">{appointment.serviceType.name}</span>
+                            </div>
+                        )}
+                        {!appointment.serviceType && appointment.specialty && (
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <span className="size-3.5 flex items-center justify-center shrink-0">✦</span>
                                 <span className="truncate">{appointment.specialty.name}</span>

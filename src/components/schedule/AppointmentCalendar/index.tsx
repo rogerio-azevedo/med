@@ -12,7 +12,11 @@ const TOTAL_HOURS = END_HOUR - START_HOUR
 
 interface AppointmentCalendarProps {
   appointments: AppointmentCardData[]
+  /** Início da semana (modo semana) ou ignorado no modo dia */
   weekStart: Date
+  /** Dia exibido quando mode === "day" */
+  dayDate?: Date
+  mode?: "week" | "day"
   onAppointmentClick: (appointment: AppointmentCardData) => void
   onSlotClick?: (date: Date) => void
 }
@@ -20,6 +24,8 @@ interface AppointmentCalendarProps {
 export function AppointmentCalendar({
   appointments,
   weekStart,
+  dayDate,
+  mode = "week",
   onAppointmentClick,
   onSlotClick,
 }: AppointmentCalendarProps) {
@@ -30,10 +36,14 @@ export function AppointmentCalendar({
     return () => clearInterval(interval)
   }, [])
 
-  const days = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart],
-  )
+  const days = useMemo(() => {
+    if (mode === "day" && dayDate) {
+      const d = new Date(dayDate)
+      d.setHours(0, 0, 0, 0)
+      return [d]
+    }
+    return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  }, [weekStart, mode, dayDate])
 
   const hours = useMemo(
     () => Array.from({ length: TOTAL_HOURS }, (_, i) => START_HOUR + i),
@@ -69,7 +79,10 @@ export function AppointmentCalendar({
   }
 
   const today = new Date()
-  const isCurrentWeek = days.some((d) => isSameDay(d, today))
+  const isCurrentWeek =
+    mode === "day"
+      ? dayDate != null && isSameDay(dayDate, today)
+      : days.some((d) => isSameDay(d, today))
 
   // Calcula posição da linha do tempo atual se estiver na janela visível
   const nowMinutes = now.getHours() * 60 + now.getMinutes()
@@ -81,7 +94,9 @@ export function AppointmentCalendar({
   return (
     <div className="flex flex-col overflow-hidden border border-border/60 rounded-xl bg-card shadow-sm">
       {/* Header: dias da semana */}
-      <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b bg-muted/40 relative z-20">
+      <div
+        className={`grid border-b bg-muted/40 relative z-20 ${mode === "day" ? "grid-cols-[60px_1fr]" : "grid-cols-[60px_repeat(7,1fr)]"}`}
+      >
         <div className="h-14" />
         {days.map((day) => {
           const isToday = isSameDay(day, today)
@@ -105,7 +120,9 @@ export function AppointmentCalendar({
 
       {/* Grid body */}
       <div className="flex-1 overflow-y-auto max-h-[600px] bg-background scroll-smooth custom-scrollbar relative">
-        <div className="grid grid-cols-[60px_repeat(7,1fr)] min-w-[700px]">
+        <div
+          className={`grid ${mode === "day" ? "min-w-0 w-full grid-cols-[60px_1fr]" : "min-w-[700px] grid-cols-[60px_repeat(7,1fr)]"}`}
+        >
           {/* Linha do tempo atual cruzando todo o grid */}
           {showNowLine && (
             <div

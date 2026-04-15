@@ -20,6 +20,7 @@ export const createAppointmentSchema = z.object({
     patientId: z.string().uuid("Paciente inválido"),
     doctorId: z.string().uuid("Médico inválido"),
     specialtyId: z.string().uuid("Especialidade inválida").optional(),
+    serviceTypeId: z.string().uuid("Tipo de atendimento inválido").optional(),
     patientPackageId: z.string().uuid("Pacote inválido").optional(),
     scheduledAt: z.string().datetime("Data/hora inválida"),
     durationMinutes: z

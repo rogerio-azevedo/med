@@ -33,6 +33,7 @@ import {
     Loader2,
     XCircle,
 } from "lucide-react";
+import { resolveServiceTypeDisplayIcon } from "@/lib/resolve-service-type-display";
 import { toast } from "sonner";
 
 type AppointmentStatus =
@@ -52,7 +53,15 @@ export type AppointmentDetail = {
     notes: string | null;
     doctor: { id: string; name: string | null };
     patient: { id: string; name: string; phone: string | null; email: string | null };
+    /** Legado / integrações */
     specialty: { id: string; name: string } | null;
+    serviceType: {
+        id: string;
+        name: string;
+        workflow: string;
+        timelineIconKey: string | null;
+        timelineColorHex: string | null;
+    } | null;
 };
 
 const statusLabels: Record<AppointmentStatus, string> = {
@@ -146,6 +155,14 @@ export function AppointmentDetailDrawer({
     const endsAt = new Date(scheduledAt.getTime() + appointment.durationMinutes * 60000);
     const transitions = allowedTransitions[appointment.status];
     const isDone = appointment.status === "done" || appointment.status === "cancelled";
+    const st = appointment.serviceType;
+    const ServiceTypeIcon = st
+        ? resolveServiceTypeDisplayIcon({
+              name: st.name,
+              workflow: st.workflow,
+              timelineIconKey: st.timelineIconKey,
+          })
+        : null;
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -213,7 +230,16 @@ export function AppointmentDetailDrawer({
                             <div className="space-y-1">
                                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Profissional</p>
                                 <p className="text-sm font-medium text-foreground">{appointment.doctor.name}</p>
-                                {appointment.specialty && (
+                                {appointment.serviceType && ServiceTypeIcon && st && (
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <ServiceTypeIcon
+                                            className="size-3.5 shrink-0"
+                                            style={{ color: st.timelineColorHex ?? undefined }}
+                                        />
+                                        <span>{appointment.serviceType.name}</span>
+                                    </div>
+                                )}
+                                {!appointment.serviceType && appointment.specialty && (
                                     <p className="text-xs text-muted-foreground">
                                         {appointment.specialty.name}
                                     </p>

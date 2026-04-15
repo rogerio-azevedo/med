@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { eq, and } from "drizzle-orm";
 import { fromZonedTime } from "date-fns-tz";
 import { doctorSchedules } from "@/db/schema/medical";
+import { getServiceTypeById } from "@/db/queries/service-types";
 import {
     createAppointment as createAppointmentQuery,
     updateAppointment as updateAppointmentQuery,
@@ -145,11 +146,19 @@ export async function createAppointment(
             };
         }
 
+        if (data.serviceTypeId) {
+            const st = await getServiceTypeById(data.serviceTypeId, clinicId);
+            if (!st) {
+                return { success: false, error: "Tipo de atendimento inválido para esta clínica." };
+            }
+        }
+
         const result = await createAppointmentQuery({
             clinicId,
             doctorId: data.doctorId,
             patientId: data.patientId,
             specialtyId: data.specialtyId,
+            serviceTypeId: data.serviceTypeId ?? null,
             patientPackageId: data.patientPackageId,
             scheduledAt: startsAt,
             durationMinutes: data.durationMinutes,

@@ -419,6 +419,8 @@ export const appointments = pgTable("appointments", {
         .notNull()
         .references(() => patients.id, { onDelete: "cascade" }),
     specialtyId: uuid("specialty_id").references(() => specialties.id),
+    /** Tipo de atendimento (catálogo da clínica). FK na migration para evitar import circular com service_types. */
+    serviceTypeId: uuid("service_type_id"),
     patientPackageId: uuid("patient_package_id").references(
         () => patientPackages.id
     ),

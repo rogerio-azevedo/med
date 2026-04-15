@@ -8,6 +8,7 @@ import {
     createScheduleBlock,
     removeScheduleBlock,
     generateAvailableSlots,
+    getAppointmentsByClinic,
 } from "@/services/appointments";
 import {
     createAppointmentSchema,
@@ -23,6 +24,7 @@ export async function createAppointmentAction(formData: FormData) {
         patientId: formData.get("patientId"),
         doctorId: formData.get("doctorId"),
         specialtyId: formData.get("specialtyId") || undefined,
+        serviceTypeId: formData.get("serviceTypeId") || undefined,
         patientPackageId: formData.get("patientPackageId") || undefined,
         scheduledAt: formData.get("scheduledAt"),
         durationMinutes: Number(formData.get("durationMinutes")),
@@ -116,6 +118,47 @@ export async function deleteScheduleBlockAction(id: string) {
 
     revalidatePath("/schedule");
     return { success: true };
+}
+
+export async function listScheduleAppointmentsAction(startIso: string, endIso: string) {
+    const session = await auth();
+    if (!session?.user?.clinicId) return { error: "Não autorizado" };
+
+    const startDate = new Date(startIso);
+    const endDate = new Date(endIso);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+        return { error: "Período inválido" };
+    }
+
+    const rows = await getAppointmentsByClinic(session.user.clinicId, {
+        startDate,
+        endDate,
+    });
+
+    return {
+        success: true as const,
+        appointments: rows.map((a) => ({
+            id: a.id,
+            scheduledAt: a.scheduledAt,
+            durationMinutes: a.durationMinutes,
+            modality: a.modality,
+            status: a.status ?? "scheduled",
+            notes: a.notes,
+            doctor: { id: a.doctor.id, name: a.doctor.name ?? null },
+            patient: { id: a.patient.id, name: a.patient.name, phone: a.patient.phone },
+            specialty: a.specialty?.id ? { id: a.specialty.id, name: a.specialty.name } : null,
+            serviceType:
+                a.serviceType?.id && a.serviceType.name
+                    ? {
+                          id: a.serviceType.id,
+                          name: a.serviceType.name,
+                          workflow: a.serviceType.workflow,
+                          timelineIconKey: a.serviceType.timelineIconKey,
+                          timelineColorHex: a.serviceType.timelineColorHex,
+                      }
+                    : null,
+        })),
+    };
 }
 
 export async function getAvailableSlotsAction(

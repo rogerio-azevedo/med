@@ -351,6 +351,13 @@
       "when": 1778695200017,
       "tag": "0049_service_types_timeline_visual",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1778695200018,
+      "tag": "0050_appointments_service_type_id",
+      "breakpoints": true
     }
   ]
 }
