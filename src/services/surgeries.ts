@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { clinicHealthInsurances, surgeries } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { clinicHealthInsurances, procedures, surgeries } from "@/db/schema";
+import { and, eq, inArray } from "drizzle-orm";
 import {
     createSurgeryQuery,
     updateSurgeryQuery,
@@ -22,6 +22,24 @@ async function assertHealthInsuranceForClinic(
     });
     if (!link) {
         return { ok: false, error: "Convênio não autorizado para esta clínica." };
+    }
+    return { ok: true };
+}
+
+async function assertProceduresForClinic(
+    clinicId: string,
+    procedureIds: string[]
+): Promise<{ ok: true } | { ok: false; error: string }> {
+    const uniqueIds = [...new Set(procedureIds)];
+    if (uniqueIds.length === 0) return { ok: true };
+
+    const rows = await db
+        .select({ id: procedures.id })
+        .from(procedures)
+        .where(and(eq(procedures.clinicId, clinicId), inArray(procedures.id, uniqueIds)));
+
+    if (rows.length !== uniqueIds.length) {
+        return { ok: false, error: "Procedimento(s) inválido(s) para esta clínica." };
     }
     return { ok: true };
 }
@@ -143,6 +161,11 @@ export async function saveSurgery(
     const ins = await assertHealthInsuranceForClinic(clinicId, normalizeUuid(input.healthInsuranceId));
     if (!ins.ok) {
         return { success: false, error: ins.error };
+    }
+
+    const procCheck = await assertProceduresForClinic(clinicId, input.procedureIds);
+    if (!procCheck.ok) {
+        return { success: false, error: procCheck.error };
     }
 
     const existing = await db.query.surgeries.findFirst({

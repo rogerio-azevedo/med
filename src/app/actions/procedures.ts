@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
 import {
     createProcedure,
     deleteProcedure,
@@ -19,8 +20,13 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export async function getProceduresAction() {
     try {
-        const procedures = await getProcedures();
-        return { success: true, data: procedures };
+        const session = await auth();
+        if (!session?.user?.clinicId) {
+            return { success: false, error: "Não autorizado" };
+        }
+
+        const proceduresList = await getProcedures(session.user.clinicId);
+        return { success: true, data: proceduresList };
     } catch (error) {
         console.error("Error loading procedures:", error);
         return { success: false, error: getErrorMessage(error, "Erro ao carregar procedimentos") };
@@ -29,7 +35,12 @@ export async function getProceduresAction() {
 
 export async function createProcedureAction(data: ProcedurePayload) {
     try {
-        const newProcedure = await createProcedure(data);
+        const session = await auth();
+        if (!session?.user?.clinicId) {
+            return { success: false, error: "Não autorizado" };
+        }
+
+        const newProcedure = await createProcedure(session.user.clinicId, data);
         revalidatePath("/procedures");
         return { success: true, data: newProcedure };
     } catch (error) {
@@ -40,7 +51,12 @@ export async function createProcedureAction(data: ProcedurePayload) {
 
 export async function updateProcedureAction(id: string, data: ProcedurePayload) {
     try {
-        const updatedProcedure = await updateProcedure(id, data);
+        const session = await auth();
+        if (!session?.user?.clinicId) {
+            return { success: false, error: "Não autorizado" };
+        }
+
+        const updatedProcedure = await updateProcedure(id, session.user.clinicId, data);
         revalidatePath("/procedures");
         return { success: true, data: updatedProcedure };
     } catch (error) {
@@ -51,7 +67,12 @@ export async function updateProcedureAction(id: string, data: ProcedurePayload) 
 
 export async function deleteProcedureAction(id: string) {
     try {
-        await deleteProcedure(id);
+        const session = await auth();
+        if (!session?.user?.clinicId) {
+            return { success: false, error: "Não autorizado" };
+        }
+
+        await deleteProcedure(id, session.user.clinicId);
         revalidatePath("/procedures");
         return { success: true };
     } catch (error) {

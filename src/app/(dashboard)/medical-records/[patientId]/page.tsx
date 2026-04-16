@@ -60,7 +60,7 @@ export default async function MedicalRecordsPage({ params, searchParams }: Medic
             getClinicHealthInsurances(session.user.clinicId),
             getDoctorsSimple(session.user.clinicId),
             getHospitals(session.user.clinicId),
-            getProcedures(),
+            getProcedures(session.user.clinicId),
         ]);
 
     const catalogVisual = serviceTypes.map((s) => ({

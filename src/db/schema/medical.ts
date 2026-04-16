@@ -124,9 +124,10 @@ export const practiceAreas = pgTable("practice_areas", {
     code: varchar("code", { length: 20 }),
 });
 
-// 5.a Procedures (Global Catalog)
+// 5.a Procedures (per-clinic catalog)
 export const procedures = pgTable("procedures", {
     id: uuid("id").primaryKey().defaultRandom(),
+    clinicId: uuid("clinic_id").references(() => clinics.id, { onDelete: "cascade" }),
     type: procedureTypeEnum("type").notNull(),
     tussCode: varchar("tuss_code", { length: 50 }),
     name: text("name").notNull(),
