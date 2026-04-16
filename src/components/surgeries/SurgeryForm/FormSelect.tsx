@@ -1,6 +1,7 @@
 "use client";
 
 import ReactSelect, { type StylesConfig } from "react-select";
+import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
 
 export type SelectOption = { value: string; label: string };
 
@@ -125,6 +126,7 @@ export function FormSelect({
             placeholder={placeholder}
             isClearable={isClearable}
             isDisabled={isDisabled}
+            filterOption={accentInsensitiveSelectFilter}
             noOptionsMessage={() => noOptionsMessage}
             styles={buildStyles()}
         />

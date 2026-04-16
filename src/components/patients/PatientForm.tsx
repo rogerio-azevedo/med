@@ -34,6 +34,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AddDoctorDialog } from "@/components/doctors/AddDoctorDialog";
 import { maskCPF, maskPhone } from "@/utils/masks";
 import { BRAZILIAN_STATES } from "@/utils/states";
+import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
 import { createPatientSchema } from "@/lib/validations/patient";
 import { getActiveHealthInsurancesAction } from "@/app/actions/health-insurances";
 
@@ -620,6 +621,7 @@ export function PatientForm({
                                                             onBlur={field.onBlur}
                                                             placeholder="Selecione o médico..."
                                                             isClearable
+                                                            filterOption={accentInsensitiveSelectFilter}
                                                             menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
                                                             menuPosition="fixed"
                                                             styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }) }}
@@ -850,6 +852,7 @@ export function PatientForm({
                                                     onChange={(val) => field.onChange(val ? val.map((v) => v.value) : [])}
                                                     onBlur={field.onBlur}
                                                     placeholder="Selecione médicos..."
+                                                    filterOption={accentInsensitiveSelectFilter}
                                                     menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
                                                     menuPosition="fixed"
                                                     styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }) }}

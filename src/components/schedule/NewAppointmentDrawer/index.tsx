@@ -27,6 +27,7 @@ import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { AddPatientDialog } from "@/components/patients/AddPatientDialog";
+import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
 import { cn } from "@/lib/utils";
 import { resolveServiceTypeDisplayIcon } from "@/lib/resolve-service-type-display";
 
@@ -235,6 +236,7 @@ export function NewAppointmentDrawer({
                                         options={doctorOptions}
                                         value={doctorOptions.find((o) => o.value === doctorId) ?? null}
                                         onChange={(opt) => handleDoctorChange(opt?.value ?? "")}
+                                        filterOption={accentInsensitiveSelectFilter}
                                         classNamePrefix="rs"
                                         styles={{
                                             control: (base) => ({
@@ -271,6 +273,7 @@ export function NewAppointmentDrawer({
                                     options={patientOptions}
                                     value={patientOptions.find((o) => o.value === patientId) ?? null}
                                     onChange={(opt) => setPatientId(opt?.value ?? "")}
+                                    filterOption={accentInsensitiveSelectFilter}
                                     classNamePrefix="rs"
                                     styles={{
                                         control: (base) => ({

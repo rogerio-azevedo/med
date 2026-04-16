@@ -24,6 +24,7 @@ import { useHeaderStore } from "@/store/header";
 import type { MedicalRecordsFileTimelineEntry } from "@/db/queries/medical-records-timeline";
 import { SurgeryForm } from "@/components/surgeries/SurgeryForm";
 import { isSurgeryServiceType } from "@/lib/surgery-service-type";
+import { normalizeForSearch } from "@/lib/search-normalize";
 
 interface MedicalRecordsClientProps {
     clinicId: string;
@@ -272,14 +273,14 @@ export function MedicalRecordsClient({
     );
 
     const filteredTimeline = useMemo(() => {
-        const q = searchTerm.trim().toLowerCase();
+        const q = normalizeForSearch(searchTerm.trim());
         if (!q) return mergedTimeline;
         return mergedTimeline.filter((c) => {
-            const doctor = String(c.doctorName ?? "").toLowerCase();
-            const diagnosis = String(c.diagnosis ?? "").toLowerCase();
-            const typeLabel = String(c.serviceTypeName ?? "").toLowerCase();
-            const dateStr = format(new Date(c.startTime), "dd MMM yyyy", { locale: ptBR }).toLowerCase();
-            const cid = String(c.cidCode ?? "").toLowerCase();
+            const doctor = normalizeForSearch(c.doctorName);
+            const diagnosis = normalizeForSearch(c.diagnosis);
+            const typeLabel = normalizeForSearch(c.serviceTypeName);
+            const dateStr = normalizeForSearch(format(new Date(c.startTime), "dd MMM yyyy", { locale: ptBR }));
+            const cid = normalizeForSearch(c.cidCode);
             return (
                 doctor.includes(q) ||
                 diagnosis.includes(q) ||

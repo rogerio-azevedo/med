@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AddPatientDialog } from "@/components/patients/AddPatientDialog";
 import { PatientsTable } from "@/components/patients/PatientsTable";
+import { matchesNormalizedSearch } from "@/lib/search-normalize";
 
 interface Patient {
     id: string;
@@ -30,15 +31,7 @@ export function PatientsContent({
     const [search, setSearch] = useState("");
 
     const filteredPatients = useMemo(() => {
-        const normalizedSearch = search.trim().toLowerCase();
-
-        if (!normalizedSearch) {
-            return patients;
-        }
-
-        return patients.filter((patient) =>
-            patient.name.toLowerCase().includes(normalizedSearch)
-        );
+        return patients.filter((patient) => matchesNormalizedSearch(patient.name, search));
     }, [patients, search]);
 
     return (

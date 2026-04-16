@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
 import { cn } from "@/lib/utils";
 
 type Option = {
@@ -224,6 +225,7 @@ export function AddCheckInDialog({ patients, serviceTypes, healthInsurances, doc
                             options={patientOptions}
                             value={patientOptions.find((option) => option.value === patientId) ?? null}
                             onChange={(option) => setPatientId(option?.value ?? "")}
+                            filterOption={accentInsensitiveSelectFilter}
                             classNamePrefix="rs"
                             styles={reactSelectStyles}
                         />
@@ -238,6 +240,7 @@ export function AddCheckInDialog({ patients, serviceTypes, healthInsurances, doc
                             options={doctorOptions}
                             value={doctorOptions.find((option) => option.value === doctorId) ?? null}
                             onChange={(option) => setDoctorId(option?.value ?? "")}
+                            filterOption={accentInsensitiveSelectFilter}
                             classNamePrefix="rs"
                             styles={reactSelectStyles}
                             isDisabled={doctors.length === 0}

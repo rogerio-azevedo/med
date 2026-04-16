@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { InviteDialog } from "@/components/common/InviteDialog";
 import { AddDoctorDialog } from "@/components/doctors/AddDoctorDialog";
 import { DoctorsTable } from "@/components/doctors/DoctorsTable";
+import { matchesNormalizedSearch } from "@/lib/search-normalize";
 import { type Doctor } from "@/types/doctor";
 
 interface DoctorsPageContentProps {
@@ -20,15 +21,7 @@ export function DoctorsPageContent({ clinicId, doctors }: DoctorsPageContentProp
     const [hideUnassociatedDoctors, setHideUnassociatedDoctors] = useState(true);
 
     const filteredDoctors = useMemo(() => {
-        const normalizedSearch = search.trim().toLowerCase();
-
-        if (!normalizedSearch) {
-            return doctors;
-        }
-
-        return doctors.filter((doctor) =>
-            String(doctor.name ?? "").toLowerCase().includes(normalizedSearch)
-        );
+        return doctors.filter((doctor) => matchesNormalizedSearch(doctor.name, search));
     }, [doctors, search]);
 
     return (

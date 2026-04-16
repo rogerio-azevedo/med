@@ -17,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -380,6 +381,7 @@ export function ConsultationForm({
                                     options={patientOptions}
                                     value={patientOptions.find((option) => option.value === selectedPatientId) ?? null}
                                     onChange={(option) => setSelectedPatientId(option?.value ?? "")}
+                                    filterOption={accentInsensitiveSelectFilter}
                                     classNamePrefix="rs"
                                     styles={reactSelectStyles}
                                     menuPortalTarget={

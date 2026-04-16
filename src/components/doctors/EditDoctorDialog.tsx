@@ -54,6 +54,7 @@ import { getPracticeAreasAction } from "@/app/actions/practice-areas";
 import { getActiveHealthInsurancesAction } from "@/app/actions/health-insurances";
 import { toast } from "sonner";
 import ReactSelect from "react-select";
+import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
 import type { GroupBase, MultiValue, StylesConfig } from "react-select";
 import cep from "cep-promise";
 import { maskPhone } from "@/utils/masks";
@@ -1018,6 +1019,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange, onReferredPatie
                                         setSelectedPatientId(option?.value ?? "")
                                     }
                                     isLoading={loadingPatientOptions}
+                                    filterOption={accentInsensitiveSelectFilter}
                                     placeholder="Selecione um paciente da clínica..."
                                     classNamePrefix="react-select"
                                     menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}

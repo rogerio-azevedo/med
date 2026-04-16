@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ReactSelect from "react-select";
+import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
 import { Loader2, Package, Plus, Trash2 } from "lucide-react";
 import {
     Form,
@@ -236,6 +237,7 @@ export function ProposalForm({
                                         placeholder="Selecione o paciente..."
                                         isDisabled={isPending}
                                         isSearchable
+                                        filterOption={accentInsensitiveSelectFilter}
                                         menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
                                         styles={{
                                             menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: "auto" }),

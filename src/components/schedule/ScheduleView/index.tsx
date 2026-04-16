@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Select from "react-select";
+import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
 import { Button } from "@/components/ui/button";
 import { AppointmentCalendar } from "@/components/schedule/AppointmentCalendar";
 import { AppointmentSlotList } from "@/components/schedule/AppointmentSlotList";
@@ -236,6 +237,7 @@ export function ScheduleView({
                         value={doctorOptions.find((o) => o.value === selectedDoctorId) ?? doctorOptions[0]}
                         onChange={(opt) => setSelectedDoctorId(opt?.value ?? "")}
                         placeholder="Todos os médicos"
+                        filterOption={accentInsensitiveSelectFilter}
                         classNamePrefix="rs"
                     />
                 </div>
