@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import Select from "react-select";
 import {
     Sheet,
@@ -83,10 +83,14 @@ export function NewAppointmentDrawer({
     const [notes, setNotes] = useState("");
 
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    /** Muda ao clicar em outro slot (inclusive no mesmo dia), para re-disparar fetch + auto-seleção de horário. */
+    const defaultDateTimeKey = defaultDate?.getTime() ?? null;
 
     const hasNonMidnightTime = (d: Date) => d.getHours() !== 0 || d.getMinutes() !== 0;
 
-    const [shouldAutoSelectSlot, setShouldAutoSelectSlot] = useState(false);
+    /** Sincronizado com `defaultDate` no efeito abaixo; usado após o fetch para pré-selecionar o horário do clique na grade. */
+    const shouldAutoSelectSlotRef = useRef(false);
+    const fetchSlotsSeq = useRef(0);
 
     useEffect(() => {
         const newDate = defaultDate ? format(defaultDate, "yyyy-MM-dd") : "";
@@ -95,15 +99,11 @@ export function NewAppointmentDrawer({
         setSelectedSlot(null);
         setSlots([]);
 
-        if (defaultDate && hasNonMidnightTime(defaultDate)) {
-            setShouldAutoSelectSlot(true);
-        } else {
-            setShouldAutoSelectSlot(false);
-        }
+        shouldAutoSelectSlotRef.current = Boolean(defaultDate && hasNonMidnightTime(defaultDate));
     }, [defaultDate, defaultDoctorId]);
 
-    function autoSelectSlot(fetchedSlots: TimeSlot[]) {
-        if (!shouldAutoSelectSlot || !defaultDate) return;
+    function applyAutoSelectFromCalendarClick(fetchedSlots: TimeSlot[]) {
+        if (!shouldAutoSelectSlotRef.current || !defaultDate) return;
 
         const targetTime = format(defaultDate, "HH:mm");
         const matchingSlot = fetchedSlots.find(
@@ -113,43 +113,55 @@ export function NewAppointmentDrawer({
         if (matchingSlot) {
             setSelectedSlot(matchingSlot);
         }
-        setShouldAutoSelectSlot(false);
+        shouldAutoSelectSlotRef.current = false;
     }
 
-    async function handleDateChange(newDate: string) {
+    useEffect(() => {
+        if (!open) {
+            setLoadingSlots(false);
+            return;
+        }
+        if (!doctorId || !date) {
+            setSlots([]);
+            setLoadingSlots(false);
+            return;
+        }
+
+        const seq = ++fetchSlotsSeq.current;
+        let cancelled = false;
+
+        setLoadingSlots(true);
+        void (async () => {
+            const res = await getAvailableSlotsAction(doctorId, date, timeZone);
+            if (cancelled || seq !== fetchSlotsSeq.current) return;
+
+            setLoadingSlots(false);
+            if ("slots" in res && res.slots) {
+                const fetchedSlots: TimeSlot[] = res.slots.map((s) => ({
+                    startsAt: new Date(s.startsAt).toISOString(),
+                    endsAt: new Date(s.endsAt).toISOString(),
+                    available: s.available,
+                }));
+                setSlots(fetchedSlots);
+                applyAutoSelectFromCalendarClick(fetchedSlots);
+            } else {
+                setSlots([]);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [open, doctorId, date, timeZone, defaultDateTimeKey]);
+
+    function handleDateChange(newDate: string) {
         setDate(newDate);
         setSelectedSlot(null);
-        if (!doctorId || !newDate) return;
-        setLoadingSlots(true);
-        const res = await getAvailableSlotsAction(doctorId, newDate, timeZone);
-        setLoadingSlots(false);
-        if ("slots" in res && res.slots) {
-            const fetchedSlots: TimeSlot[] = res.slots.map((s) => ({
-                startsAt: new Date(s.startsAt).toISOString(),
-                endsAt: new Date(s.endsAt).toISOString(),
-                available: s.available,
-            }));
-            setSlots(fetchedSlots);
-            autoSelectSlot(fetchedSlots);
-        }
     }
 
-    async function handleDoctorChange(id: string) {
+    function handleDoctorChange(id: string) {
         setDoctorId(id);
         setSelectedSlot(null);
-        if (!date || !id) return;
-        setLoadingSlots(true);
-        const res = await getAvailableSlotsAction(id, date, timeZone);
-        setLoadingSlots(false);
-        if ("slots" in res && res.slots) {
-            const fetchedSlots: TimeSlot[] = res.slots.map((s) => ({
-                startsAt: new Date(s.startsAt).toISOString(),
-                endsAt: new Date(s.endsAt).toISOString(),
-                available: s.available,
-            }));
-            setSlots(fetchedSlots);
-            autoSelectSlot(fetchedSlots);
-        }
     }
 
     function handleSubmit() {
