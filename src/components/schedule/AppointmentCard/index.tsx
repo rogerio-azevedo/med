@@ -159,13 +159,15 @@ export function AppointmentCard({
                             )}
                         </div>
                     </div>
-                    <Link
-                        href={medicalRecordHref}
-                        onClick={(e) => e.stopPropagation()}
-                        className="line-clamp-2 min-h-0 flex-1 text-[10px] font-semibold leading-snug text-foreground/90 transition hover:underline focus-visible:underline sm:text-[11px] sm:leading-snug"
-                    >
-                        {appointment.patient.name}
-                    </Link>
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                        <Link
+                            href={medicalRecordHref}
+                            onClick={(e) => e.stopPropagation()}
+                            className="line-clamp-2 text-[10px] font-semibold leading-snug text-foreground/90 transition hover:underline focus-visible:underline sm:text-[11px] sm:leading-snug"
+                        >
+                            {appointment.patient.name}
+                        </Link>
+                    </div>
                 </div>
             ) : (
                 /* Full (list view) */
