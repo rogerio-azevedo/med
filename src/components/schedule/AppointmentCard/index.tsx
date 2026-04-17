@@ -42,6 +42,23 @@ const statusColors: Record<AppointmentStatus, string> = {
     no_show: "bg-red-500",
 };
 
+/** Tom estável por médico (vista compacta), sobre a cor de modalidade — não usa box-shadow para não conflitar com shadow-sm. */
+function compactDoctorToneClass(doctorId: string | null | undefined): string {
+    if (!doctorId) return "";
+    let h = 0;
+    for (let i = 0; i < doctorId.length; i++) h = (h * 31 + doctorId.charCodeAt(i)) | 0;
+    const i = Math.abs(h) % 6;
+    const overlays = [
+        "before:absolute before:inset-0 before:z-0 before:rounded-md before:bg-violet-500/14 before:pointer-events-none before:content-[''] dark:before:bg-violet-400/18",
+        "before:absolute before:inset-0 before:z-0 before:rounded-md before:bg-teal-500/14 before:pointer-events-none before:content-[''] dark:before:bg-teal-400/18",
+        "before:absolute before:inset-0 before:z-0 before:rounded-md before:bg-rose-500/13 before:pointer-events-none before:content-[''] dark:before:bg-rose-400/18",
+        "before:absolute before:inset-0 before:z-0 before:rounded-md before:bg-amber-500/14 before:pointer-events-none before:content-[''] dark:before:bg-amber-400/18",
+        "before:absolute before:inset-0 before:z-0 before:rounded-md before:bg-sky-500/14 before:pointer-events-none before:content-[''] dark:before:bg-sky-400/18",
+        "before:absolute before:inset-0 before:z-0 before:rounded-md before:bg-indigo-500/13 before:pointer-events-none before:content-[''] dark:before:bg-indigo-400/18",
+    ];
+    return overlays[i] ?? overlays[0];
+}
+
 const modalityStyles: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
     in_person: {
         bg: "bg-blue-50/80 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30",
@@ -71,6 +88,8 @@ interface AppointmentCardProps {
     /** For calendar view: top offset in px and height in px */
     style?: React.CSSProperties;
     compact?: boolean;
+    /** Vista calendário com faixas lado a lado: destaca tom estável por médico */
+    compactDoctorTint?: boolean;
 }
 
 export function AppointmentCard({
@@ -78,6 +97,7 @@ export function AppointmentCard({
     onClick,
     style,
     compact = false,
+    compactDoctorTint = false,
 }: AppointmentCardProps) {
     const modStyle = modalityStyles[appointment.modality] || modalityStyles.in_person;
     const st = appointment.serviceType;
@@ -91,6 +111,8 @@ export function AppointmentCard({
     const statusColor = statusColors[appointment.status] || "bg-border";
     const start = new Date(appointment.scheduledAt);
     const medicalRecordHref = `/medical-records/${appointment.patient.id}`;
+    const doctorTone =
+        compact && compactDoctorTint ? compactDoctorToneClass(appointment.doctor.id) : "";
 
     return (
         <div
@@ -109,12 +131,12 @@ export function AppointmentCard({
                 }
             }}
             style={style}
-            title={`${format(start, "HH:mm")} — ${appointment.patient.name}`}
-            className={`group w-full text-left rounded-md border-l-4 transition-all cursor-pointer shadow-sm hover:shadow-md ${compact ? "p-0" : "pr-3 py-2"} ${statusColor.replace("bg-", "border-")} ${modStyle.bg}`}
+            title={`${format(start, "HH:mm")} — ${appointment.patient.name}${appointment.doctor.name ? ` — ${appointment.doctor.name}` : ""}`}
+            className={`group text-left rounded-md border-l-4 transition-all cursor-pointer shadow-sm hover:shadow-md ${compact ? "relative min-w-0 max-w-full overflow-hidden p-0" : "w-full pr-3 py-2"} ${statusColor.replace("bg-", "border-")} ${modStyle.bg} ${doctorTone}`}
         >
             {compact ? (
                 /* Compact (calendar view): hora + ícone na primeira linha; nome com até 2 linhas. */
-                <div className="relative flex h-full min-h-0 flex-col gap-0.5 overflow-hidden px-1.5 py-1">
+                <div className="relative z-10 flex h-full min-h-0 flex-col gap-0.5 overflow-hidden px-1.5 py-1">
                     <div className="flex shrink-0 items-center justify-between gap-0.5">
                         <div
                             className={`truncate text-[10px] font-bold tabular-nums leading-none ${modStyle.text}`}

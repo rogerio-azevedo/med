@@ -4,6 +4,10 @@ import { useMemo, useEffect, useState } from "react"
 import { format, addDays, isSameDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { AppointmentCard, type AppointmentCardData } from "../AppointmentCard"
+import {
+  computeOverlapLayout,
+  type OverlapSlotLayout,
+} from "./appointmentOverlapLayout"
 
 // Altura por hora: valores maiores dão mais pixels a consultas curtas (ex.: 20min) para horário + nome.
 const HOUR_HEIGHT = 140
@@ -63,7 +67,10 @@ export function AppointmentCalendar({
     return map
   }, [appointments])
 
-  function getSlotStyle(appt: AppointmentCardData): React.CSSProperties {
+  function getSlotStyle(
+    appt: AppointmentCardData,
+    layout?: OverlapSlotLayout,
+  ): React.CSSProperties {
     const start = new Date(appt.scheduledAt)
     const startMinutes = start.getHours() * 60 + start.getMinutes()
     const offsetMinutes = startMinutes - START_HOUR * 60
@@ -72,11 +79,21 @@ export function AppointmentCalendar({
     // Altura deve caber no intervalo proporcional à duração; um mínimo fixo grande (ex.: 44px)
     // empilhava consultas curtas seguidas (ex.: 20min às 09:00 e 09:20 com HOUR_HEIGHT=96).
     const height = Math.min(Math.max(durationPx - 4, 18), durationPx - 2)
+
+    const totalColumns = layout?.totalColumns ?? 1
+    const columnIndex = layout?.columnIndex ?? 0
+    const horizontal =
+      totalColumns <= 1
+        ? { left: "2px" as const, right: "2px" as const }
+        : {
+            left: `calc(${(columnIndex / totalColumns) * 100}% + 2px)`,
+            right: `calc(${((totalColumns - columnIndex - 1) / totalColumns) * 100}% + 2px)`,
+          }
+
     return {
       position: "absolute",
       top: `${top}px`,
-      left: "2px",
-      right: "2px",
+      ...horizontal,
       height: `${height}px`,
       zIndex: 10,
     }
@@ -160,12 +177,13 @@ export function AppointmentCalendar({
           {days.map((day) => {
             const key = format(day, "yyyy-MM-dd")
             const dayAppts = appointmentsByDay.get(key) ?? []
+            const overlapLayoutById = computeOverlapLayout(dayAppts)
             const isToday = isSameDay(day, today)
 
             return (
               <div
                 key={key}
-                className={`relative border-r border-border/50 transition-colors hover:bg-muted/30 cursor-pointer ${isToday ? "bg-primary/[0.02]" : ""}`}
+                className={`relative min-w-0 overflow-x-hidden border-r border-border/50 transition-colors hover:bg-muted/30 cursor-pointer ${isToday ? "bg-primary/[0.02]" : ""}`}
                 style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}
                 onKeyDown={() => {}}
                 onClick={(e) => {
@@ -199,15 +217,19 @@ export function AppointmentCalendar({
                 ))}
 
                 {/* Agendamentos */}
-                {dayAppts.map((appt) => (
-                  <AppointmentCard
-                    key={appt.id}
-                    appointment={appt}
-                    onClick={onAppointmentClick}
-                    style={getSlotStyle(appt)}
-                    compact
-                  />
-                ))}
+                {dayAppts.map((appt) => {
+                  const lane = overlapLayoutById.get(appt.id)
+                  return (
+                    <AppointmentCard
+                      key={appt.id}
+                      appointment={appt}
+                      onClick={onAppointmentClick}
+                      style={getSlotStyle(appt, lane)}
+                      compact
+                      compactDoctorTint={(lane?.totalColumns ?? 1) > 1}
+                    />
+                  )
+                })}
               </div>
             )
           })}
