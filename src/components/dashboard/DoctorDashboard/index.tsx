@@ -6,6 +6,7 @@ import {
 import { getWaitingConsultationsForClinic } from "@/db/queries/consultations";
 import { getWaitingSurgeriesForClinic } from "@/db/queries/surgeries";
 import { WaitingEncountersBanner } from "@/components/medical-records/WaitingEncountersBanner";
+import { DashboardLayoutHeader } from "@/components/dashboard/DashboardLayoutHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TodayScheduleList } from "@/components/dashboard/TodayScheduleList";
 import { Users, CalendarDays, ClipboardCheck } from "lucide-react";
@@ -47,14 +48,12 @@ export async function DoctorDashboard({
 
     return (
         <div className="flex flex-col gap-8 p-6 lg:p-8">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">Meu Painel</h1>
-                <p className="text-muted-foreground text-sm mt-1">
-                    Seu resumo do dia
-                    {userName ? ` • Olá, Dr. ${userName.split(" ")[0]}` : ""}
-                </p>
-            </div>
+            <DashboardLayoutHeader
+                title="Meu Painel"
+                description="Seu resumo do dia"
+                userName={userName}
+                doctorGreeting
+            />
 
             <WaitingEncountersBanner items={waitingEncounters} />
 

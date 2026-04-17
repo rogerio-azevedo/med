@@ -2,6 +2,7 @@ import {
     getAdminDashboardStats,
     getTodayAppointments,
 } from "@/db/queries/dashboard";
+import { DashboardLayoutHeader } from "@/components/dashboard/DashboardLayoutHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TodayScheduleList } from "@/components/dashboard/TodayScheduleList";
 import { Stethoscope, Users, CalendarDays, ClipboardCheck } from "lucide-react";
@@ -21,14 +22,11 @@ export async function AdminDashboard({ clinicId, userName }: AdminDashboardProps
 
     return (
         <div className="flex flex-col gap-8 p-6 lg:p-8">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-                <p className="text-muted-foreground text-sm mt-1">
-                    Visão geral da clínica
-                    {userName ? ` • Olá, ${userName.split(" ")[0]}` : ""}
-                </p>
-            </div>
+            <DashboardLayoutHeader
+                title="Dashboard"
+                description="Visão geral da clínica"
+                userName={userName}
+            />
 
             {/* Stat Cards */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">

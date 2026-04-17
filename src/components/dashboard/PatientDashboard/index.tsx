@@ -6,6 +6,8 @@ import {
 } from "@/db/queries/dashboard";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DoctorCard } from "@/components/dashboard/DoctorCard";
+import { DashboardLayoutHeader } from "@/components/dashboard/DashboardLayoutHeader";
+import { BrowserFormattedDate } from "@/components/shared/BrowserFormattedDate";
 import { ClipboardCheck, CalendarDays, Calendar, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge as UiBadge } from "@/components/ui/badge";
@@ -28,16 +30,6 @@ const statusConfig: Record<AppointmentStatus, { label: string; variant: "default
     cancelled: { label: "Cancelado", variant: "destructive" },
     no_show: { label: "Não compareceu", variant: "destructive" },
 };
-
-function formatDateTime(date: Date) {
-    return new Intl.DateTimeFormat("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(new Date(date));
-}
 
 export async function PatientDashboard({
     clinicId,
@@ -65,14 +57,11 @@ export async function PatientDashboard({
 
     return (
         <div className="flex flex-col gap-8 p-6 lg:p-8">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">Meu Painel</h1>
-                <p className="text-muted-foreground text-sm mt-1">
-                    Acompanhe sua saúde
-                    {userName ? ` • Olá, ${userName.split(" ")[0]}` : ""}
-                </p>
-            </div>
+            <DashboardLayoutHeader
+                title="Meu Painel"
+                description="Acompanhe sua saúde"
+                userName={userName}
+            />
 
             {/* Stat Cards */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -102,7 +91,10 @@ export async function PatientDashboard({
                                 {nextApt ? (
                                     <>
                                         <p className="text-lg font-bold tabular-nums">
-                                            {formatDateTime(nextApt.scheduledAt)}
+                                            <BrowserFormattedDate
+                                                value={nextApt.scheduledAt}
+                                                variant="dateTime"
+                                            />
                                         </p>
                                         <p className="text-xs text-muted-foreground truncate">
                                             Dr. {nextApt.doctorName}
@@ -165,7 +157,11 @@ export async function PatientDashboard({
                                                 Dr. {apt.doctorName ?? "—"}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
-                                                {formatDateTime(apt.scheduledAt)} • {apt.durationMinutes}min
+                                                <BrowserFormattedDate
+                                                    value={apt.scheduledAt}
+                                                    variant="dateTime"
+                                                />{" "}
+                                                • {apt.durationMinutes}min
                                             </p>
                                         </div>
                                         {status && (

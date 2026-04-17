@@ -1,7 +1,7 @@
+import { BrowserFormattedDate } from "@/components/shared/BrowserFormattedDate";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Video, Phone, MessageCircle, User } from "lucide-react";
-import Link from "next/link";
 
 type AppointmentModality = "in_person" | "remote" | "phone" | "whatsapp";
 type AppointmentStatus =
@@ -14,7 +14,8 @@ type AppointmentStatus =
 
 interface ScheduleItem {
     id: string;
-    scheduledAt: Date;
+    /** Instante ISO vindo do banco; pode chegar como string na fronteira RSC → cliente. */
+    scheduledAt: Date | string;
     durationMinutes: number;
     modality: AppointmentModality;
     status: AppointmentStatus | null;
@@ -50,13 +51,6 @@ const statusConfig: Record<
     cancelled: { label: "Cancelado", variant: "destructive" },
     no_show: { label: "Não compareceu", variant: "destructive" },
 };
-
-function formatTime(date: Date) {
-    return new Intl.DateTimeFormat("pt-BR", {
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(new Date(date));
-}
 
 function getInitials(name: string | null) {
     if (!name) return "?";
@@ -99,9 +93,11 @@ export function TodayScheduleList({
                     >
                         {/* Time */}
                         <div className="flex flex-col items-center min-w-[52px] shrink-0">
-                            <span className="text-sm font-semibold tabular-nums">
-                                {formatTime(apt.scheduledAt)}
-                            </span>
+                            <BrowserFormattedDate
+                                value={apt.scheduledAt}
+                                variant="time"
+                                className="text-sm font-semibold"
+                            />
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <Clock className="size-3" />
                                 <span>{apt.durationMinutes}min</span>
