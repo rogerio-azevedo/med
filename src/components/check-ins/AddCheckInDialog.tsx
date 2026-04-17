@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
 import { cn } from "@/lib/utils";
+import { LinkedDoctorSelect } from "@/components/shared/LinkedDoctorSelect";
 
 type Option = {
     value: string;
@@ -65,11 +66,6 @@ export function AddCheckInDialog({ patients, serviceTypes, healthInsurances, doc
     const patientOptions: Option[] = patients.map((patient) => ({
         value: patient.id,
         label: patient.name,
-    }));
-
-    const doctorOptions: Option[] = doctors.map((d) => ({
-        value: d.id,
-        label: d.name?.trim() ? `Dr(a). ${d.name}` : "Médico sem nome",
     }));
 
     const healthInsuranceOptions: Option[] = [
@@ -231,26 +227,12 @@ export function AddCheckInDialog({ patients, serviceTypes, healthInsurances, doc
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label className="text-sm font-medium">
-                            Médico <span className="text-destructive">*</span>
-                        </Label>
-                        <Select
-                            placeholder="Selecione o médico..."
-                            options={doctorOptions}
-                            value={doctorOptions.find((option) => option.value === doctorId) ?? null}
-                            onChange={(option) => setDoctorId(option?.value ?? "")}
-                            filterOption={accentInsensitiveSelectFilter}
-                            classNamePrefix="rs"
-                            styles={reactSelectStyles}
-                            isDisabled={doctors.length === 0}
-                        />
-                        {doctors.length === 0 ? (
-                            <p className="text-xs text-muted-foreground">
-                                Nenhum médico vinculado ativo nesta clínica (parceiros não aparecem aqui).
-                            </p>
-                        ) : null}
-                    </div>
+                    <LinkedDoctorSelect
+                        doctors={doctors}
+                        value={doctorId}
+                        onChange={setDoctorId}
+                        showRequiredMark
+                    />
 
                     <div className="space-y-2">
                         <Label className="text-sm font-medium">Convênio</Label>

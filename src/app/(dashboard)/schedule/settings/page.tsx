@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getDoctorsSimple } from "@/db/queries/doctors";
 import { DoctorScheduleConfig } from "@/components/schedule/DoctorScheduleConfig";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export const metadata = {
     title: "Configurar Agenda | Med",
@@ -24,7 +25,7 @@ export default async function ScheduleSettingsPage() {
     }
 
     const clinicId = session.user.clinicId;
-    let doctors = await getDoctorsSimple(clinicId);
+    let doctors = await getDoctorsSimple(clinicId, { relationshipTypes: ["linked"] });
 
     // Se for médico, pode ver e editar APENAS a própria agenda
     let defaultDoctorId: string | undefined = undefined;
@@ -60,15 +61,11 @@ export default async function ScheduleSettingsPage() {
     }
 
     return (
-        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-            <div className="flex items-center justify-between space-y-2">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Disponibilidade</h2>
-                    <p className="text-muted-foreground mt-1">
-                        Gerencie os horários e turnos de atendimento.
-                    </p>
-                </div>
-            </div>
+        <div className="flex-1 space-y-8 p-8 pt-6">
+            <PageHeader
+                title="Disponibilidade"
+                description="Gerencie os horários e turnos de atendimento."
+            />
 
             <DoctorScheduleConfig doctors={doctors} defaultDoctorId={defaultDoctorId} />
         </div>

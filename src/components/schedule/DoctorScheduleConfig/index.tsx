@@ -6,6 +6,7 @@ import { ptBR } from "date-fns/locale";
 import { Copy, Plus, Trash2, Loader2, Save, CalendarRange } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { LinkedDoctorSelect } from "@/components/shared/LinkedDoctorSelect";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -222,21 +223,13 @@ export function DoctorScheduleConfig({ doctors, defaultDoctorId }: DoctorSchedul
     return (
         <div className="space-y-6 max-w-5xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 bg-muted/30 p-4 rounded-lg border">
-                <div className="flex-1 max-w-xs space-y-1.5">
-                    <Label>Médico</Label>
-                    <Select value={doctorId} onValueChange={setDoctorId} disabled={doctors.length <= 1}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Selecione o médico" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {doctors.map((d) => (
-                                <SelectItem key={d.id} value={d.id}>
-                                    {d.name || "Sem nome"}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+                <LinkedDoctorSelect
+                    className="flex-1 max-w-xs"
+                    doctors={doctors}
+                    value={doctorId}
+                    onChange={setDoctorId}
+                    isDisabled={doctors.length <= 1}
+                />
 
                 <div className="flex gap-2 items-center flex-wrap sm:flex-nowrap">
                     <div className="flex items-center gap-2">
