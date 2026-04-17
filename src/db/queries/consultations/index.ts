@@ -11,7 +11,7 @@ import {
     patients,
     healthInsurances,
 } from "@/db/schema";
-import { eq, and, desc, or, ilike, isNull, ne } from "drizzle-orm";
+import { eq, and, desc, or, ilike, isNull, ne, gte, lte } from "drizzle-orm";
 import type { consultationSchema, consultationSoapSchema, vitalSignsSchema } from "@/lib/validations/medical-records";
 import type { z } from "zod";
 
@@ -120,6 +120,79 @@ export async function getWaitingConsultationsForClinic(
         .orderBy(consultations.startTime);
 
     return rows.map((r) => ({ ...r, encounterKind: "consultation" as const }));
+}
+
+export type ClinicConsultationListRow = {
+    id: string;
+    patientId: string;
+    patientName: string;
+    doctorId: string | null;
+    doctorName: string | null;
+    status: string;
+    startTime: Date;
+    endTime: Date | null;
+    serviceTypeName: string | null;
+    healthInsuranceName: string | null;
+};
+
+export type GetAllConsultationsForClinicOptions = {
+    doctorId?: string;
+    patientId?: string;
+    status?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+};
+
+/**
+ * Lista consultas da clínica para o painel Gestão (ordenadas por data mais recente).
+ */
+export async function getAllConsultationsForClinic(
+    clinicId: string,
+    options?: GetAllConsultationsForClinicOptions
+): Promise<ClinicConsultationListRow[]> {
+    const conditions: SQL[] = [eq(consultations.clinicId, clinicId)];
+
+    if (options?.doctorId) {
+        conditions.push(eq(consultations.doctorId, options.doctorId));
+    }
+    if (options?.patientId) {
+        conditions.push(eq(consultations.patientId, options.patientId));
+    }
+    if (options?.status) {
+        conditions.push(eq(consultations.status, options.status));
+    }
+    if (options?.dateFrom) {
+        const start = new Date(options.dateFrom);
+        start.setHours(0, 0, 0, 0);
+        conditions.push(gte(consultations.startTime, start));
+    }
+    if (options?.dateTo) {
+        const end = new Date(options.dateTo);
+        end.setHours(23, 59, 59, 999);
+        conditions.push(lte(consultations.startTime, end));
+    }
+
+    return db
+        .select({
+            id: consultations.id,
+            patientId: consultations.patientId,
+            patientName: patients.name,
+            doctorId: consultations.doctorId,
+            doctorName: users.name,
+            status: consultations.status,
+            startTime: consultations.startTime,
+            endTime: consultations.endTime,
+            serviceTypeName: serviceTypes.name,
+            healthInsuranceName: healthInsurances.name,
+        })
+        .from(consultations)
+        .innerJoin(patients, eq(consultations.patientId, patients.id))
+        .leftJoin(doctors, eq(consultations.doctorId, doctors.id))
+        .leftJoin(users, eq(doctors.userId, users.id))
+        .leftJoin(serviceTypes, eq(consultations.serviceTypeId, serviceTypes.id))
+        .leftJoin(healthInsurances, eq(consultations.healthInsuranceId, healthInsurances.id))
+        .where(and(...conditions))
+        .orderBy(desc(consultations.startTime));
 }
 
 /**

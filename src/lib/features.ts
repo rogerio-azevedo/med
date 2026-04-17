@@ -17,6 +17,8 @@ export type FeatureSlug =
     | "proposals"
     | "checkins"
     | "map"
+    | "consultations"
+    | "surgeries"
     | "users"
     | "clinic-settings";
 
@@ -48,6 +50,8 @@ export const ALL_FEATURES: FeatureDefinition[] = [
     { slug: "proposals",          name: "Orçamentos",             description: "Criação e gestão de orçamentos/propostas",    category: "Operações" },
     { slug: "checkins",           name: "Check-ins",              description: "Registro e acompanhamento de check-ins",      category: "Operações" },
     { slug: "map",                name: "Mapa de Profissionais",  description: "Visualização do mapa de profissionais",       category: "Operações" },
+    { slug: "consultations",      name: "Consultas",              description: "Listagem e gestão de consultas da clínica",   category: "Operações" },
+    { slug: "surgeries",          name: "Cirurgias",              description: "Listagem e gestão de cirurgias da clínica",   category: "Operações" },
     { slug: "users",              name: "Usuários",               description: "Gestão de usuários da clínica",               category: "Administração" },
     { slug: "clinic-settings",    name: "Configurações",          description: "Configurações gerais da clínica",             category: "Administração" },
 ];

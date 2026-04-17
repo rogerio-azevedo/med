@@ -1,6 +1,16 @@
 import { db } from "@/db";
-import { surgeries, surgeryProcedures, doctors, users, serviceTypes, healthInsurances, patients } from "@/db/schema";
+import {
+    surgeries,
+    surgeryProcedures,
+    doctors,
+    users,
+    serviceTypes,
+    healthInsurances,
+    patients,
+    hospitals,
+} from "@/db/schema";
 import type { WaitingEncounterRow } from "@/db/queries/consultations";
+import type { SQL } from "drizzle-orm";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 
@@ -86,6 +96,90 @@ export async function getWaitingSurgeriesForClinic(
                 ...r,
                 encounterKind: "surgery" as const,
             }))
+        );
+}
+
+export type ClinicSurgeryListRow = {
+    id: string;
+    patientId: string;
+    patientName: string;
+    surgeonId: string | null;
+    surgeonName: string | null;
+    status: string;
+    /** Coluna `date` no PG pode vir como string no driver. */
+    surgeryDate: string | Date | null;
+    createdAt: Date;
+    serviceTypeName: string | null;
+    healthInsuranceName: string | null;
+    hospitalName: string | null;
+};
+
+export type GetAllSurgeriesForClinicOptions = {
+    surgeonId?: string;
+    patientId?: string;
+    status?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+};
+
+/**
+ * Lista cirurgias da clínica para o painel Gestão.
+ * Filtro de período usa `coalesce(surgery_date, created_at::date)`.
+ */
+export async function getAllSurgeriesForClinic(
+    clinicId: string,
+    options?: GetAllSurgeriesForClinicOptions
+): Promise<ClinicSurgeryListRow[]> {
+    const conditions: SQL[] = [eq(surgeries.clinicId, clinicId)];
+
+    if (options?.surgeonId) {
+        conditions.push(eq(surgeries.surgeonId, options.surgeonId));
+    }
+    if (options?.patientId) {
+        conditions.push(eq(surgeries.patientId, options.patientId));
+    }
+    if (options?.status) {
+        conditions.push(eq(surgeries.status, options.status as (typeof surgeries.$inferSelect)["status"]));
+    }
+    if (options?.dateFrom) {
+        const d = options.dateFrom.toISOString().slice(0, 10);
+        conditions.push(
+            sql`coalesce(${surgeries.surgeryDate}, (${surgeries.createdAt})::date) >= ${d}::date`
+        );
+    }
+    if (options?.dateTo) {
+        const d = options.dateTo.toISOString().slice(0, 10);
+        conditions.push(
+            sql`coalesce(${surgeries.surgeryDate}, (${surgeries.createdAt})::date) <= ${d}::date`
+        );
+    }
+
+    return db
+        .select({
+            id: surgeries.id,
+            patientId: surgeries.patientId,
+            patientName: patients.name,
+            surgeonId: surgeries.surgeonId,
+            surgeonName: users.name,
+            status: surgeries.status,
+            surgeryDate: surgeries.surgeryDate,
+            createdAt: surgeries.createdAt,
+            serviceTypeName: serviceTypes.name,
+            healthInsuranceName: healthInsurances.name,
+            hospitalName: hospitals.name,
+        })
+        .from(surgeries)
+        .innerJoin(patients, eq(surgeries.patientId, patients.id))
+        .leftJoin(doctors, eq(surgeries.surgeonId, doctors.id))
+        .leftJoin(users, eq(doctors.userId, users.id))
+        .leftJoin(serviceTypes, eq(surgeries.serviceTypeId, serviceTypes.id))
+        .leftJoin(healthInsurances, eq(surgeries.healthInsuranceId, healthInsurances.id))
+        .leftJoin(hospitals, eq(surgeries.hospitalId, hospitals.id))
+        .where(and(...conditions))
+        .orderBy(
+            desc(
+                sql`coalesce(${surgeries.surgeryDate}::timestamp, ${surgeries.createdAt})`
+            )
         );
 }
 

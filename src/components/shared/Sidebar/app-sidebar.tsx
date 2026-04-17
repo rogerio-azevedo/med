@@ -13,8 +13,9 @@ import {
     ClipboardList,
     Map as MapIcon,
     ShieldCheck,
-    FileText,
-    LogIn,
+  FileText,
+  LogIn,
+  LayoutList,
 } from "lucide-react"
 
 import { NavMain } from "@/components/shared/Sidebar/nav-main"
@@ -61,6 +62,17 @@ const data = {
       title: "Orçamentos",
       url: "/proposals",
       icon: FileText,
+    },
+    {
+      title: "Gestão",
+      url: "#",
+      icon: LayoutList,
+      items: [
+        { title: "Consultas", url: "/gestao/consultas" },
+        { title: "Cirurgias", url: "/gestao/cirurgias" },
+        { title: "Exames", url: "/gestao/exames" },
+        { title: "Video Consultas", url: "/gestao/video-consultas" },
+      ],
     },
     {
       title: "Check-ins",
