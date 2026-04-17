@@ -5,12 +5,15 @@ import {
     clinicPatients,
     consultations,
     doctors,
+    examRequests,
     patients,
     doctorSpecialties,
     specialties,
     patientDoctors,
+    proposals,
+    surgeries,
 } from "@/db/schema";
-import { and, count, eq, gte, lt, lte, sql } from "drizzle-orm";
+import { and, count, eq, gte, lte, sql } from "drizzle-orm";
 import { users } from "@/db/schema/auth";
 
 // Helpers
@@ -72,12 +75,49 @@ export async function getAdminDashboardStats(clinicId: string) {
             )
         );
 
+    const [monthSurgeriesResult] = await db
+        .select({ count: count() })
+        .from(surgeries)
+        .where(
+            and(
+                eq(surgeries.clinicId, clinicId),
+                eq(surgeries.status, "finished"),
+                gte(surgeries.updatedAt, monthStart),
+                lte(surgeries.updatedAt, monthEnd),
+            )
+        );
+
+    const [monthExamsResult] = await db
+        .select({ count: count() })
+        .from(examRequests)
+        .where(
+            and(
+                eq(examRequests.clinicId, clinicId),
+                gte(examRequests.createdAt, monthStart),
+                lte(examRequests.createdAt, monthEnd),
+            )
+        );
+
+    const [monthProposalsResult] = await db
+        .select({ count: count() })
+        .from(proposals)
+        .where(
+            and(
+                eq(proposals.clinicId, clinicId),
+                gte(proposals.createdAt, monthStart),
+                lte(proposals.createdAt, monthEnd),
+            )
+        );
+
     return {
         totalDoctors: totalDoctorsResult?.count ?? 0,
         totalPatients: totalPatientsResult?.count ?? 0,
         totalAppointments: totalAppointmentsResult?.count ?? 0,
         todayAppointments: todayAppointmentsResult?.count ?? 0,
         monthServiceRecords: monthConsultationsResult?.count ?? 0,
+        monthSurgeries: monthSurgeriesResult?.count ?? 0,
+        monthExams: monthExamsResult?.count ?? 0,
+        monthProposals: monthProposalsResult?.count ?? 0,
     };
 }
 
@@ -158,10 +198,52 @@ export async function getDoctorDashboardStats(clinicId: string, doctorId: string
             )
         );
 
+    const [monthSurgeriesResult] = await db
+        .select({ count: count() })
+        .from(surgeries)
+        .where(
+            and(
+                eq(surgeries.clinicId, clinicId),
+                eq(surgeries.surgeonId, doctorId),
+                eq(surgeries.status, "finished"),
+                gte(surgeries.updatedAt, monthStart),
+                lte(surgeries.updatedAt, monthEnd),
+            )
+        );
+
+    const [monthExamsResult] = await db
+        .select({ count: count() })
+        .from(examRequests)
+        .innerJoin(consultations, eq(examRequests.consultationId, consultations.id))
+        .where(
+            and(
+                eq(consultations.clinicId, clinicId),
+                eq(consultations.doctorId, doctorId),
+                gte(examRequests.createdAt, monthStart),
+                lte(examRequests.createdAt, monthEnd),
+            )
+        );
+
+    const [monthProposalsResult] = await db
+        .select({ count: count() })
+        .from(proposals)
+        .innerJoin(doctors, eq(proposals.createdById, doctors.userId))
+        .where(
+            and(
+                eq(proposals.clinicId, clinicId),
+                eq(doctors.id, doctorId),
+                gte(proposals.createdAt, monthStart),
+                lte(proposals.createdAt, monthEnd),
+            )
+        );
+
     return {
         totalPatients: totalPatientsResult?.count ?? 0,
         todayAppointments: todayAppointmentsResult?.count ?? 0,
         monthServiceRecords: monthConsultationsResult?.count ?? 0,
+        monthSurgeries: monthSurgeriesResult?.count ?? 0,
+        monthExams: monthExamsResult?.count ?? 0,
+        monthProposals: monthProposalsResult?.count ?? 0,
     };
 }
 

@@ -28,34 +28,35 @@ export function StatCard({
     const content = (
         <Card
             className={cn(
-                "transition-all duration-200 hover:shadow-md hover:-translate-y-0.5",
+                /* Card base usa py-6/gap-6; aqui zeramos para o conteúdo não “flutuar” alto */
+                "gap-0 py-0 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5",
                 href && "cursor-pointer",
                 className
             )}
             {...props}
         >
-            <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex flex-col gap-1 min-w-0">
-                        <p className="text-sm font-medium text-muted-foreground truncate">
+            <CardContent className="px-3 py-2.5">
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 flex-col gap-0">
+                        <p className="truncate text-xs font-medium text-muted-foreground">
                             {title}
                         </p>
-                        <p className="text-3xl font-bold tracking-tight text-foreground">
+                        <p className="text-xl font-bold tabular-nums tracking-tight text-foreground">
                             {value}
                         </p>
                         {description && (
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
                                 {description}
                             </p>
                         )}
                     </div>
                     <div
                         className={cn(
-                            "flex items-center justify-center rounded-full p-3 shrink-0",
+                            "flex shrink-0 items-center justify-center rounded-full p-1.5",
                             iconBgClass
                         )}
                     >
-                        <Icon className={cn("size-5", iconColorClass)} />
+                        <Icon className={cn("size-3.5", iconColorClass)} />
                     </div>
                 </div>
             </CardContent>

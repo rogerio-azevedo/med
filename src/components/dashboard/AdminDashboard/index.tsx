@@ -5,7 +5,16 @@ import {
 import { DashboardLayoutHeader } from "@/components/dashboard/DashboardLayoutHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TodayScheduleList } from "@/components/dashboard/TodayScheduleList";
-import { Stethoscope, Users, CalendarDays, ClipboardCheck } from "lucide-react";
+import {
+    Calendar,
+    CalendarDays,
+    ClipboardCheck,
+    FileText,
+    FlaskConical,
+    Scissors,
+    Stethoscope,
+    Users,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
@@ -21,15 +30,15 @@ export async function AdminDashboard({ clinicId, userName }: AdminDashboardProps
     ]);
 
     return (
-        <div className="flex flex-col gap-8 p-6 lg:p-8">
+        <div className="flex flex-col gap-4">
             <DashboardLayoutHeader
                 title="Dashboard"
                 description="Visão geral da clínica"
                 userName={userName}
             />
 
-            {/* Stat Cards */}
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+            {/* Stat Cards — 2 linhas em xl (4+4) */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
                     title="Total de Médicos"
                     value={stats.totalDoctors}
@@ -52,18 +61,52 @@ export async function AdminDashboard({ clinicId, userName }: AdminDashboardProps
                     title="Agendamentos Hoje"
                     value={stats.todayAppointments}
                     icon={CalendarDays}
-                    description={`${stats.totalAppointments} no total`}
+                    description="Para hoje"
                     iconColorClass="text-violet-500"
                     iconBgClass="bg-violet-500/10"
                     href="/schedule"
                 />
                 <StatCard
-                    title="Atendimentos"
+                    title="Agendamentos Total"
+                    value={stats.totalAppointments}
+                    icon={Calendar}
+                    description="Na clínica"
+                    iconColorClass="text-sky-500"
+                    iconBgClass="bg-sky-500/10"
+                    href="/schedule"
+                />
+                <StatCard
+                    title="Consultas"
                     value={stats.monthServiceRecords}
                     icon={ClipboardCheck}
-                    description="Realizados este mês"
+                    description="Realizadas este mês"
                     iconColorClass="text-orange-500"
                     iconBgClass="bg-orange-500/10"
+                />
+                <StatCard
+                    title="Cirurgias"
+                    value={stats.monthSurgeries}
+                    icon={Scissors}
+                    description="Realizadas este mês"
+                    iconColorClass="text-rose-500"
+                    iconBgClass="bg-rose-500/10"
+                />
+                <StatCard
+                    title="Exames"
+                    value={stats.monthExams}
+                    icon={FlaskConical}
+                    description="Solicitações este mês"
+                    iconColorClass="text-cyan-500"
+                    iconBgClass="bg-cyan-500/10"
+                />
+                <StatCard
+                    title="Orçamentos"
+                    value={stats.monthProposals}
+                    icon={FileText}
+                    description="Criados este mês"
+                    iconColorClass="text-amber-500"
+                    iconBgClass="bg-amber-500/10"
+                    href="/proposals"
                 />
             </div>
 

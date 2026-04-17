@@ -56,7 +56,7 @@ export async function PatientDashboard({
     const nextApt = stats.nextAppointment;
 
     return (
-        <div className="flex flex-col gap-8 p-6 lg:p-8">
+        <div className="flex flex-col gap-4">
             <DashboardLayoutHeader
                 title="Meu Painel"
                 description="Acompanhe sua saúde"
@@ -64,7 +64,7 @@ export async function PatientDashboard({
             />
 
             {/* Stat Cards */}
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <StatCard
                     title="Meus Médicos"
                     value={myDoctors.length}
@@ -81,16 +81,16 @@ export async function PatientDashboard({
                     iconColorClass="text-emerald-500"
                     iconBgClass="bg-emerald-500/10"
                 />
-                <Card className="sm:col-span-2 lg:col-span-1">
-                    <CardContent className="p-6">
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="flex flex-col gap-1 min-w-0">
+                <Card className="gap-0 py-0 sm:col-span-2 lg:col-span-1">
+                    <CardContent className="px-3 py-2.5">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex flex-col gap-0.5 min-w-0">
                                 <p className="text-sm font-medium text-muted-foreground">
                                     Próxima Consulta
                                 </p>
                                 {nextApt ? (
                                     <>
-                                        <p className="text-lg font-bold tabular-nums">
+                                        <p className="text-lg font-bold tracking-tight tabular-nums">
                                             <BrowserFormattedDate
                                                 value={nextApt.scheduledAt}
                                                 variant="dateTime"
@@ -106,8 +106,8 @@ export async function PatientDashboard({
                                     </p>
                                 )}
                             </div>
-                            <div className="flex items-center justify-center rounded-full p-3 shrink-0 bg-teal-500/10">
-                                <CalendarDays className="size-5 text-teal-500" />
+                            <div className="flex items-center justify-center rounded-full p-2 shrink-0 bg-teal-500/10">
+                                <CalendarDays className="size-4 text-teal-500" />
                             </div>
                         </div>
                     </CardContent>

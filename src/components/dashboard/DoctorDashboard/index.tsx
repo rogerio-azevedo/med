@@ -9,7 +9,14 @@ import { WaitingEncountersBanner } from "@/components/medical-records/WaitingEnc
 import { DashboardLayoutHeader } from "@/components/dashboard/DashboardLayoutHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TodayScheduleList } from "@/components/dashboard/TodayScheduleList";
-import { Users, CalendarDays, ClipboardCheck } from "lucide-react";
+import {
+    CalendarDays,
+    ClipboardCheck,
+    FileText,
+    FlaskConical,
+    Scissors,
+    Users,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
@@ -47,7 +54,7 @@ export async function DoctorDashboard({
     );
 
     return (
-        <div className="flex flex-col gap-8 p-6 lg:p-8">
+        <div className="flex flex-col gap-4">
             <DashboardLayoutHeader
                 title="Meu Painel"
                 description="Seu resumo do dia"
@@ -57,13 +64,13 @@ export async function DoctorDashboard({
 
             <WaitingEncountersBanner items={waitingEncounters} />
 
-            {/* Stat Cards */}
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+            {/* Stat Cards — 2 linhas em xl (4+2) */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
                     title="Meus Pacientes"
                     value={stats.totalPatients}
                     icon={Users}
-                    description="Pacientes sob sua responsabilidade"
+                    description="Sob sua responsabilidade"
                     iconColorClass="text-emerald-500"
                     iconBgClass="bg-emerald-500/10"
                     href="/patients"
@@ -78,12 +85,37 @@ export async function DoctorDashboard({
                     href="/schedule"
                 />
                 <StatCard
-                    title="Atendimentos"
+                    title="Consultas"
                     value={stats.monthServiceRecords}
                     icon={ClipboardCheck}
-                    description="Realizados este mês"
+                    description="Realizadas este mês"
                     iconColorClass="text-orange-500"
                     iconBgClass="bg-orange-500/10"
+                />
+                <StatCard
+                    title="Cirurgias"
+                    value={stats.monthSurgeries}
+                    icon={Scissors}
+                    description="Realizadas este mês"
+                    iconColorClass="text-rose-500"
+                    iconBgClass="bg-rose-500/10"
+                />
+                <StatCard
+                    title="Exames"
+                    value={stats.monthExams}
+                    icon={FlaskConical}
+                    description="Solicitações este mês"
+                    iconColorClass="text-cyan-500"
+                    iconBgClass="bg-cyan-500/10"
+                />
+                <StatCard
+                    title="Orçamentos"
+                    value={stats.monthProposals}
+                    icon={FileText}
+                    description="Criados por você este mês"
+                    iconColorClass="text-amber-500"
+                    iconBgClass="bg-amber-500/10"
+                    href="/proposals"
                 />
             </div>
 
