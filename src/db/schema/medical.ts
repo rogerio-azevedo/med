@@ -124,7 +124,20 @@ export const practiceAreas = pgTable("practice_areas", {
     code: varchar("code", { length: 20 }),
 });
 
-// 5.a Procedures (per-clinic catalog)
+// 5.a ICD-10 reference codes (global catalog; referenced by procedures, SOAP, etc.)
+export const icd10Codes = pgTable("icd10_codes", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    code: varchar("code", { length: 10 }).notNull().unique(),
+    description: varchar("description", { length: 500 }).notNull(),
+    category: varchar("category", { length: 10 }),
+    categoryDesc: varchar("description_category", { length: 500 }),
+    chapter: varchar("chapter", { length: 10 }),
+    chapterDesc: varchar("description_chapter", { length: 500 }),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 5.b Procedures (per-clinic catalog)
 export const procedures = pgTable("procedures", {
     id: uuid("id").primaryKey().defaultRandom(),
     clinicId: uuid("clinic_id").references(() => clinics.id, { onDelete: "cascade" }),
@@ -133,11 +146,12 @@ export const procedures = pgTable("procedures", {
     name: text("name").notNull(),
     description: text("description"),
     purpose: varchar("purpose", { length: 255 }),
+    cidId: uuid("cid_id").references(() => icd10Codes.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// 5.b Health Insurances (Global Catalog)
+// 5.c Health Insurances (Global Catalog)
 export const healthInsurances = pgTable("health_insurances", {
     id: uuid("id").primaryKey().defaultRandom(),
     name: varchar("name", { length: 150 }).notNull(),
@@ -149,7 +163,7 @@ export const healthInsurances = pgTable("health_insurances", {
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// 5.b Clinic Health Insurances (Clinic <-> Health Insurance)
+// 5.d Clinic Health Insurances (Clinic <-> Health Insurance)
 export const clinicHealthInsurances = pgTable("clinic_health_insurances", {
     id: uuid("id").primaryKey().defaultRandom(),
     clinicId: uuid("clinic_id")

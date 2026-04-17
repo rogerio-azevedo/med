@@ -29,6 +29,9 @@ interface Procedure {
     name: string;
     description: string | null;
     purpose: string | null;
+    cidId: string | null;
+    cidCode: string | null;
+    cidDescription: string | null;
 }
 
 const procedureTypeLabel: Record<Procedure["type"], string> = {
@@ -52,6 +55,7 @@ export function ProceduresTable({ procedures }: { procedures: Procedure[] }) {
                         <TableRow>
                             <TableHead className="h-12 font-semibold text-foreground/70">Tipo</TableHead>
                             <TableHead className="h-12 font-semibold text-foreground/70">Código TUSS</TableHead>
+                            <TableHead className="h-12 font-semibold text-foreground/70">CID-10</TableHead>
                             <TableHead className="h-12 font-semibold text-foreground/70">Nome</TableHead>
                             <TableHead className="h-12 font-semibold text-foreground/70">Descrição</TableHead>
                             <TableHead className="h-12 font-semibold text-foreground/70">Finalidade</TableHead>
@@ -61,7 +65,7 @@ export function ProceduresTable({ procedures }: { procedures: Procedure[] }) {
                     <TableBody>
                         {procedures.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-32 text-center">
+                                <TableCell colSpan={7} className="h-32 text-center">
                                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                                         <FileBadge2 size={32} className="opacity-20" />
                                         <p>Nenhum procedimento encontrado.</p>
@@ -76,6 +80,20 @@ export function ProceduresTable({ procedures }: { procedures: Procedure[] }) {
                                     </TableCell>
                                     <TableCell className="h-14 font-mono text-xs uppercase text-muted-foreground">
                                         {procedure.tussCode || <span className="text-muted-foreground/30 italic">Sem código</span>}
+                                    </TableCell>
+                                    <TableCell className="h-14 max-w-[220px] text-xs text-muted-foreground">
+                                        {procedure.cidCode ? (
+                                            <div className="flex min-w-0 flex-col gap-0.5">
+                                                <span className="font-mono font-semibold text-primary">{procedure.cidCode}</span>
+                                                {procedure.cidDescription ? (
+                                                    <span className="line-clamp-1 text-[11px] leading-tight text-muted-foreground/90">
+                                                        {procedure.cidDescription}
+                                                    </span>
+                                                ) : null}
+                                            </div>
+                                        ) : (
+                                            <span className="text-muted-foreground/30 italic">Sem CID</span>
+                                        )}
                                     </TableCell>
                                     <TableCell className="h-14 font-medium">
                                         <div className="flex items-center gap-2">

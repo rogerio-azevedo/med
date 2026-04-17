@@ -18,6 +18,7 @@ import {
 import { Form } from "@/components/ui/form";
 import { ProcedureFormFields } from "./ProcedureFormFields";
 import { procedureFormSchema, type ProcedureFormValues } from "./procedure-form-schema";
+import type { ProcedurePayload } from "@/db/queries/procedures";
 
 export function AddProcedureDialog() {
     const [isOpen, setIsOpen] = useState(false);
@@ -31,13 +32,24 @@ export function AddProcedureDialog() {
             name: "",
             description: "",
             purpose: "",
+            cidId: null,
+            cidMetaCode: "",
+            cidMetaDescription: "",
         },
     });
 
     async function onSubmit(values: ProcedureFormValues) {
         setIsPending(true);
         try {
-            const result = await createProcedureAction(values);
+            const payload: ProcedurePayload = {
+                type: values.type,
+                tussCode: values.tussCode,
+                name: values.name,
+                description: values.description,
+                purpose: values.purpose,
+                cidId: values.cidId,
+            };
+            const result = await createProcedureAction(payload);
             if (result.success) {
                 toast.success("Procedimento cadastrado com sucesso!");
                 form.reset();

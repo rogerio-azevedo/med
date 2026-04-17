@@ -1,3 +1,6 @@
+import { Icd10Search } from "@/components/medical-records/Icd10Search";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Control } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import type { ProcedureFormValues } from "./procedure-form-schema";
 
 interface ProcedureFormFieldsProps {
@@ -16,6 +20,10 @@ interface ProcedureFormFieldsProps {
 }
 
 export function ProcedureFormFields({ control }: ProcedureFormFieldsProps) {
+    const { setValue, watch } = useFormContext<ProcedureFormValues>();
+    const cidMetaCode = watch("cidMetaCode");
+    const cidMetaDescription = watch("cidMetaDescription");
+
     return (
         <div className="space-y-4">
             <FormField
@@ -38,6 +46,49 @@ export function ProcedureFormFields({ control }: ProcedureFormFieldsProps) {
                                 <SelectItem value="hospitalization">INTERNAÇÃO</SelectItem>
                             </SelectContent>
                         </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+
+            <FormField
+                control={control}
+                name="cidId"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>CID-10</FormLabel>
+                        <div className="space-y-2">
+                            <Icd10Search
+                                onSelect={(cid: { id: string; code: string; description: string }) => {
+                                    field.onChange(cid.id);
+                                    setValue("cidMetaCode", cid.code);
+                                    setValue("cidMetaDescription", cid.description);
+                                }}
+                            />
+                            {cidMetaCode ? (
+                                <div className="flex items-center justify-between rounded-md border border-primary/20 bg-primary/5 p-3">
+                                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                                        <Badge className="shrink-0">{cidMetaCode}</Badge>
+                                        <span className="truncate text-sm font-medium text-foreground/90">
+                                            {cidMetaDescription}
+                                        </span>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="shrink-0"
+                                        onClick={() => {
+                                            field.onChange(null);
+                                            setValue("cidMetaCode", "");
+                                            setValue("cidMetaDescription", "");
+                                        }}
+                                    >
+                                        Remover
+                                    </Button>
+                                </div>
+                            ) : null}
+                        </div>
                         <FormMessage />
                     </FormItem>
                 )}

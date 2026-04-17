@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { ProcedureFormFields } from "./ProcedureFormFields";
+import type { ProcedurePayload } from "@/db/queries/procedures";
 import { procedureFormSchema, type ProcedureFormValues } from "./procedure-form-schema";
 
 interface EditProcedureDialogProps {
@@ -26,6 +27,9 @@ interface EditProcedureDialogProps {
         name: string;
         description: string | null;
         purpose: string | null;
+        cidId: string | null;
+        cidCode: string | null;
+        cidDescription: string | null;
     };
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
@@ -42,6 +46,9 @@ export function EditProcedureDialog({ procedure, isOpen, onOpenChange }: EditPro
             name: procedure.name,
             description: procedure.description || "",
             purpose: procedure.purpose || "",
+            cidId: procedure.cidId,
+            cidMetaCode: procedure.cidCode || "",
+            cidMetaDescription: procedure.cidDescription || "",
         },
     });
 
@@ -52,13 +59,24 @@ export function EditProcedureDialog({ procedure, isOpen, onOpenChange }: EditPro
             name: procedure.name,
             description: procedure.description || "",
             purpose: procedure.purpose || "",
+            cidId: procedure.cidId,
+            cidMetaCode: procedure.cidCode || "",
+            cidMetaDescription: procedure.cidDescription || "",
         });
     }, [form, procedure]);
 
     async function onSubmit(values: ProcedureFormValues) {
         setIsPending(true);
         try {
-            const result = await updateProcedureAction(procedure.id, values);
+            const payload: ProcedurePayload = {
+                type: values.type,
+                tussCode: values.tussCode,
+                name: values.name,
+                description: values.description,
+                purpose: values.purpose,
+                cidId: values.cidId,
+            };
+            const result = await updateProcedureAction(procedure.id, payload);
             if (result.success) {
                 toast.success("Procedimento atualizado com sucesso!");
                 onOpenChange(false);

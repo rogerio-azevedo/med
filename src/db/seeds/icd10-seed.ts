@@ -2,7 +2,7 @@ import { config } from "dotenv";
 config();
 
 import { db } from "../index";
-import { icd10Codes } from "../schema/clinical-chart";
+import { icd10Codes } from "../schema/medical";
 import { eq } from "drizzle-orm";
 
 async function seedCID10() {

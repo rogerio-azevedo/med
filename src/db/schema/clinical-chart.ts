@@ -18,27 +18,15 @@ import {
     referralUrgencyEnum,
     patientAlertTypeEnum,
     procedures,
+    icd10Codes,
+    healthInsurances,
 } from "./medical";
 import { clinics, hospitals } from "./clinics";
 import { users } from "./auth";
 import { serviceTypes, checkIns } from "./check-ins";
-import { healthInsurances } from "./medical";
 import { medications } from "./medications";
 
-// 1. ICD-10 reference codes
-export const icd10Codes = pgTable("icd10_codes", {
-    id: uuid("id").primaryKey().defaultRandom(),
-    code: varchar("code", { length: 10 }).notNull().unique(),
-    description: varchar("description", { length: 500 }).notNull(),
-    category: varchar("category", { length: 10 }),
-    categoryDesc: varchar("description_category", { length: 500 }),
-    chapter: varchar("chapter", { length: 10 }),
-    chapterDesc: varchar("description_chapter", { length: 500 }),
-    isActive: boolean("is_active").default(true).notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-// 2. Consultations (encounters)
+// 1. Consultations (encounters)
 export const consultations = pgTable("consultations", {
     id: uuid("id").primaryKey().defaultRandom(),
     patientId: uuid("patient_id")
