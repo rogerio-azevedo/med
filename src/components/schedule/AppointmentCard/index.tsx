@@ -19,6 +19,7 @@ export type AppointmentCardData = {
     durationMinutes: number;
     status: AppointmentStatus;
     modality: string;
+    notes?: string | null;
     patient: { id: string; name: string; phone: string | null };
     doctor: { id: string; name: string | null }; // null possible from DB join
     /** Legado / integrações */
@@ -108,35 +109,38 @@ export function AppointmentCard({
                 }
             }}
             style={style}
+            title={`${format(start, "HH:mm")} — ${appointment.patient.name}`}
             className={`group w-full text-left rounded-md border-l-4 transition-all cursor-pointer shadow-sm hover:shadow-md ${compact ? "p-0" : "pr-3 py-2"} ${statusColor.replace("bg-", "border-")} ${modStyle.bg}`}
         >
             {compact ? (
-                /* Compact (calendar view) */
-                <div className="relative flex h-full min-h-0 flex-col overflow-hidden px-2 py-1.5">
-                    <div className="flex items-start justify-between gap-1">
-                        <div className={`truncate text-[10px] font-bold leading-none sm:text-xs ${modStyle.text}`}>
+                /* Compact (calendar view): hora + ícone na primeira linha; nome com até 2 linhas. */
+                <div className="relative flex h-full min-h-0 flex-col gap-0.5 overflow-hidden px-1.5 py-1">
+                    <div className="flex shrink-0 items-center justify-between gap-0.5">
+                        <div
+                            className={`truncate text-[10px] font-bold tabular-nums leading-none ${modStyle.text}`}
+                        >
                             {format(start, "HH:mm")}
                         </div>
-                        <div className="shrink-0 text-[10px] leading-none opacity-80 flex items-center">
+                        <div className="flex shrink-0 items-center justify-center opacity-85">
                             {ServiceIcon && st ? (
                                 <span
-                                    className="flex size-4 items-center justify-center rounded"
+                                    className="flex size-3.5 items-center justify-center rounded"
                                     style={{
                                         color: st.timelineColorHex ?? undefined,
                                     }}
                                     title={st.name}
                                 >
-                                    <ServiceIcon className="size-3.5" />
+                                    <ServiceIcon className="size-3" />
                                 </span>
                             ) : (
-                                modStyle.icon
+                                <span className="scale-90 [&>span]:text-[10px]">{modStyle.icon}</span>
                             )}
                         </div>
                     </div>
                     <Link
                         href={medicalRecordHref}
                         onClick={(e) => e.stopPropagation()}
-                        className="mt-1 truncate text-[10px] font-semibold leading-tight text-foreground/90 transition hover:underline focus-visible:underline sm:text-xs"
+                        className="line-clamp-2 min-h-0 flex-1 text-[10px] font-semibold leading-snug text-foreground/90 transition hover:underline focus-visible:underline sm:text-[11px] sm:leading-snug"
                     >
                         {appointment.patient.name}
                     </Link>

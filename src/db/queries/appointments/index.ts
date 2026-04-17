@@ -191,6 +191,7 @@ export async function updateAppointment(
         doctorId: string;
         patientId: string;
         specialtyId?: string;
+        /** Se omitido, mantém o valor atual no banco. */
         serviceTypeId?: string | null;
         scheduledAt: Date;
         durationMinutes: number;
@@ -204,7 +205,7 @@ export async function updateAppointment(
             doctorId: data.doctorId,
             patientId: data.patientId,
             specialtyId: data.specialtyId ?? null,
-            serviceTypeId: data.serviceTypeId ?? null,
+            ...(data.serviceTypeId !== undefined ? { serviceTypeId: data.serviceTypeId } : {}),
             scheduledAt: data.scheduledAt,
             durationMinutes: data.durationMinutes,
             modality: data.modality,
@@ -231,6 +232,12 @@ export async function updateAppointmentStatus(
     return db
         .update(appointments)
         .set({ status })
+        .where(and(eq(appointments.id, id), eq(appointments.clinicId, clinicId)));
+}
+
+export async function deleteAppointment(id: string, clinicId: string) {
+    await db
+        .delete(appointments)
         .where(and(eq(appointments.id, id), eq(appointments.clinicId, clinicId)));
 }
 

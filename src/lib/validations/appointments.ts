@@ -41,5 +41,13 @@ export const updateAppointmentStatusSchema = z.object({
     }),
 });
 
+/** Atualização completa no dashboard (create sem pacote + id; pacote não é atualizado na query). */
+export const updateAppointmentSchema = createAppointmentSchema
+    .omit({ patientPackageId: true })
+    .extend({
+        id: z.string().uuid("ID inválido"),
+    });
+
 export type CreateAppointmentInput = z.infer<typeof createAppointmentSchema>;
 export type UpdateAppointmentStatusInput = z.infer<typeof updateAppointmentStatusSchema>;
+export type UpdateAppointmentInput = z.infer<typeof updateAppointmentSchema>;

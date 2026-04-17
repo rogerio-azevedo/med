@@ -5,7 +5,8 @@ import { format, addDays, isSameDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { AppointmentCard, type AppointmentCardData } from "../AppointmentCard"
 
-const HOUR_HEIGHT = 96 // px por hora para acomodar melhor cards de 30 min em duas linhas
+// Altura por hora: valores maiores dão mais pixels a consultas curtas (ex.: 20min) para horário + nome.
+const HOUR_HEIGHT = 140
 const START_HOUR = 7 // 07:00
 const END_HOUR = 20 // 20:00
 const TOTAL_HOURS = END_HOUR - START_HOUR
@@ -67,7 +68,10 @@ export function AppointmentCalendar({
     const startMinutes = start.getHours() * 60 + start.getMinutes()
     const offsetMinutes = startMinutes - START_HOUR * 60
     const top = (offsetMinutes / 60) * HOUR_HEIGHT
-    const height = Math.max((appt.durationMinutes / 60) * HOUR_HEIGHT - 2, 44)
+    const durationPx = (appt.durationMinutes / 60) * HOUR_HEIGHT
+    // Altura deve caber no intervalo proporcional à duração; um mínimo fixo grande (ex.: 44px)
+    // empilhava consultas curtas seguidas (ex.: 20min às 09:00 e 09:20 com HOUR_HEIGHT=96).
+    const height = Math.min(Math.max(durationPx - 4, 18), durationPx - 2)
     return {
       position: "absolute",
       top: `${top}px`,

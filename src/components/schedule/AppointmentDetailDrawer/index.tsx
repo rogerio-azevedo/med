@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
     Sheet,
@@ -22,6 +22,7 @@ import {
 import {
     updateAppointmentStatusAction,
     cancelAppointmentAction,
+    deleteAppointmentAction,
 } from "@/app/actions/appointments";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,7 +33,20 @@ import {
     MessageSquare,
     Loader2,
     XCircle,
+    Pencil,
+    Trash2,
 } from "lucide-react";
+import {
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { EditAppointmentDrawer } from "@/components/schedule/EditAppointmentDrawer";
 import { resolveServiceTypeDisplayIcon } from "@/lib/resolve-service-type-display";
 import { toast } from "sonner";
 
@@ -104,6 +118,18 @@ interface AppointmentDetailDrawerProps {
     onOpenChange: (open: boolean) => void;
     appointment: AppointmentDetail | null;
     onAppointmentUpdated?: (appointmentId: string, status: AppointmentStatus) => void;
+    onAppointmentDeleted?: (appointmentId: string) => void;
+    canEdit: boolean;
+    canDelete: boolean;
+    doctors: { id: string; name: string | null; relationshipType: "linked" | "partner" | null }[];
+    patients: { id: string; name: string; phone: string | null }[];
+    serviceTypes: {
+        id: string;
+        name: string;
+        workflow: string;
+        timelineIconKey: string | null;
+        timelineColorHex: string | null;
+    }[];
 }
 
 export function AppointmentDetailDrawer({
@@ -111,10 +137,22 @@ export function AppointmentDetailDrawer({
     onOpenChange,
     appointment,
     onAppointmentUpdated,
+    onAppointmentDeleted,
+    canEdit,
+    canDelete,
+    doctors,
+    patients,
+    serviceTypes,
 }: AppointmentDetailDrawerProps) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const [isCancelling, startCancelTransition] = useTransition();
+    const [isDeleting, startDeleteTransition] = useTransition();
+    const [editOpen, setEditOpen] = useState(false);
+
+    useEffect(() => {
+        if (!open) setEditOpen(false);
+    }, [open]);
 
     function handleStatusChange(newStatus: string) {
         if (!appointment) return;
@@ -149,12 +187,32 @@ export function AppointmentDetailDrawer({
         });
     }
 
+    function handleDeleteConfirm() {
+        if (!appointment) return;
+        startDeleteTransition(async () => {
+            const result = await deleteAppointmentAction(appointment.id);
+            if ("error" in result) {
+                toast.error(result.error);
+            } else {
+                onAppointmentDeleted?.(appointment.id);
+                toast.success("Agendamento excluído.");
+                router.refresh();
+                onOpenChange(false);
+            }
+        });
+    }
+
     if (!appointment) return null;
 
     const scheduledAt = new Date(appointment.scheduledAt);
     const endsAt = new Date(scheduledAt.getTime() + appointment.durationMinutes * 60000);
     const transitions = allowedTransitions[appointment.status];
     const isDone = appointment.status === "done" || appointment.status === "cancelled";
+    const canMutateSchedule =
+        (appointment.status === "scheduled" || appointment.status === "confirmed") &&
+        canEdit;
+    const canRemove =
+        (appointment.status === "scheduled" || appointment.status === "confirmed") && canDelete;
     const st = appointment.serviceType;
     const ServiceTypeIcon = st
         ? resolveServiceTypeDisplayIcon({
@@ -165,11 +223,12 @@ export function AppointmentDetailDrawer({
         : null;
 
     return (
-        <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="flex flex-col w-full sm:max-w-md bg-background p-0 overflow-hidden">
-                <SheetHeader className="px-6 py-5 border-b bg-card">
-                    <div className="flex items-start justify-between gap-4">
-                        <div>
+        <>
+            <Sheet open={open} onOpenChange={onOpenChange}>
+                <SheetContent className="flex flex-col w-full sm:max-w-md bg-background p-0 overflow-hidden">
+                <SheetHeader className="border-b bg-card py-5 pl-6 pr-14">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                        <div className="min-w-0 flex-1 pr-1">
                             <SheetTitle className="text-xl">Detalhes da Consulta</SheetTitle>
                             <SheetDescription className="text-sm mt-1">
                                 {format(scheduledAt, "EEEE, d 'de' MMMM 'de' yyyy", {
@@ -178,7 +237,7 @@ export function AppointmentDetailDrawer({
                             </SheetDescription>
                         </div>
                         <Badge
-                            className={`px-2.5 py-0.5 whitespace-nowrap border-0 ${statusColors[appointment.status]}`}
+                            className={`w-fit shrink-0 self-start px-2.5 py-0.5 whitespace-nowrap border-0 sm:self-center ${statusColors[appointment.status]}`}
                             variant="outline"
                         >
                             {statusLabels[appointment.status]}
@@ -282,11 +341,65 @@ export function AppointmentDetailDrawer({
 
                 {/* Rodapé de Ações */}
                 <div className="p-6 bg-card border-t space-y-4">
+                    {canMutateSchedule && (
+                        <Button
+                            variant="outline"
+                            className="w-full shadow-sm"
+                            onClick={() => setEditOpen(true)}
+                            disabled={isPending || isCancelling || isDeleting}
+                        >
+                            <Pencil className="mr-2 size-4" />
+                            Editar agendamento
+                        </Button>
+                    )}
+
+                    {canRemove && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="w-full border-destructive/50 text-destructive hover:bg-destructive/10"
+                                    disabled={isPending || isCancelling || isDeleting}
+                                >
+                                    <Trash2 className="mr-2 size-4" />
+                                    Excluir agendamento
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Excluir agendamento?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta ação remove o registro do sistema (diferente de cancelar).
+                                        Não é possível desfazer.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel disabled={isDeleting}>Voltar</AlertDialogCancel>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        onClick={() => handleDeleteConfirm()}
+                                        disabled={isDeleting}
+                                    >
+                                        {isDeleting ? (
+                                            <>
+                                                <Loader2 className="mr-2 size-4 animate-spin inline" />
+                                                Excluindo...
+                                            </>
+                                        ) : (
+                                            "Excluir definitivamente"
+                                        )}
+                                    </Button>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+
                     {/* Alterar status */}
                     {!isDone && transitions.length > 0 && (
                         <div className="space-y-2">
                             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Alterar Status</p>
-                            <Select onValueChange={handleStatusChange} disabled={isPending}>
+                            <Select onValueChange={handleStatusChange} disabled={isPending || isDeleting}>
                                 <SelectTrigger className="h-10 bg-background shadow-sm">
                                     <SelectValue placeholder="Selecione o novo status..." />
                                 </SelectTrigger>
@@ -313,7 +426,7 @@ export function AppointmentDetailDrawer({
                             variant="destructive"
                             className="w-full shadow-sm hover:shadow-md transition-all"
                             onClick={handleCancel}
-                            disabled={isCancelling || isPending}
+                            disabled={isCancelling || isPending || isDeleting}
                         >
                             {isCancelling ? (
                                 <>
@@ -330,6 +443,20 @@ export function AppointmentDetailDrawer({
                     )}
                 </div>
             </SheetContent>
-        </Sheet>
+            </Sheet>
+
+            <EditAppointmentDrawer
+                open={editOpen}
+                onOpenChange={setEditOpen}
+                appointment={appointment}
+                doctors={doctors}
+                patients={patients}
+                serviceTypes={serviceTypes}
+                onSuccess={() => {
+                    router.refresh();
+                    onOpenChange(false);
+                }}
+            />
+        </>
     );
 }

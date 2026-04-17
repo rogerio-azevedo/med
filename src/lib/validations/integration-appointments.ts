@@ -206,6 +206,7 @@ export type UpdateIntegrationAppointmentInput = {
     doctorId: string;
     patientId: string;
     specialtyId?: string;
+    serviceTypeId?: string | null;
     scheduledAt: string;
     durationMinutes: number;
     modality: (typeof appointmentModalityValues)[number];

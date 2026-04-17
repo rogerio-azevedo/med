@@ -52,6 +52,9 @@ export default async function SchedulePage() {
         (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
     );
 
+    const isAdmin =
+        session.user.role === "super_admin" || session.user.clinicRole === "admin";
+
     const appointments = rawAppointments.map((a) => ({
         id: a.id,
         scheduledAt: a.scheduledAt,
@@ -95,6 +98,8 @@ export default async function SchedulePage() {
                     timelineIconKey: st.timelineIconKey,
                     timelineColorHex: st.timelineColorHex,
                 }))}
+                isAdmin={isAdmin}
+                currentUserDoctorId={session.user.doctorId ?? undefined}
             />
         </div>
     );

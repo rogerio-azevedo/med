@@ -7,6 +7,7 @@ import {
     createAppointment as createAppointmentQuery,
     updateAppointment as updateAppointmentQuery,
     updateAppointmentStatus as updateAppointmentStatusQuery,
+    deleteAppointment as deleteAppointmentQuery,
     checkConflict,
     getAppointmentsByClinic,
     getAppointmentById,
@@ -39,7 +40,9 @@ export async function generateAvailableSlots(
     doctorId: string,
     clinicId: string,
     dateStr: string,
-    timeZone: string
+    timeZone: string,
+    /** Ignora este agendamento ao marcar slots ocupados (edição na mesma data/hora). */
+    excludeAppointmentId?: string
 ): Promise<TimeSlot[]> {
     // Pega o número do dia da semana (0=Dom...6=Sab).
     // Construindo a string como UTC garantimos que não sofra offset do servidor
@@ -96,6 +99,7 @@ export async function generateAvailableSlots(
 
             // Verificar se o slot colide com um agendamento existente
             const hasAppointment = existingAppointments.some((appt) => {
+                if (excludeAppointmentId && appt.id === excludeAppointmentId) return false;
                 if (appt.status === "cancelled" || appt.status === "no_show") return false;
                 const apptStart = new Date(appt.scheduledAt);
                 const apptEnd = new Date(
@@ -220,10 +224,18 @@ export async function updateAppointment(
             };
         }
 
+        if (data.serviceTypeId) {
+            const st = await getServiceTypeById(data.serviceTypeId, clinicId);
+            if (!st) {
+                return { success: false, error: "Tipo de atendimento inválido para esta clínica." };
+            }
+        }
+
         const result = await updateAppointmentQuery(id, clinicId, {
             doctorId: data.doctorId,
             patientId: data.patientId,
             specialtyId: data.specialtyId,
+            ...(data.serviceTypeId !== undefined ? { serviceTypeId: data.serviceTypeId } : {}),
             scheduledAt: startsAt,
             durationMinutes: data.durationMinutes,
             modality: data.modality,
@@ -237,6 +249,31 @@ export async function updateAppointment(
         return { success: true, appointment: result };
     } catch {
         return { success: false, error: "Erro ao atualizar agendamento." };
+    }
+}
+
+const EDITABLE_APPOINTMENT_STATUSES = ["scheduled", "confirmed"] as const;
+
+export async function deleteAppointment(
+    id: string,
+    clinicId: string
+): Promise<{ success: true } | { success: false; error: string }> {
+    try {
+        const existing = await getAppointmentById(id, clinicId);
+        if (!existing) {
+            return { success: false, error: "Agendamento não encontrado." };
+        }
+        const st = existing.status ?? "scheduled";
+        if (!EDITABLE_APPOINTMENT_STATUSES.includes(st as (typeof EDITABLE_APPOINTMENT_STATUSES)[number])) {
+            return {
+                success: false,
+                error: "Só é possível excluir agendamentos agendados ou confirmados.",
+            };
+        }
+        await deleteAppointmentQuery(id, clinicId);
+        return { success: true };
+    } catch {
+        return { success: false, error: "Erro ao excluir agendamento." };
     }
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useLayoutEffect } from "react";
+import { useState, useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import {
     format,
     startOfWeek,
@@ -63,6 +63,10 @@ interface ScheduleViewProps {
     doctors: Doctor[];
     patients: Patient[];
     serviceTypes: ScheduleServiceTypeOption[];
+    /** Admin da clínica ou super_admin — editar e excluir conforme regras. */
+    isAdmin: boolean;
+    /** Médico logado (quando `session.user.role === "doctor"`). */
+    currentUserDoctorId?: string;
 }
 
 type TimeGranularity = "day" | "week" | "month";
@@ -106,6 +110,8 @@ export function ScheduleView({
     doctors,
     patients,
     serviceTypes,
+    isAdmin,
+    currentUserDoctorId,
 }: ScheduleViewProps) {
     const setHeader = useHeaderStore((s) => s.setHeader);
     const setToolbar = useHeaderStore((s) => s.setToolbar);
@@ -116,6 +122,7 @@ export function ScheduleView({
     const [anchorDate, setAnchorDate] = useState(() => new Date());
     const [appointmentItems, setAppointmentItems] = useState(initialAppointments);
     const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
+    const defaultDoctorFilterAppliedRef = useRef(false);
 
     const [newDrawerOpen, setNewDrawerOpen] = useState(false);
     const [blockModalOpen, setBlockModalOpen] = useState(false);
@@ -149,6 +156,15 @@ export function ScheduleView({
         setAppointmentItems(initialAppointments);
     }, [initialAppointments]);
 
+    /** Médico logado: filtro da agenda inicia no próprio profissional (uma vez por montagem). */
+    useEffect(() => {
+        if (defaultDoctorFilterAppliedRef.current) return;
+        if (!currentUserDoctorId) return;
+        if (!doctors.some((d) => d.id === currentUserDoctorId)) return;
+        setSelectedDoctorId(currentUserDoctorId);
+        defaultDoctorFilterAppliedRef.current = true;
+    }, [currentUserDoctorId, doctors]);
+
     useEffect(() => {
         let cancelled = false;
         (async () => {
@@ -179,7 +195,7 @@ export function ScheduleView({
             durationMinutes: appt.durationMinutes,
             modality: appt.modality,
             status: appt.status as AppointmentDetail["status"],
-            notes: null,
+            notes: appt.notes ?? null,
             doctor: appt.doctor,
             patient: {
                 id: appt.patient.id,
@@ -218,6 +234,18 @@ export function ScheduleView({
         },
         []
     );
+
+    const handleAppointmentDeleted = useCallback((appointmentId: string) => {
+        setAppointmentItems((current) => current.filter((a) => a.id !== appointmentId));
+        setSelectedAppointment((current) =>
+            current?.id === appointmentId ? null : current
+        );
+    }, []);
+
+    const detailCanEdit =
+        isAdmin ||
+        (!!currentUserDoctorId && selectedAppointment?.doctor.id === currentUserDoctorId);
+    const detailCanDelete = isAdmin;
 
     const doctorOptions = [
         { value: "", label: "Todos os médicos" },
@@ -418,6 +446,12 @@ export function ScheduleView({
                 onOpenChange={setDetailDrawerOpen}
                 appointment={selectedAppointment}
                 onAppointmentUpdated={handleAppointmentUpdated}
+                onAppointmentDeleted={handleAppointmentDeleted}
+                canEdit={detailCanEdit}
+                canDelete={detailCanDelete}
+                doctors={doctors}
+                patients={patients}
+                serviceTypes={serviceTypes}
             />
 
             <DoctorScheduleBlockModal
