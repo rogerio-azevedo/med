@@ -8,6 +8,7 @@ import {
     KeyRound,
     Link2,
     Eye,
+    AlertCircle,
 } from "lucide-react"
 import {
     Table,
@@ -86,9 +87,23 @@ export function DoctorsTable({
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
     const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
     const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
+    const [missingInfoDoctor, setMissingInfoDoctor] = useState<Doctor | null>(null)
     const [relationshipType, setRelationshipType] = useState<"linked" | "partner">("linked")
     const [isSavingRelationship, setIsSavingRelationship] = useState(false)
     const [isAssociating, setIsAssociating] = useState(false)
+
+    const getMissingInfo = (doctor: Doctor) => {
+        const missing: string[] = []
+        if (!doctor.phone) missing.push("Telefone")
+        
+        // Se for um email fake gerado pelo nosso importador, consideramos pendente
+        if (!doctor.email || doctor.email.endsWith("@mail.com")) missing.push("E-mail")
+            
+        if (!doctor.address || !doctor.address.street || !doctor.address.zipCode) {
+            missing.push("Endereço")
+        }
+        return missing
+    }
 
     const normalizedSelectedDoctor = selectedDoctor
         ? {
@@ -174,11 +189,12 @@ export function DoctorsTable({
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Nome</TableHead>
-                            <TableHead>Especialidade</TableHead>
-                            <TableHead>Áreas de Atuação</TableHead>
-                            <TableHead>CRM / Registro</TableHead>
-                            <TableHead className="text-right">Ações</TableHead>
+                            <TableHead className="w-[20%] min-w-[150px]">Nome</TableHead>
+                            <TableHead className="w-[25%]">Especialidade</TableHead>
+                            <TableHead className="w-[25%]">Áreas de Atuação</TableHead>
+                            <TableHead className="whitespace-nowrap">CRM / Registro</TableHead>
+                            <TableHead className="whitespace-nowrap">Pendências</TableHead>
+                            <TableHead className="w-[80px] text-right">Ações</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -193,7 +209,7 @@ export function DoctorsTable({
                         ) : (
                             groupedDoctors.flatMap((group, index) => [
                                 <TableRow key={`${group.key}-header`} className="bg-muted/20 hover:bg-muted/20">
-                                    <TableCell colSpan={5} className="py-4">
+                                    <TableCell colSpan={6} className="py-4">
                                         <div className="flex items-center gap-3">
                                             <span className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                                                 {group.title}
@@ -210,13 +226,13 @@ export function DoctorsTable({
                                 </TableRow>,
                                 ...group.doctors.map((doctor) => (
                                 <TableRow key={doctor.id}>
-                                    <TableCell className="font-medium cursor-pointer hover:text-primary transition-colors" onClick={() => {
+                                    <TableCell className="font-medium cursor-pointer hover:text-primary transition-colors max-w-[200px] truncate" title={doctor.name || "-"} onClick={() => {
                                         setSelectedDoctor(doctor);
                                         setIsDetailsDialogOpen(true);
                                     }}>
                                         {doctor.name || "-"}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="max-w-[200px]">
                                         <div className="flex flex-wrap gap-1">
                                             {doctor.specialties.length > 0 ? (
                                                 doctor.specialties.map((s) => (
@@ -229,7 +245,7 @@ export function DoctorsTable({
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="max-w-[200px]">
                                         <div className="flex flex-wrap gap-1">
                                             {doctor.practiceAreas && doctor.practiceAreas.length > 0 ? (
                                                 doctor.practiceAreas.map((pa) => (
@@ -243,6 +259,27 @@ export function DoctorsTable({
                                         </div>
                                     </TableCell>
                                     <TableCell>{doctor.crm ? `${doctor.crm}${doctor.crmState ? ` - ${doctor.crmState}` : ''}` : "-"}</TableCell>
+                                    <TableCell>
+                                        {(() => {
+                                            const missing = getMissingInfo(doctor)
+                                            if (missing.length === 0) {
+                                                return <span className="text-muted-foreground/50">-</span>
+                                            }
+                                            return (
+                                                <Badge
+                                                    variant="destructive"
+                                                    className="cursor-pointer hover:bg-destructive/80 transition-colors"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setMissingInfoDoctor(doctor)
+                                                    }}
+                                                >
+                                                    <AlertCircle className="mr-1 h-3 w-3" />
+                                                    {missing.length} {missing.length === 1 ? 'pendência' : 'pendências'}
+                                                </Badge>
+                                            )
+                                        })()}
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -332,7 +369,7 @@ export function DoctorsTable({
                                 ...(index < groupedDoctors.length - 1
                                     ? [
                                         <TableRow key={`${group.key}-divider`} className="pointer-events-none bg-background">
-                                            <TableCell colSpan={5} className="h-6 border-t-2 border-border/70 bg-background" />
+                                            <TableCell colSpan={6} className="h-6 border-t-2 border-border/70 bg-background" />
                                         </TableRow>,
                                     ]
                                     : []),
@@ -497,6 +534,62 @@ export function DoctorsTable({
                                 {isSavingRelationship ? "Salvando..." : "Salvar Tipo de Vínculo"}
                             </Button>
                         </div>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={!!missingInfoDoctor}
+                onOpenChange={(open) => {
+                    if (!open) setMissingInfoDoctor(null)
+                }}
+            >
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-destructive">
+                            <AlertCircle className="h-5 w-5" />
+                            Informações Pendentes
+                        </DialogTitle>
+                        <DialogDescription>
+                            O cadastro de <span className="font-semibold">{missingInfoDoctor?.name}</span> ainda está incompleto e precisa das seguintes informações:
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        {missingInfoDoctor && getMissingInfo(missingInfoDoctor).length > 0 ? (
+                            <ul className="space-y-3">
+                                {getMissingInfo(missingInfoDoctor).map((info, idx) => (
+                                    <li key={idx} className="flex items-center gap-2 rounded-md bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
+                                        <div className="h-2 w-2 rounded-full bg-destructive" />
+                                        {info}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">Tudo certo com os dados principais!</p>
+                        )}
+                    </div>
+                    <DialogFooter className="gap-3 sm:justify-between">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setMissingInfoDoctor(null)}
+                        >
+                            Fechar
+                        </Button>
+                        <Button 
+                            onClick={() => {
+                                const targetDoctor = missingInfoDoctor;
+                                setMissingInfoDoctor(null);
+                                if (targetDoctor) {
+                                    setTimeout(() => {
+                                        setSelectedDoctor(targetDoctor);
+                                        setIsEditDialogOpen(true);
+                                    }, 100);
+                                }
+                            }}
+                        >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Editar Cadastro
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
