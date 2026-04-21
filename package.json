@@ -13,7 +13,8 @@
     "db:migrate:raw": "drizzle-kit migrate",
     "db:check": "node scripts/check-drizzle-migrations.mjs",
     "db:studio": "drizzle-kit studio",
-    "integration:token": "node scripts/create-appointment-integration-token.mjs"
+    "integration:token": "node scripts/create-appointment-integration-token.mjs",
+    "import:doctors": "tsx --env-file=.env src/scripts/import-cfm-doctors.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
