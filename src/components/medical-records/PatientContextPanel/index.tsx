@@ -1,12 +1,17 @@
+"use client";
+
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { AlertCircle, User, Activity, Info } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { MedicalRecordsFileTimelineEntry } from "@/db/queries/medical-records-timeline";
 import { PatientFilesSidebarTimeline } from "../PatientFilesSidebarTimeline";
+import { PatientDetailsModal } from "../PatientDetailsModal";
 
 interface PatientContextPanelProps {
     patient: any;
@@ -27,6 +32,8 @@ export function PatientContextPanel({
     onAttachFile,
     onFilesChanged,
 }: PatientContextPanelProps) {
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
     const age = patient.birthDate
         ? Math.floor((new Date().getTime() - new Date(patient.birthDate).getTime()) / 31536000000)
         : null;
@@ -56,10 +63,27 @@ export function PatientContextPanel({
                             {age !== null && ` • ${age} a.`}
                         </p>
                         <Badge variant="outline" className="mt-1.5 max-w-full truncate bg-background text-xs">
-                            {patient.cpf || "CPF não informado"}
+                                {patient.cpf || "CPF não informado"}
                         </Badge>
                     </div>
                 </div>
+
+                <Button
+                    id="patient-details-btn"
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1.5 border-primary/30 text-primary hover:bg-primary/5 hover:border-primary/60"
+                    onClick={() => setIsDetailsOpen(true)}
+                >
+                    <Info className="size-3.5" />
+                    Ver detalhes do paciente
+                </Button>
+
+                <PatientDetailsModal
+                    patient={patient}
+                    isOpen={isDetailsOpen}
+                    onOpenChange={setIsDetailsOpen}
+                />
 
                 <Separator />
 
