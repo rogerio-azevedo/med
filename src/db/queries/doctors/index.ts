@@ -14,93 +14,53 @@ import {
     patientReferrals,
     patients,
 } from "@/db/schema";
-import { eq, and, asc, inArray, isNull, or } from "drizzle-orm";
+import { eq, and, asc, inArray, isNull, or, sql, ilike, isNotNull } from "drizzle-orm";
 import { type Doctor as DoctorListItem } from "@/types/doctor";
 
-export async function getDoctorsByClinic(clinicId: string) {
-    const referredPatients = await getReferredPatientsByClinic(clinicId);
-    const rawResults = await db
-        .select({
-            id: doctors.id,
-            crm: doctors.crm,
-            crmState: doctors.crmState,
-            phone: doctors.phone,
-            relationshipType: clinicDoctors.relationshipType,
-            isAssociated: clinicDoctors.id,
-            name: users.name,
-            email: users.email,
-            observations: doctors.observations,
-            specialtyId: specialties.id,
-            specialtyName: specialties.name,
-            practiceAreaId: practiceAreas.id,
-            practiceAreaName: practiceAreas.name,
-            healthInsuranceId: healthInsurances.id,
-            healthInsuranceName: healthInsurances.name,
-            inviteCode: inviteLinks.code,
-            address: {
-                id: addresses.id,
-                zipCode: addresses.zipCode,
-                street: addresses.street,
-                number: addresses.number,
-                complement: addresses.complement,
-                neighborhood: addresses.neighborhood,
-                city: addresses.city,
-                state: addresses.state,
-                latitude: addresses.latitude,
-                longitude: addresses.longitude,
-            }
-        })
-        .from(doctors)
-        .innerJoin(users, eq(doctors.userId, users.id))
-        .leftJoin(
-            clinicDoctors,
-            and(
-                eq(clinicDoctors.doctorId, doctors.id),
-                eq(clinicDoctors.clinicId, clinicId)
-            )
-        )
-        .leftJoin(doctorSpecialties, eq(doctorSpecialties.doctorId, doctors.id))
-        .leftJoin(specialties, eq(doctorSpecialties.specialtyId, specialties.id))
-        .leftJoin(doctorPracticeAreas, eq(doctorPracticeAreas.doctorId, doctors.id))
-        .leftJoin(practiceAreas, eq(doctorPracticeAreas.practiceAreaId, practiceAreas.id))
-        .leftJoin(
-            doctorHealthInsurances,
-            and(
-                eq(doctorHealthInsurances.doctorId, doctors.id),
-                eq(doctorHealthInsurances.isActive, true)
-            )
-        )
-        .leftJoin(
-            healthInsurances,
-            and(
-                eq(doctorHealthInsurances.healthInsuranceId, healthInsurances.id),
-                eq(healthInsurances.isActive, true)
-            )
-        )
-        .leftJoin(
-            addresses,
-            and(
-                eq(addresses.entityId, doctors.id),
-                eq(addresses.entityType, "doctor")
-            )
-        )
-        .leftJoin(
-            inviteLinks,
-            and(
-                eq(inviteLinks.doctorId, doctors.id),
-                eq(inviteLinks.clinicId, clinicId),
-                eq(inviteLinks.role, "patient"),
-                eq(inviteLinks.isActive, true)
-            )
-        )
-        .where(
-            and(
-                eq(users.role, "doctor"),
-                or(eq(clinicDoctors.isActive, true), isNull(clinicDoctors.id))
-            )
-        )
-        .orderBy(asc(users.name));
+export type ReferredPatientRow = {
+    patientId: string;
+    patientName: string;
+    createdAt: Date;
+    source: "patient_reported" | "doctor_reported" | "invite_link" | "manual";
+};
 
+export type ReferredPatientsByDoctor = Map<string, ReferredPatientRow[]>;
+
+type DoctorListJoinRow = {
+    id: string;
+    crm: string | null;
+    crmState: string | null;
+    phone: string | null;
+    relationshipType: "linked" | "partner" | null;
+    isAssociated: string | null;
+    name: string | null;
+    email: string | null;
+    observations: string | null;
+    specialtyId: string | null;
+    specialtyName: string | null;
+    practiceAreaId: string | null;
+    practiceAreaName: string | null;
+    healthInsuranceId: string | null;
+    healthInsuranceName: string | null;
+    inviteCode: string | null;
+    address: {
+        id: string | null;
+        zipCode: string | null;
+        street: string | null;
+        number: string | null;
+        complement: string | null;
+        neighborhood: string | null;
+        city: string | null;
+        state: string | null;
+        latitude: number | null;
+        longitude: number | null;
+    };
+};
+
+function accumulateDoctorsFromJoinRows(
+    rawResults: DoctorListJoinRow[],
+    referredPatients: ReferredPatientsByDoctor
+): Map<string, DoctorListItem> {
     const doctorsMap = new Map<string, DoctorListItem>();
 
     for (const row of rawResults) {
@@ -161,12 +121,315 @@ export async function getDoctorsByClinic(clinicId: string) {
         }
     }
 
-    return Array.from(doctorsMap.values()).sort((a, b) =>
-        (a.name || "").localeCompare(b.name || "", "pt-BR", { sensitivity: "base" })
-    );
+    return doctorsMap;
 }
 
-export async function getReferredPatientsByClinic(clinicId: string) {
+const doctorListSelectShape = {
+    id: doctors.id,
+    crm: doctors.crm,
+    crmState: doctors.crmState,
+    phone: doctors.phone,
+    relationshipType: clinicDoctors.relationshipType,
+    isAssociated: clinicDoctors.id,
+    name: users.name,
+    email: users.email,
+    observations: doctors.observations,
+    specialtyId: specialties.id,
+    specialtyName: specialties.name,
+    practiceAreaId: practiceAreas.id,
+    practiceAreaName: practiceAreas.name,
+    healthInsuranceId: healthInsurances.id,
+    healthInsuranceName: healthInsurances.name,
+    inviteCode: inviteLinks.code,
+    address: {
+        id: addresses.id,
+        zipCode: addresses.zipCode,
+        street: addresses.street,
+        number: addresses.number,
+        complement: addresses.complement,
+        neighborhood: addresses.neighborhood,
+        city: addresses.city,
+        state: addresses.state,
+        latitude: addresses.latitude,
+        longitude: addresses.longitude,
+    },
+} as const;
+
+export type DoctorListFilters = {
+    query?: string;
+    relationshipType?: "linked" | "partner";
+    /**
+     * Quando true (padrão), exclui médicos sem vínculo ativo com a clínica.
+     * Equivale ao checkbox "Ocultar médicos sem vínculo" marcado.
+     */
+    hideUnassociated?: boolean;
+    page?: number;
+    pageSize?: number;
+};
+
+function cleanDoctorListQuery(value?: string) {
+    const normalized = value?.trim();
+    return normalized ? normalized : undefined;
+}
+
+/** Como em produção: vinculados primeiro, depois parceiros; sem vínculo por último. */
+const doctorListRelationshipSortRank = sql`(
+  CASE ${clinicDoctors.relationshipType}
+    WHEN 'linked' THEN 0
+    WHEN 'partner' THEN 1
+    ELSE 2
+  END
+)`;
+
+/**
+ * Chave de nome alinhada ao que esperamos na UI: sem espaços nas pontas, ignorando caixa.
+ * COLLATE "C" deixa a ordem byte-a-byte previsível (ex.: A antes de E), evitando surpresas
+ * da collation padrão do banco, que pode divergir de pt-BR.
+ */
+const doctorListNameSortKeySql = sql`LOWER(TRIM(BOTH FROM COALESCE(${users.name}, ''))) COLLATE "C"`;
+
+function doctorListRelationshipRankForSort(doctor: DoctorListItem): number {
+    if (!doctor.isAssociated) return 2;
+    if (doctor.relationshipType === "linked") return 0;
+    if (doctor.relationshipType === "partner") return 1;
+    return 2;
+}
+
+function compareDoctorsForListOrder(a: DoctorListItem, b: DoctorListItem): number {
+    const ra = doctorListRelationshipRankForSort(a);
+    const rb = doctorListRelationshipRankForSort(b);
+    if (ra !== rb) return ra - rb;
+    const nameCmp = (a.name || "").localeCompare(b.name || "", "pt-BR", { sensitivity: "base" });
+    if (nameCmp !== 0) return nameCmp;
+    return a.id.localeCompare(b.id);
+}
+
+function buildDoctorListBaseWhere(
+    clinicId: string,
+    filters: DoctorListFilters
+) {
+    const hideUnassociated = filters.hideUnassociated !== false;
+
+    const conditions = [
+        eq(users.role, "doctor"),
+        or(eq(clinicDoctors.isActive, true), isNull(clinicDoctors.id)),
+    ];
+
+    if (hideUnassociated) {
+        conditions.push(isNotNull(clinicDoctors.id));
+    }
+
+    const normalizedQuery = cleanDoctorListQuery(filters.query);
+    if (normalizedQuery) {
+        conditions.push(ilike(users.name, `%${normalizedQuery}%`));
+    }
+
+    if (filters.relationshipType) {
+        conditions.push(eq(clinicDoctors.relationshipType, filters.relationshipType));
+        conditions.push(isNotNull(clinicDoctors.id));
+    }
+
+    return and(...conditions);
+}
+
+export async function getPaginatedDoctors(clinicId: string, filters: DoctorListFilters = {}) {
+    const pageSize = filters.pageSize && filters.pageSize > 0 ? filters.pageSize : 25;
+    const requestedPage = filters.page && filters.page > 0 ? filters.page : 1;
+    const whereClause = buildDoctorListBaseWhere(clinicId, filters);
+
+    const clinicDoctorJoin = and(
+        eq(clinicDoctors.doctorId, doctors.id),
+        eq(clinicDoctors.clinicId, clinicId)
+    );
+
+    const [countRow] = await db
+        .select({ count: sql<number>`count(distinct ${doctors.id})::int` })
+        .from(doctors)
+        .innerJoin(users, eq(doctors.userId, users.id))
+        .leftJoin(clinicDoctors, clinicDoctorJoin)
+        .where(whereClause);
+
+    const total = countRow?.count ?? 0;
+    const totalPages = total > 0 ? Math.ceil(total / pageSize) : 1;
+    const page = Math.min(requestedPage, totalPages);
+    const offset = (page - 1) * pageSize;
+
+    const idRows = await db
+        .select({ id: doctors.id })
+        .from(doctors)
+        .innerJoin(users, eq(doctors.userId, users.id))
+        .leftJoin(clinicDoctors, clinicDoctorJoin)
+        .where(whereClause)
+        .orderBy(
+            asc(doctorListRelationshipSortRank),
+            sql`${doctorListNameSortKeySql} ASC`,
+            asc(doctors.id)
+        )
+        .limit(pageSize)
+        .offset(offset);
+
+    const ids = idRows.map((row) => row.id);
+
+    if (ids.length === 0) {
+        return {
+            items: [] as DoctorListItem[],
+            pagination: {
+                page,
+                pageSize,
+                total,
+                totalPages,
+                hasPreviousPage: page > 1,
+                hasNextPage: page < totalPages,
+            },
+        };
+    }
+
+    const referredPatients =
+        ids.length > 0
+            ? await getReferredPatientsByClinic(clinicId, ids)
+            : new Map<string, ReferredPatientRow[]>();
+
+    const rawResults = await db
+        .select(doctorListSelectShape)
+        .from(doctors)
+        .innerJoin(users, eq(doctors.userId, users.id))
+        .leftJoin(clinicDoctors, clinicDoctorJoin)
+        .leftJoin(doctorSpecialties, eq(doctorSpecialties.doctorId, doctors.id))
+        .leftJoin(specialties, eq(doctorSpecialties.specialtyId, specialties.id))
+        .leftJoin(doctorPracticeAreas, eq(doctorPracticeAreas.doctorId, doctors.id))
+        .leftJoin(practiceAreas, eq(doctorPracticeAreas.practiceAreaId, practiceAreas.id))
+        .leftJoin(
+            doctorHealthInsurances,
+            and(
+                eq(doctorHealthInsurances.doctorId, doctors.id),
+                eq(doctorHealthInsurances.isActive, true)
+            )
+        )
+        .leftJoin(
+            healthInsurances,
+            and(
+                eq(doctorHealthInsurances.healthInsuranceId, healthInsurances.id),
+                eq(healthInsurances.isActive, true)
+            )
+        )
+        .leftJoin(
+            addresses,
+            and(eq(addresses.entityId, doctors.id), eq(addresses.entityType, "doctor"))
+        )
+        .leftJoin(
+            inviteLinks,
+            and(
+                eq(inviteLinks.doctorId, doctors.id),
+                eq(inviteLinks.clinicId, clinicId),
+                eq(inviteLinks.role, "patient"),
+                eq(inviteLinks.isActive, true)
+            )
+        )
+        .where(and(whereClause, inArray(doctors.id, ids)));
+
+    const doctorsMap = accumulateDoctorsFromJoinRows(
+        rawResults as DoctorListJoinRow[],
+        referredPatients
+    );
+
+    const items = ids
+        .map((id) => doctorsMap.get(id))
+        .filter((d): d is DoctorListItem => d !== undefined)
+        .sort(compareDoctorsForListOrder);
+
+    return {
+        items,
+        pagination: {
+            page,
+            pageSize,
+            total,
+            totalPages,
+            hasPreviousPage: page > 1,
+            hasNextPage: page < totalPages,
+        },
+    };
+}
+
+export async function getDoctorsByClinic(clinicId: string) {
+    const referredPatients = await getReferredPatientsByClinic(clinicId);
+    const rawResults = await db
+        .select(doctorListSelectShape)
+        .from(doctors)
+        .innerJoin(users, eq(doctors.userId, users.id))
+        .leftJoin(
+            clinicDoctors,
+            and(
+                eq(clinicDoctors.doctorId, doctors.id),
+                eq(clinicDoctors.clinicId, clinicId)
+            )
+        )
+        .leftJoin(doctorSpecialties, eq(doctorSpecialties.doctorId, doctors.id))
+        .leftJoin(specialties, eq(doctorSpecialties.specialtyId, specialties.id))
+        .leftJoin(doctorPracticeAreas, eq(doctorPracticeAreas.doctorId, doctors.id))
+        .leftJoin(practiceAreas, eq(doctorPracticeAreas.practiceAreaId, practiceAreas.id))
+        .leftJoin(
+            doctorHealthInsurances,
+            and(
+                eq(doctorHealthInsurances.doctorId, doctors.id),
+                eq(doctorHealthInsurances.isActive, true)
+            )
+        )
+        .leftJoin(
+            healthInsurances,
+            and(
+                eq(doctorHealthInsurances.healthInsuranceId, healthInsurances.id),
+                eq(healthInsurances.isActive, true)
+            )
+        )
+        .leftJoin(
+            addresses,
+            and(
+                eq(addresses.entityId, doctors.id),
+                eq(addresses.entityType, "doctor")
+            )
+        )
+        .leftJoin(
+            inviteLinks,
+            and(
+                eq(inviteLinks.doctorId, doctors.id),
+                eq(inviteLinks.clinicId, clinicId),
+                eq(inviteLinks.role, "patient"),
+                eq(inviteLinks.isActive, true)
+            )
+        )
+        .where(
+            and(
+                eq(users.role, "doctor"),
+                or(eq(clinicDoctors.isActive, true), isNull(clinicDoctors.id))
+            )
+        )
+        .orderBy(
+            asc(doctorListRelationshipSortRank),
+            sql`${doctorListNameSortKeySql} ASC`,
+            asc(doctors.id)
+        );
+
+    const doctorsMap = accumulateDoctorsFromJoinRows(
+        rawResults as DoctorListJoinRow[],
+        referredPatients
+    );
+
+    return Array.from(doctorsMap.values()).sort(compareDoctorsForListOrder);
+}
+
+export async function getReferredPatientsByClinic(
+    clinicId: string,
+    doctorIds?: string[]
+): Promise<ReferredPatientsByDoctor> {
+    const baseConditions = [
+        eq(patientReferrals.clinicId, clinicId),
+        eq(patientReferrals.status, "active"),
+    ];
+
+    if (doctorIds && doctorIds.length > 0) {
+        baseConditions.push(inArray(patientReferrals.doctorId, doctorIds));
+    }
+
     const rows = await db
         .select({
             doctorId: patientReferrals.doctorId,
@@ -177,23 +440,10 @@ export async function getReferredPatientsByClinic(clinicId: string) {
         })
         .from(patientReferrals)
         .innerJoin(patients, eq(patientReferrals.patientId, patients.id))
-        .where(
-            and(
-                eq(patientReferrals.clinicId, clinicId),
-                eq(patientReferrals.status, "active")
-            )
-        )
+        .where(and(...baseConditions))
         .orderBy(asc(patients.name));
 
-    const grouped = new Map<
-        string,
-        {
-            patientId: string;
-            patientName: string;
-            createdAt: Date;
-            source: "patient_reported" | "doctor_reported" | "invite_link" | "manual";
-        }[]
-    >();
+    const grouped = new Map<string, ReferredPatientRow[]>();
 
     for (const row of rows) {
         const current = grouped.get(row.doctorId) ?? [];

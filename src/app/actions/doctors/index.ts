@@ -12,11 +12,39 @@ import { revalidatePath } from "next/cache";
 import { adminSetDoctorPasswordSchema } from "@/validations/auth";
 import { adminSetDoctorPassword } from "@/services/auth";
 import { getPatientsByClinic } from "@/db/queries/patients";
-import { getDoctorsSimple } from "@/db/queries/doctors";
+import {
+    getDoctorsSimple,
+    getPaginatedDoctors,
+    type DoctorListFilters,
+} from "@/db/queries/doctors";
 import {
     assignPatientReferralToDoctor,
     removePatientReferralFromDoctor,
 } from "@/services/patients";
+
+function getDoctorsListErrorMessage(error: unknown, fallback: string) {
+    if (error instanceof Error && error.message) {
+        return error.message;
+    }
+    return fallback;
+}
+
+export async function getDoctorsListAction(clinicId: string, filters?: DoctorListFilters) {
+    try {
+        const session = await auth();
+        if (!session?.user?.clinicId || session.user.clinicId !== clinicId) {
+            return { success: false as const, error: "Não autorizado" };
+        }
+        const data = await getPaginatedDoctors(clinicId, filters);
+        return { success: true as const, data };
+    } catch (error) {
+        console.error("Error loading doctors list:", error);
+        return {
+            success: false as const,
+            error: getDoctorsListErrorMessage(error, "Erro ao carregar médicos"),
+        };
+    }
+}
 
 export async function createDoctorAction(formData: FormData) {
     const session = await auth();
