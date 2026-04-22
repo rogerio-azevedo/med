@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays } from "lucide-react";
 import ReactSelect from "react-select";
-import type { SurgeryStatusValue } from "@/lib/validations/surgeries";
+import type { SurgeryStatusValue } from "@/validations/surgeries";
 import { FormSelect, BASE_SELECT_STYLES, type SelectOption } from "./FormSelect";
 
 type ProcedureOpt = { id: string; name: string };

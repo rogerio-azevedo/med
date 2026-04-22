@@ -21,7 +21,7 @@ import type { ServiceTypeWorkflow } from "@/lib/service-type-workflows";
 import { FileUploadModal } from "../FileUploadModal";
 import { MedicalRecordsTimelineToolbar } from "../MedicalRecordsTimelineToolbar";
 import { useHeaderStore } from "@/store/header";
-import type { MedicalRecordsFileTimelineEntry } from "@/db/queries/medical-records-timeline";
+import type { MedicalRecordsFileTimelineEntry } from "@/db/queries/medical-records";
 import { SurgeryForm } from "@/components/surgeries/SurgeryForm";
 import { isSurgeryServiceType } from "@/lib/surgery-service-type";
 import { normalizeForSearch } from "@/lib/search-normalize";

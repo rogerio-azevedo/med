@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { AddressForm, type AddressFormProps } from "@/components/shared/AddressForm";
 import { updateClinicInfoAction } from "@/app/actions/clinics";
-import { updateClinicSchema, type UpdateClinicInput } from "@/lib/validations/clinic";
+import { updateClinicSchema, type UpdateClinicInput } from "@/validations/clinic";
 
 interface ClinicSettingsFormProps {
     clinic: {

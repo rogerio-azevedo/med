@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { categoryRequiresReferenceDate } from "@/lib/validations/file";
+import { categoryRequiresReferenceDate } from "@/validations/file";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, ImagePlus, Loader2, Upload, X, XCircle } from "lucide-react";
 

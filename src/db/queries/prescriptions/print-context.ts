@@ -8,7 +8,7 @@ import {
     getConsultationDetailsWithDoctorById,
 } from "@/db/queries/consultations";
 import { getPatientById } from "@/db/queries/patients";
-import { formatClinicAddressLine } from "@/lib/format-clinic-address";
+import { formatClinicAddressLine } from "@/lib/formatters/clinic-address";
 import { resolvePrescriptionVerificationUrl } from "@/lib/prescription-verification-url";
 
 export type PrescriptionPrintItem = {

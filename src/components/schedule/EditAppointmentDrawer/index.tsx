@@ -21,14 +21,14 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { getAvailableSlotsAction, updateAppointmentAction } from "@/app/actions/appointments";
-import { appointmentModalityValues } from "@/lib/validations/appointments";
+import { appointmentModalityValues } from "@/validations/appointments";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
 import { cn } from "@/lib/utils";
-import { resolveServiceTypeDisplayIcon } from "@/lib/resolve-service-type-display";
+import { resolveServiceTypeDisplayIcon } from "@/lib/formatters/resolve-service-type-display";
 
 type Doctor = { id: string; name: string | null; relationshipType: "linked" | "partner" | null };
 type Patient = { id: string; name: string; phone: string | null };

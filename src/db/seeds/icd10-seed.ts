@@ -2,15 +2,14 @@ import { config } from "dotenv";
 config();
 
 import { db } from "../index";
-import { icd10Codes } from "../schema/medical";
-import { eq } from "drizzle-orm";
+import { icd10Codes } from "../schema/specialties";
 
 async function seedCID10() {
     console.log("🚀 Iniciando seed do CID-10...");
 
     // 1. Verificar se já existem dados ou se forçamos o reset
     const forceReset = process.env.FORCE_RESET === "true";
-    
+
     if (forceReset) {
         console.log("🗑️ Reset forçado: deletando dados existentes...");
         await db.delete(icd10Codes);
@@ -50,20 +49,20 @@ async function seedCID10() {
 
     // 3. Tentar baixar a lista completa do CID-10 (DATASUS via GitHub mirror)
     const FULL_CID_URL = "https://raw.githubusercontent.com/cleytonferrari/CidDataSus/master/CIDImport/Repositorio/Resources/CID-10-SUBCATEGORIAS.CSV";
-    
+
     try {
         console.log("📥 Baixando lista completa do CID-10 (pode demorar um pouco)...");
         const response = await fetch(FULL_CID_URL);
         if (!response.ok) throw new Error("Falha ao baixar CSV do CID-10");
-        
+
         // DATASUS CSV is typically ISO-8859-1 (Latin1)
         const buffer = await response.arrayBuffer();
         const decoder = new TextDecoder("iso-8859-1");
         const text = decoder.decode(buffer);
         const lines = text.split('\n');
-        
+
         console.log(`📄 Processando ${lines.length} linhas...`);
-        
+
         const BATCH_SIZE = 100;
         let batch = [];
         let count = 0;

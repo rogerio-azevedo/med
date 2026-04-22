@@ -1,7 +1,7 @@
 import { eq, and, desc } from "drizzle-orm";
 import { db } from "@/db";
 import { clinics, clinicUsers, users } from "@/db/schema";
-import type { CreateClinicInput, UpdateClinicInput } from "@/lib/validations/clinic";
+import type { CreateClinicInput, UpdateClinicInput } from "@/validations/clinic";
 import { seedDefaultScoreItemsForClinic } from "@/services/score-items";
 import { seedDefaultServiceTypesForClinic } from "@/services/service-types";
 

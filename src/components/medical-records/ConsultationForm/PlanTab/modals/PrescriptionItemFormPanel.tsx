@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import type { InferSelectModel } from "drizzle-orm";
 import { prescriptions } from "@/db/schema";
 import { PRESCRIPTION_ROUTE_LABELS, type PrescriptionRoute } from "@/lib/prescription-route-map";
-import { addCalendarDays, parseDurationDays, toDateInputValue } from "@/lib/prescription-form-dates";
+import { addCalendarDays, parseDurationDays, toDateInputValue } from "@/lib/formatters/prescription-form-dates";
 
 type PrescriptionRow = InferSelectModel<typeof prescriptions>;
 

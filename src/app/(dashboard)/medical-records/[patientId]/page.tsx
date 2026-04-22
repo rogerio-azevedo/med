@@ -12,7 +12,7 @@ import {
 import { getDoctorsSimple } from "@/db/queries/doctors";
 import { getHospitals } from "@/db/queries/hospitals";
 import { getProcedures } from "@/db/queries/procedures";
-import { getPatientFilesTimelineSorted } from "@/db/queries/medical-records-timeline";
+import { getPatientFilesTimelineSorted } from "@/db/queries/medical-records";
 import { getActiveServiceTypes } from "@/db/queries/service-types";
 import { getClinicHealthInsurances } from "@/db/queries/health-insurances";
 import { auth } from "@/auth";
@@ -23,7 +23,7 @@ import { db } from "@/db";
 import { clinicUsers } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { isSurgeryServiceType } from "@/lib/surgery-service-type";
-import { enrichTimelineRowsWithServiceTypeCatalog } from "@/lib/enrich-timeline-service-type-visual";
+import { enrichTimelineRowsWithServiceTypeCatalog } from "@/lib/formatters/enrich-timeline-service-type-visual";
 
 export const dynamic = "force-dynamic";
 

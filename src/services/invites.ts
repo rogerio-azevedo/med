@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { inviteLinks } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
-import type { GenerateInviteInput } from "@/lib/validations/invite";
+import type { GenerateInviteInput } from "@/validations/invite";
 
 export async function generateInviteCode(
     data: GenerateInviteInput

@@ -1,7 +1,7 @@
 import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { clinics, serviceTypes } from "@/db/schema";
-import type { ServiceTypeInput } from "@/lib/validations/service-types";
+import type { ServiceTypeInput } from "@/validations/service-types";
 
 const defaultServiceTypes = [
     { name: "Consulta" },

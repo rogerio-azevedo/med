@@ -13,7 +13,7 @@ import {
     findPatientByClinicAndId,
     specialtyExists,
 } from "@/services/appointment-integrations";
-import { patchIntegrationAppointmentSchema } from "@/lib/validations/integration-appointments";
+import { patchIntegrationAppointmentSchema } from "@/validations/integration-appointments";
 
 type RouteContext = { params: Promise<{ appointmentId: string }> };
 

@@ -12,7 +12,7 @@ import {
     healthInsurances,
 } from "@/db/schema";
 import { eq, and, desc, or, ilike, isNull, ne, gte, lte } from "drizzle-orm";
-import type { consultationSchema, consultationSoapSchema, vitalSignsSchema } from "@/lib/validations/medical-records";
+import type { consultationSchema, consultationSoapSchema, vitalSignsSchema } from "@/validations/medical-records";
 import type { z } from "zod";
 
 type ConsultationInsert = z.infer<typeof consultationSchema>;

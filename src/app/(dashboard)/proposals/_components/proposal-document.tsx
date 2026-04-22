@@ -45,9 +45,9 @@ export function ProposalDocument({ data }: ProposalDocumentProps) {
                 clinicPhone={data.clinicPhone}
             />
 
-            <div className="h-0.5 w-full print:h-px" style={{ backgroundColor: ACCENT }} aria-hidden />
+            <div className="h-0.5 w-full print:h-px" style={{ backgroundColor: ACCENT, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }} aria-hidden />
 
-            <div className="px-4 py-2 print:px-3 print:py-2" style={{ backgroundColor: LIGHT }}>
+            <div className="px-4 py-2 print:px-3 print:py-2" style={{ backgroundColor: LIGHT, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
                 <div className="text-center">
                     <h1 className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: NAVY }}>
                         Proposta comercial

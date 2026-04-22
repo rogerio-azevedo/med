@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import { User } from "lucide-react";
 import Link from "next/link";
-import { resolveServiceTypeDisplayIcon } from "@/lib/resolve-service-type-display";
+import { resolveServiceTypeDisplayIcon } from "@/lib/formatters/resolve-service-type-display";
 
 type AppointmentStatus =
     | "scheduled"

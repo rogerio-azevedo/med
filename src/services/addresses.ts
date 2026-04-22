@@ -2,7 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { addresses } from "@/db/schema";
 import { geocodeAddress } from "@/lib/geocode";
-import type { AddressInput } from "@/lib/validations/address";
+import type { AddressInput } from "@/validations/address";
 
 export async function upsertAddress(
     data: AddressInput

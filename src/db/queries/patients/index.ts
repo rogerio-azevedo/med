@@ -7,7 +7,7 @@ import {
     patientOrigins,
     patientReferrals,
     doctors,
-} from "@/db/schema/medical";
+} from "@/db/schema";
 import { addresses } from "@/db/schema/clinics";
 import { users } from "@/db/schema/auth";
 import { getPatientHealthInsurances } from "@/db/queries/health-insurances";

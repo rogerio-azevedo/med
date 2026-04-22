@@ -37,9 +37,9 @@ export function PrescriptionVerificationDocument({ data, verifiedAt }: Prescript
                 clinicPhone={data.clinicPhone}
             />
 
-            <div className="h-1 w-full" style={{ backgroundColor: ACCENT }} aria-hidden />
+            <div className="h-1 w-full" style={{ backgroundColor: ACCENT, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }} aria-hidden />
 
-            <div className="px-6 py-5 print:px-4 print:py-4" style={{ backgroundColor: LIGHT }}>
+            <div className="px-6 py-5 print:px-4 print:py-4" style={{ backgroundColor: LIGHT, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
                 <h1 className="text-center text-sm font-bold uppercase tracking-[0.2em]" style={{ color: NAVY }}>
                     Receituário médico
                 </h1>

@@ -5,7 +5,7 @@ import ReactSelect from "react-select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { createCardSchema, updateCardSchema } from "@/lib/validations/kanban";
+import { createCardSchema, updateCardSchema } from "@/validations/kanban";
 import {
     Dialog,
     DialogContent,

@@ -1,8 +1,8 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { addresses, clinics } from "@/db/schema";
-import { formatClinicAddressLine } from "@/lib/format-clinic-address";
-import { buildProposalPaymentDisplayText } from "@/lib/format-proposal-payment-pdf";
+import { formatClinicAddressLine } from "@/lib/formatters/clinic-address";
+import { buildProposalPaymentDisplayText } from "@/lib/formatters/proposal-payment-pdf";
 import { getProposalById } from "@/db/queries/proposals";
 
 export type ProposalPrintItem = {

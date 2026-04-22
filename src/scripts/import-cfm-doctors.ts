@@ -95,7 +95,7 @@ async function main() {
             const doctorId = crypto.randomUUID();
 
             // 1. Inserir ou recuperar User
-            let currentUserId = userId;
+            let currentUserId: string = userId;
             const userExists = await db.query.users.findFirst({
                 where: (u, { eq }) => eq(u.email, generatedEmail)
             });
@@ -117,7 +117,7 @@ async function main() {
                 where: (d, { and, eq }) => and(eq(d.crm, data.crm), eq(d.crmState, data.uf))
             });
 
-            let currentDoctorId = doctorId;
+            let currentDoctorId: string = doctorId;
             if (doctorExists) {
                 currentDoctorId = doctorExists.id;
             } else {

@@ -31,7 +31,7 @@ export default async function ScheduleSettingsPage() {
     let defaultDoctorId: string | undefined = undefined;
     if (role === "doctor") {
         const { db } = await import("@/db");
-        const { doctors: docsTable } = await import("@/db/schema/medical");
+        const { doctors: docsTable } = await import("@/db/schema");
         const { eq } = await import("drizzle-orm");
         const myDoc = await db.select().from(docsTable).where(eq(docsTable.userId, session.user.id as string)).limit(1);
 

@@ -14,7 +14,7 @@ import { PlusCircle, Package } from "lucide-react";
 import { createProductAction, updateProductAction } from "@/app/actions/products";
 import { toast } from "sonner";
 import { PackageForm } from "./package-form";
-import { CreateProductInput } from "@/lib/validations/products";
+import { CreateProductInput } from "@/validations/products";
 
 interface PackageDialogProps {
     initialData?: Partial<CreateProductInput> & { id: string };

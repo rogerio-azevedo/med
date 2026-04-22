@@ -8,7 +8,7 @@ import {
     findPatientByClinicAndId,
     specialtyExists,
 } from "@/services/appointment-integrations";
-import { createIntegrationAppointmentSchema } from "@/lib/validations/integration-appointments";
+import { createIntegrationAppointmentSchema } from "@/validations/integration-appointments";
 
 function validationErrorResponse(
     error: Extract<

@@ -10,7 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { clinics } from "./clinics";
-import { patients } from "./medical";
+import { patients } from "./patients";
 import { users } from "./auth";
 import { products } from "./products";
 import { paymentTerms } from "./payment-terms";

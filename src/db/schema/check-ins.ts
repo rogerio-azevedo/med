@@ -9,7 +9,9 @@ import {
     varchar,
 } from "drizzle-orm/pg-core";
 import { clinicUsers, clinics } from "./clinics";
-import { doctors, healthInsurances, patients } from "./medical";
+import { doctors } from "./doctors";
+import { healthInsurances } from "./health-insurances";
+import { patients } from "./patients";
 
 export const serviceTypes = pgTable(
     "service_types",

@@ -6,7 +6,8 @@ import {
     integer,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { doctors, patients } from "./medical";
+import { doctors } from "./doctors";
+import { patients } from "./patients";
 import { type AdapterAccount } from "next-auth/adapters";
 
 export const users = pgTable("user", {

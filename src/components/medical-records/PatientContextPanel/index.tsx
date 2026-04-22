@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, User, Activity, Info } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { MedicalRecordsFileTimelineEntry } from "@/db/queries/medical-records-timeline";
+import type { MedicalRecordsFileTimelineEntry } from "@/db/queries/medical-records";
 import { PatientFilesSidebarTimeline } from "../PatientFilesSidebarTimeline";
 import { PatientDetailsModal } from "../PatientDetailsModal";
 

@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronRight, ClipboardList } from "lucide-react";
-import { resolveTimelineVisual } from "@/lib/medical-timeline-visual";
+import { resolveTimelineVisual } from "@/lib/formatters/medical-timeline-visual";
 import { cn } from "@/lib/utils";
 
 export type MedicalTimelineRow = {

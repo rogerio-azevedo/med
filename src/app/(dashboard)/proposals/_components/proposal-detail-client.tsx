@@ -9,7 +9,7 @@ import { updateProposalAction } from "@/app/actions/proposals";
 import { ProposalForm } from "./proposal-form";
 import { ProposalPrintButtons } from "./proposal-print-buttons";
 import { formatCurrency } from "@/lib/utils";
-import type { CreateProposalInput } from "@/lib/validations/proposals";
+import type { CreateProposalInput } from "@/validations/proposals";
 
 interface ProposalDetailClientProps {
     proposal: {

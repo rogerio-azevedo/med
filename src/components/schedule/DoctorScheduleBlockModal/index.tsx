@@ -23,7 +23,7 @@ import { createScheduleBlockAction } from "@/app/actions/appointments";
 import {
     scheduleBlockReasonValues,
     scheduleBlockReasonLabels,
-} from "@/lib/validations/schedule-blocks";
+} from "@/validations/schedule-blocks";
 import { Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 

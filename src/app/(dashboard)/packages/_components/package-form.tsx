@@ -20,7 +20,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { createProductSchema, CreateProductInput } from "@/lib/validations/products";
+import { createProductSchema, CreateProductInput } from "@/validations/products";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 

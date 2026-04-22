@@ -1,7 +1,7 @@
 import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { clinics, scoreItems } from "@/db/schema";
-import type { ScoreItemInput } from "@/lib/validations/score-items";
+import type { ScoreItemInput } from "@/validations/score-items";
 
 const defaultScoreItems = [
     { name: "Consulta convênio", score: 1 },

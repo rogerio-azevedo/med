@@ -5,8 +5,8 @@ import {
     getConsultationForPatientInClinic,
     getSurgeryForPatientInClinic,
 } from "@/db/queries/files";
-import { assertMimeAndSize, normalizeMimeType } from "@/lib/validations/file";
-import type { FileCategory } from "@/lib/validations/file";
+import { assertMimeAndSize, normalizeMimeType } from "@/validations/file";
+import type { FileCategory } from "@/validations/file";
 
 function storageSubfolder(category: FileCategory): "exams" | "images" {
     return category === "clinical_photo" ? "images" : "exams";

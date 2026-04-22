@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { filePresignBodySchema } from "@/lib/validations/file";
+import { filePresignBodySchema } from "@/validations/file";
 import { buildPatientFileRemoteKey, validateFileUploadContext } from "@/services/files";
 import { createPresignedPutUrl } from "@/infra/storage/presign";
 

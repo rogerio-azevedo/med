@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { createHospitalAction } from "@/app/actions/hospitals";
-import { hospitalSchema, type HospitalInput } from "@/lib/validations/hospital";
+import { hospitalSchema, type HospitalInput } from "@/validations/hospital";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,

@@ -29,7 +29,7 @@ import {
     scoreItemSchema,
     type ScoreItemFormInput,
     type ScoreItemInput,
-} from "@/lib/validations/score-items";
+} from "@/validations/score-items";
 
 export function AddScoreItemDialog() {
     const [open, setOpen] = useState(false);

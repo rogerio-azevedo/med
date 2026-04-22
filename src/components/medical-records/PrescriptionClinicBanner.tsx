@@ -50,7 +50,7 @@ export function PrescriptionClinicBanner({
                     ? "flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 print:px-3 print:py-2.5"
                     : "flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 print:px-4 print:py-4"
             }
-            style={{ backgroundColor: NAVY, color: "#fff" }}
+            style={{ backgroundColor: NAVY, color: "#fff", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}
         >
             <ClinicLogo logoUrl={clinicLogoUrl} clinicName={clinicName} compact={compact} />
             <div className="min-w-0 flex-1 text-right sm:text-right">

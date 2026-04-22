@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { fileMetadataBodySchema } from "@/lib/validations/file";
+import { fileMetadataBodySchema } from "@/validations/file";
 import { assertRemoteKeyForPatient, validateFileUploadContext } from "@/services/files";
 import { headObject } from "@/infra/storage/presign";
 import { insertPatientFile } from "@/db/queries/files";

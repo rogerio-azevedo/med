@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { patients, clinicPatients } from "@/db/schema/medical";
+import { patients, clinicPatients } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export type PatientEligibilityResult =

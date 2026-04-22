@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
-import { doctorSchedules } from "@/db/schema/medical";
+import { doctorSchedules } from "@/db/schema";
 
 export type ScheduleRow = typeof doctorSchedules.$inferSelect;
 export type InsertScheduleRow = typeof doctorSchedules.$inferInsert;

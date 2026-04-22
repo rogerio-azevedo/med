@@ -14,7 +14,7 @@ import { PlusCircle, FileText } from "lucide-react";
 import { createProposalAction } from "@/app/actions/proposals";
 import { toast } from "sonner";
 import { ProposalForm } from "./proposal-form";
-import { CreateProposalInput } from "@/lib/validations/proposals";
+import { CreateProposalInput } from "@/validations/proposals";
 
 interface ProposalDialogProps {
     patients: { id: string; name: string }[];

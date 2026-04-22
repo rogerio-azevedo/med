@@ -1,9 +1,6 @@
 import { and, eq, not, inArray, gte, lte, lt, gt, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { appointments } from "@/db/schema/medical";
-import { doctors } from "@/db/schema/medical";
-import { patients } from "@/db/schema/medical";
-import { specialties } from "@/db/schema/medical";
+import { appointments, doctors, patients, specialties } from "@/db/schema";
 import { users } from "@/db/schema/auth";
 import { serviceTypes } from "@/db/schema/check-ins";
 

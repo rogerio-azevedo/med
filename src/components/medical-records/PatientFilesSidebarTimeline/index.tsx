@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Paperclip, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { MedicalRecordsFileTimelineEntry } from "@/db/queries/medical-records-timeline";
+import type { MedicalRecordsFileTimelineEntry } from "@/db/queries/medical-records";
 import { FileCard, type PatientFileRow } from "../FileCard";
 import { FileGroupCard } from "../FileGroupCard";
 import { ImageGroupCarouselModal } from "../ImageGroupCarouselModal";

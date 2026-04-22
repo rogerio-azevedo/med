@@ -24,7 +24,7 @@ import {
 import { Pencil, Save, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteSurgeryAction, getSurgeryDetailsAction, saveSurgeryAction } from "@/app/actions/surgeries";
-import type { SurgeryStatusValue } from "@/lib/validations/surgeries";
+import type { SurgeryStatusValue } from "@/validations/surgeries";
 import { BasicDataSection } from "./BasicDataSection";
 import { LocationAndInsuranceSection } from "./LocationAndInsuranceSection";
 import { MedicalTeamSection, type TeamField } from "./MedicalTeamSection";

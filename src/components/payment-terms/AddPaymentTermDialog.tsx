@@ -32,7 +32,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { paymentTermSchema, type PaymentTermInput } from "@/lib/validations/payment-terms";
+import { paymentTermSchema, type PaymentTermInput } from "@/validations/payment-terms";
 import { paymentMethodOptions } from "./payment-method-options";
 
 export function AddPaymentTermDialog() {

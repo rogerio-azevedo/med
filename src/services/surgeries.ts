@@ -6,7 +6,7 @@ import {
     updateSurgeryQuery,
     replaceSurgeryProceduresQuery,
 } from "@/db/queries/surgeries";
-import type { SurgerySaveInput } from "@/lib/validations/surgeries";
+import type { SurgerySaveInput } from "@/validations/surgeries";
 
 async function assertHealthInsuranceForClinic(
     clinicId: string,

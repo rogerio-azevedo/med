@@ -4,7 +4,7 @@ import { checkIns } from "@/db/schema";
 import { createCheckInQuery, getCheckInDependencies } from "@/db/queries/check-ins";
 import { createWaitingConsultationForCheckIn } from "@/services/consultations";
 import { createWaitingSurgery } from "@/services/surgeries";
-import type { CheckInInput } from "@/lib/validations/check-ins";
+import type { CheckInInput } from "@/validations/check-ins";
 
 export async function createCheckInService(
     clinicId: string,

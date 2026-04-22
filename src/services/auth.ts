@@ -19,7 +19,7 @@ import type {
     AdminSetDoctorPasswordInput,
     ChangeOwnPasswordInput,
     RegisterInput,
-} from "@/lib/validations/auth";
+} from "@/validations/auth";
 import bcrypt from "bcryptjs";
 
 export async function registerUser(

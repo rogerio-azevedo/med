@@ -34,7 +34,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { SERVICE_TYPE_WORKFLOWS, getServiceTypeWorkflowLabel } from "@/lib/service-type-workflows";
 import type { Resolver } from "react-hook-form";
-import { serviceTypeSchema, type ServiceTypeInput } from "@/lib/validations/service-types";
+import { serviceTypeSchema, type ServiceTypeInput } from "@/validations/service-types";
 import { ServiceTypeTimelineFields } from "./ServiceTypeTimelineFields";
 
 export function AddServiceTypeDialog() {

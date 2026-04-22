@@ -1,7 +1,7 @@
 import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { paymentTerms, proposals } from "@/db/schema";
-import type { PaymentTermInput } from "@/lib/validations/payment-terms";
+import type { PaymentTermInput } from "@/validations/payment-terms";
 
 export async function createPaymentTermService(
     clinicId: string,

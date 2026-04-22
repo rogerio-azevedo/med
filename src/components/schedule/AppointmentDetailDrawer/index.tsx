@@ -47,7 +47,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { EditAppointmentDrawer } from "@/components/schedule/EditAppointmentDrawer";
-import { resolveServiceTypeDisplayIcon } from "@/lib/resolve-service-type-display";
+import { resolveServiceTypeDisplayIcon } from "@/lib/formatters/resolve-service-type-display";
 import { toast } from "sonner";
 
 type AppointmentStatus =

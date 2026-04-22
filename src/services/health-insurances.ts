@@ -9,7 +9,7 @@ import {
 import type {
     HealthInsuranceInput,
     PatientHealthInsuranceInput,
-} from "@/lib/validations/health-insurance";
+} from "@/validations/health-insurance";
 
 export async function createHealthInsuranceService(
     data: HealthInsuranceInput

@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { addresses, hospitals } from "@/db/schema";
 import { geocodeAddress } from "@/lib/geocode";
-import type { HospitalInput } from "@/lib/validations/hospital";
+import type { HospitalInput } from "@/validations/hospital";
 
 function hasAddressData(data: HospitalInput) {
     return Boolean(data.zipCode || data.street || data.city);

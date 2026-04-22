@@ -10,7 +10,7 @@ import {
     patients,
     specialties,
 } from "@/db/schema";
-import type { CreateAppointmentIntegrationCredentialInput } from "@/lib/validations/integration-appointments";
+import type { CreateAppointmentIntegrationCredentialInput } from "@/validations/integration-appointments";
 
 export const APPOINTMENT_INTEGRATION_SCOPE = "appointments:write";
 const APPOINTMENT_INTEGRATION_TYPE = "integration";

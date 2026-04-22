@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { formatPrescriptionDateBr } from "@/lib/format-prescription-date";
+import { formatPrescriptionDateBr } from "@/lib/formatters/prescription-date";
 import { PRESCRIPTION_ROUTE_LABELS, type PrescriptionRoute } from "@/lib/prescription-route-map";
 
 export type PrescriptionItemDetailsInput = {

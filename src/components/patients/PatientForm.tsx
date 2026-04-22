@@ -35,7 +35,7 @@ import { AddDoctorDialog } from "@/components/doctors/AddDoctorDialog";
 import { maskCPF, maskPhone } from "@/utils/masks";
 import { BRAZILIAN_STATES } from "@/utils/states";
 import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
-import { createPatientSchema } from "@/lib/validations/patient";
+import { createPatientSchema } from "@/validations/patient";
 import { getActiveHealthInsurancesAction } from "@/app/actions/health-insurances";
 
 export const patientFormSchema = createPatientSchema;

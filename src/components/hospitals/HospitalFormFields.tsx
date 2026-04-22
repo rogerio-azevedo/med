@@ -1,7 +1,7 @@
 "use client";
 
 import type { UseFormReturn } from "react-hook-form";
-import type { HospitalInput } from "@/lib/validations/hospital";
+import type { HospitalInput } from "@/validations/hospital";
 import {
     FormControl,
     FormField,

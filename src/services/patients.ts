@@ -10,7 +10,7 @@ import {
     patientReferrals,
 } from "@/db/schema";
 import { deletePatient as deletePatientQuery } from "@/db/queries/patients";
-import type { CreatePatientInput, UpdatePatientInput } from "@/lib/validations/patient";
+import type { CreatePatientInput, UpdatePatientInput } from "@/validations/patient";
 import { syncPatientHealthInsurances } from "@/services/health-insurances";
 
 type ClinicDoctorSelection = {

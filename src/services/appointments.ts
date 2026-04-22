@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { eq, and } from "drizzle-orm";
 import { fromZonedTime } from "date-fns-tz";
-import { doctorSchedules } from "@/db/schema/medical";
+import { doctorSchedules } from "@/db/schema";
 import { getServiceTypeById } from "@/db/queries/service-types";
 import {
     createAppointment as createAppointmentQuery,
@@ -19,9 +19,9 @@ import {
     getScheduleBlocksByDoctor,
     getAllScheduleBlocksByClinic,
 } from "@/db/queries/schedule-blocks";
-import type { CreateAppointmentInput } from "@/lib/validations/appointments";
-import type { CreateScheduleBlockInput } from "@/lib/validations/schedule-blocks";
-import type { UpdateIntegrationAppointmentInput } from "@/lib/validations/integration-appointments";
+import type { CreateAppointmentInput } from "@/validations/appointments";
+import type { CreateScheduleBlockInput } from "@/validations/schedule-blocks";
+import type { UpdateIntegrationAppointmentInput } from "@/validations/integration-appointments";
 
 export type TimeSlot = {
     startsAt: Date;

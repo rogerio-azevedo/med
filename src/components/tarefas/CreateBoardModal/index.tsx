@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createBoardSchema } from "@/lib/validations/kanban";
+import { createBoardSchema } from "@/validations/kanban";
 import {
     Dialog,
     DialogContent,

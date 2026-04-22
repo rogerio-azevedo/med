@@ -11,7 +11,7 @@ import {
 } from "@/db/schema";
 import { deleteDoctor as deleteDoctorQuery } from "@/db/queries/doctors";
 import { geocodeAddress } from "@/lib/geocode";
-import type { CreateDoctorInput, UpdateDoctorInput } from "@/lib/validations/doctor";
+import type { CreateDoctorInput, UpdateDoctorInput } from "@/validations/doctor";
 import { syncDoctorHealthInsurances } from "@/services/health-insurances";
 import { ensureDoctorPatientInviteCode } from "@/services/invites";
 import bcrypt from "bcryptjs";

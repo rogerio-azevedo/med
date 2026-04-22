@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getScheduleAction, saveScheduleAction } from "@/app/actions/schedule-config";
-import type { DayConfigDraft, PeriodDraft } from "@/lib/validations/schedule-config";
+import type { DayConfigDraft, PeriodDraft } from "@/validations/schedule-config";
 
 type Doctor = { id: string; name: string | null };
 

@@ -10,7 +10,7 @@ import {
 import { clinicUsers } from "@/db/schema/clinics";
 import { users } from "@/db/schema/auth";
 import { eq, and, asc, sql, inArray } from "drizzle-orm";
-import { doctors, clinicDoctors } from "@/db/schema/medical";
+import { doctors, clinicDoctors } from "@/db/schema";
 
 /** Converts an ISO string (or Date) to a Date object, or null if falsy. */
 function toDateOrNull(value: string | Date | null | undefined): Date | null {

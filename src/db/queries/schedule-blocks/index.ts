@@ -1,6 +1,6 @@
 import { and, eq, gte, lte } from "drizzle-orm";
 import { db } from "@/db";
-import { doctorScheduleBlocks } from "@/db/schema/medical";
+import { doctorScheduleBlocks } from "@/db/schema";
 
 export async function getScheduleBlocksByDoctor(
     doctorId: string,

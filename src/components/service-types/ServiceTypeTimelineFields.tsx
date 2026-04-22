@@ -22,7 +22,7 @@ import {
     SERVICE_TYPE_TIMELINE_ICON_LABELS,
     SERVICE_TYPE_TIMELINE_ICON_OPTIONS,
 } from "@/lib/service-type-timeline-icons";
-import type { ServiceTypeInput } from "@/lib/validations/service-types";
+import type { ServiceTypeInput } from "@/validations/service-types";
 
 interface ServiceTypeTimelineFieldsProps {
     control: Control<ServiceTypeInput, unknown, ServiceTypeInput>;

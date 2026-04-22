@@ -9,7 +9,7 @@ import {
     boolean,
 } from "drizzle-orm/pg-core";
 import { clinics } from "./clinics";
-import { doctorClinicRelationshipTypeEnum, doctors } from "./medical";
+import { doctorClinicRelationshipTypeEnum, doctors } from "./doctors";
 
 export const inviteRoleEnum = pgEnum("invite_role", ["admin", "doctor", "patient"]);
 

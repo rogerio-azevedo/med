@@ -26,7 +26,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { createProposalSchema, type CreateProposalInput } from "@/lib/validations/proposals";
+import { createProposalSchema, type CreateProposalInput } from "@/validations/proposals";
 import { getPaymentMethodLabel } from "@/components/payment-terms/payment-method-options";
 import { formatCurrency } from "@/lib/utils";
 
