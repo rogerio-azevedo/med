@@ -17,6 +17,11 @@ import {
 import { claimSurgeryAction } from "@/app/actions/surgeries";
 import { toast } from "sonner";
 import { ConsultationDetailSheet, type ConsultationDetailData } from "../ConsultationDetailSheet";
+import {
+    defaultTimelineTypeFilter,
+    timelineRowMatchesTypeFilter,
+    type TimelineTypeFilter,
+} from "../TimelineFilters";
 import type { ServiceTypeWorkflow } from "@/lib/service-type-workflows";
 import { FileUploadModal } from "../FileUploadModal";
 import { MedicalRecordsTimelineToolbar } from "../MedicalRecordsTimelineToolbar";
@@ -36,7 +41,7 @@ interface MedicalRecordsClientProps {
     serviceTypes: {
         id: string;
         name: string;
-        workflow: "consultation" | "generic" | "exam_review" | "procedure" | "surgery";
+        workflow: "consultation" | "generic" | "exam_review" | "procedure" | "surgery" | "return";
         slug?: string | null;
     }[];
     healthInsurances: { id: string; name: string }[];
@@ -76,13 +81,47 @@ type ConsultationTimelineItem = {
     serviceTypeTimelineIconKey?: string | null;
     serviceTypeTimelineColorHex?: string | null;
     status?: string | null;
+    hasReturn?: boolean;
+    parentConsultationId?: string | null;
+    healthInsuranceId?: string | null;
 };
+
+/** Monta o estado de edição a partir do registro recém-criado em `startConsultation` (retorno). */
+function createdReturnToDetailData(
+    row: {
+        id: string;
+        status: string;
+        startTime: Date;
+        serviceTypeId: string | null;
+        healthInsuranceId: string | null;
+        parentConsultationId: string | null;
+        doctorId: string | null;
+    },
+    st: { name: string }
+): ConsultationDetailData {
+    return {
+        id: row.id,
+        doctorId: row.doctorId,
+        status: row.status,
+        startTime: row.startTime,
+        soap: null,
+        vitalSigns: [],
+        serviceType: { name: st.name, workflow: "return" },
+        serviceTypeId: row.serviceTypeId,
+        parentConsultationId: row.parentConsultationId,
+        healthInsuranceId: row.healthInsuranceId,
+    };
+}
 
 function detailToFormInitial(c: ConsultationDetailData) {
     const v0 = c.vitalSigns?.[0];
     const wfRaw = c.serviceType?.workflow ?? "consultation";
     const serviceTypeWorkflow: ServiceTypeWorkflow =
-        wfRaw === "generic" || wfRaw === "exam_review" || wfRaw === "procedure" || wfRaw === "consultation"
+        wfRaw === "generic" ||
+        wfRaw === "exam_review" ||
+        wfRaw === "procedure" ||
+        wfRaw === "consultation" ||
+        wfRaw === "return"
             ? wfRaw
             : "consultation";
 
@@ -141,8 +180,10 @@ export function MedicalRecordsClient({
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [formSessionKey, setFormSessionKey] = useState(0);
     const [searchTerm, setSearchTerm] = useState("");
+    const [typeFilter, setTypeFilter] = useState<TimelineTypeFilter>(defaultTimelineTypeFilter);
     const [selectedConsultationId, setSelectedConsultationId] = useState<string | null>(null);
     const [editingConsultation, setEditingConsultation] = useState<ConsultationDetailData | null>(null);
+    const [isStartingReturn, setIsStartingReturn] = useState(false);
 
     const [surgeryFormOpen, setSurgeryFormOpen] = useState(false);
     const [activeSurgeryId, setActiveSurgeryId] = useState<string | null>(null);
@@ -154,6 +195,55 @@ export function MedicalRecordsClient({
         setFormSessionKey((value) => value + 1);
         setIsFormOpen(true);
     }, []);
+
+    const openReturnFormForParent = useCallback(
+        async (parentConsultationId: string, healthInsuranceId: string | null) => {
+            const st = serviceTypes.find((s) => s.workflow === "return");
+            if (!st) {
+                toast.error(
+                    'Cadastre um tipo de atendimento com fluxo "Retorno" (Cadastros → Tipos de atendimento).'
+                );
+                return;
+            }
+            setIsStartingReturn(true);
+            try {
+                const res = await startConsultationAction({
+                    patientId: patient.id,
+                    serviceTypeId: st.id,
+                    healthInsuranceId,
+                    parentConsultationId,
+                });
+                if (!res.success) {
+                    toast.error(
+                        typeof res.error === "string" ? res.error : "Não foi possível iniciar o retorno."
+                    );
+                    return;
+                }
+                const created = "data" in res ? res.data : undefined;
+                if (!created?.id) {
+                    toast.error("Resposta inválida ao iniciar retorno.");
+                    return;
+                }
+                setEditingConsultation(createdReturnToDetailData(created, { name: st.name }));
+                setFormSessionKey((value) => value + 1);
+                setIsFormOpen(true);
+                setSelectedConsultationId(null);
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : "Erro inesperado ao iniciar retorno.";
+                toast.error(msg);
+            } finally {
+                setIsStartingReturn(false);
+            }
+        },
+        [serviceTypes, patient.id]
+    );
+
+    const handleStartReturn = useCallback(
+        (detail: ConsultationDetailData) => {
+            void openReturnFormForParent(detail.id, detail.healthInsuranceId ?? null);
+        },
+        [openReturnFormForParent]
+    );
 
     useEffect(() => {
         setHeader("Prontuário");
@@ -167,10 +257,12 @@ export function MedicalRecordsClient({
                 onSearchChange={setSearchTerm}
                 onNewConsultation={handleStartConsultation}
                 isDoctor={isDoctor}
+                typeFilter={typeFilter}
+                onTypeFilterChange={setTypeFilter}
             />
         );
         return () => setToolbar(null);
-    }, [searchTerm, isDoctor, handleStartConsultation, setToolbar]);
+    }, [searchTerm, typeFilter, isDoctor, handleStartConsultation, setToolbar]);
 
     useEffect(() => {
         if (!queuedConsultation?.id || !isDoctor) return;
@@ -194,7 +286,11 @@ export function MedicalRecordsClient({
 
             const wfRaw = queuedConsultation.serviceType?.workflow ?? "consultation";
             const workflow =
-                wfRaw === "generic" || wfRaw === "exam_review" || wfRaw === "procedure" || wfRaw === "consultation"
+                wfRaw === "generic" ||
+                wfRaw === "exam_review" ||
+                wfRaw === "procedure" ||
+                wfRaw === "consultation" ||
+                wfRaw === "return"
                     ? wfRaw
                     : "consultation";
 
@@ -256,6 +352,9 @@ export function MedicalRecordsClient({
             serviceTypeSlug: c.serviceTypeSlug,
             serviceTypeTimelineIconKey: c.serviceTypeTimelineIconKey,
             serviceTypeTimelineColorHex: c.serviceTypeTimelineColorHex,
+            hasReturn: c.hasReturn,
+            parentConsultationId: c.parentConsultationId,
+            healthInsuranceId: c.healthInsuranceId,
         }));
         return [...cRows, ...surgeries].sort((a, b) => {
             const ta = new Date(a.startTime).getTime();
@@ -274,22 +373,25 @@ export function MedicalRecordsClient({
 
     const filteredTimeline = useMemo(() => {
         const q = normalizeForSearch(searchTerm.trim());
-        if (!q) return mergedTimeline;
-        return mergedTimeline.filter((c) => {
-            const doctor = normalizeForSearch(c.doctorName);
-            const diagnosis = normalizeForSearch(c.diagnosis);
-            const typeLabel = normalizeForSearch(c.serviceTypeName);
-            const dateStr = normalizeForSearch(format(new Date(c.startTime), "dd MMM yyyy", { locale: ptBR }));
-            const cid = normalizeForSearch(c.cidCode);
-            return (
-                doctor.includes(q) ||
-                diagnosis.includes(q) ||
-                typeLabel.includes(q) ||
-                dateStr.includes(q) ||
-                cid.includes(q)
-            );
-        });
-    }, [mergedTimeline, searchTerm]);
+        let list = mergedTimeline;
+        if (q) {
+            list = list.filter((c) => {
+                const doctor = normalizeForSearch(c.doctorName);
+                const diagnosis = normalizeForSearch(c.diagnosis);
+                const typeLabel = normalizeForSearch(c.serviceTypeName);
+                const dateStr = normalizeForSearch(format(new Date(c.startTime), "dd MMM yyyy", { locale: ptBR }));
+                const cid = normalizeForSearch(c.cidCode);
+                return (
+                    doctor.includes(q) ||
+                    diagnosis.includes(q) ||
+                    typeLabel.includes(q) ||
+                    dateStr.includes(q) ||
+                    cid.includes(q)
+                );
+            });
+        }
+        return list.filter((row) => timelineRowMatchesTypeFilter(row, typeFilter));
+    }, [mergedTimeline, searchTerm, typeFilter]);
 
     const handleTimelineSelect = (id: string, kind: "consultation" | "surgery") => {
         if (kind === "consultation") {
@@ -318,6 +420,7 @@ export function MedicalRecordsClient({
                     patientId: data.patientId,
                     serviceTypeId: data.serviceTypeId,
                     healthInsuranceId: data.healthInsuranceId,
+                    parentConsultationId: data.parentConsultationId ?? null,
                 });
 
                 if (!startResult.success) {
@@ -390,14 +493,34 @@ export function MedicalRecordsClient({
             </aside>
 
             <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-muted/10">
-                <div className="border-b bg-muted/30 px-5 py-1 md:px-8">
+                <div className="border-b bg-muted/30 px-5 py-2 md:px-8">
                     <h2 className="text-center text-lg font-bold leading-relaxed text-muted-foreground">
                         Registros de Atendimentos
                     </h2>
+                    {isDoctor ? (
+                        <p className="mx-auto mt-1 max-w-2xl text-center text-xs leading-snug text-muted-foreground">
+                            <span className="font-medium text-foreground">Retorno:</span> em atendimentos{" "}
+                            <span className="font-medium text-foreground">Concluídos</span> use o botão{" "}
+                            <span className="font-medium text-foreground">Retorno</span> no próprio card (ou abra o
+                            detalhe e use o botão no topo do painel).{" "}
+                            <span className="font-medium text-foreground">+ Novo Atendimento</span> é para atendimento
+                            novo, não retorno.
+                        </p>
+                    ) : null}
                 </div>
 
                 <div className="w-full flex-1 overflow-y-auto p-5 md:p-8">
-                    <ConsultationTimeline consultations={filteredTimeline} onSelect={handleTimelineSelect} />
+                    <ConsultationTimeline
+                        consultations={filteredTimeline}
+                        onSelect={handleTimelineSelect}
+                        onRequestReturn={
+                            isDoctor
+                                ? ({ consultationId, healthInsuranceId }) =>
+                                      void openReturnFormForParent(consultationId, healthInsuranceId)
+                                : undefined
+                        }
+                        isRequestReturnLoading={isStartingReturn}
+                    />
                 </div>
 
                 <FileUploadModal
@@ -413,6 +536,10 @@ export function MedicalRecordsClient({
                 consultationId={selectedConsultationId}
                 onClose={() => setSelectedConsultationId(null)}
                 onEdit={handleEditConsultation}
+                onStartReturn={handleStartReturn}
+                isDoctor={isDoctor}
+                isReturnStarting={isStartingReturn}
+                onSelectConsultation={(id) => setSelectedConsultationId(id)}
                 patientId={patient.id}
                 currentDoctorId={currentDoctorId}
                 canDeleteAsAdmin={canDeleteClinicalRecordsAsAdmin}

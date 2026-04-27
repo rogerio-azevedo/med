@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getConsultationDetailsWithDoctor } from "@/db/queries/consultations";
+import { getConsultationDetailsWithDoctor, getConsultationReturnStatus } from "@/db/queries/consultations";
 
 export async function GET(
     request: Request,
@@ -23,7 +23,13 @@ export async function GET(
             return NextResponse.json({ error: "Consultation not found" }, { status: 404 });
         }
 
-        return NextResponse.json(consultation);
+        const returnStatus = await getConsultationReturnStatus(consultationId, session.user.clinicId);
+
+        return NextResponse.json({
+            ...consultation,
+            hasReturn: returnStatus.hasReturn,
+            returnConsultationId: returnStatus.returnConsultationId,
+        });
     } catch (error) {
         console.error("API Error (Consultation Detail):", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

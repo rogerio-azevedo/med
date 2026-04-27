@@ -5,6 +5,7 @@ import {
     FileText,
     FlaskConical,
     Microscope,
+    RotateCcw,
     Scissors,
     Stethoscope,
     Video,
@@ -62,6 +63,14 @@ function heuristicVisual(input: {
             Icon: ClipboardList,
             ringClass: "border-amber-500/70 bg-amber-500/12 text-amber-900 shadow-sm dark:text-amber-100",
             typeBadgeClass: "border-amber-500/30 bg-amber-500/15 text-amber-950 dark:text-amber-50",
+        };
+    }
+
+    if (wf === "return") {
+        return {
+            Icon: RotateCcw,
+            ringClass: "border-indigo-500/70 bg-indigo-500/12 text-indigo-900 shadow-sm dark:text-indigo-100",
+            typeBadgeClass: "border-indigo-500/30 bg-indigo-500/15 text-indigo-950 dark:text-indigo-50",
         };
     }
 

@@ -3,13 +3,15 @@
 import { Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TimelineFilters } from "./TimelineFilters";
+import { TimelineFilters, type TimelineTypeFilter } from "./TimelineFilters";
 
 interface MedicalRecordsTimelineToolbarProps {
     searchTerm: string;
     onSearchChange: (value: string) => void;
     onNewConsultation: () => void;
     isDoctor?: boolean;
+    typeFilter: TimelineTypeFilter;
+    onTypeFilterChange: (next: TimelineTypeFilter) => void;
 }
 
 export function MedicalRecordsTimelineToolbar({
@@ -17,6 +19,8 @@ export function MedicalRecordsTimelineToolbar({
     onSearchChange,
     onNewConsultation,
     isDoctor,
+    typeFilter,
+    onTypeFilterChange,
 }: MedicalRecordsTimelineToolbarProps) {
     return (
         <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-3">
@@ -30,7 +34,7 @@ export function MedicalRecordsTimelineToolbar({
                         className="h-10 min-h-10 py-2 pl-10 text-sm md:h-11 md:min-h-11"
                     />
                 </div>
-                <TimelineFilters onFilterChange={() => {}} />
+                <TimelineFilters filter={typeFilter} onFilterChange={onTypeFilterChange} />
             </div>
             <Button
                 type="button"

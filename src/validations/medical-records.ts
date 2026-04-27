@@ -8,6 +8,7 @@ export const consultationSchema = z.object({
     serviceTypeId: z.string().uuid().optional().nullable(),
     healthInsuranceId: z.string().uuid().optional().nullable(),
     checkInId: z.string().uuid().optional().nullable(),
+    parentConsultationId: z.string().uuid().optional().nullable(),
     status: z.string().optional().default("in_progress"),
 });
 

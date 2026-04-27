@@ -2,7 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronRight, ClipboardList } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ChevronRight, ClipboardList, RotateCcw } from "lucide-react";
 import { resolveTimelineVisual } from "@/lib/formatters/medical-timeline-visual";
 import { cn } from "@/lib/utils";
 
@@ -22,14 +23,30 @@ export type MedicalTimelineRow = {
     serviceTypeTimelineColorHex?: string | null;
     status?: string | null;
     timelineKind?: "consultation" | "surgery";
+    /** Só em consulta “mãe”: já existe registro de retorno */
+    hasReturn?: boolean;
+    parentConsultationId?: string | null;
+    healthInsuranceId?: string | null;
 };
 
 interface ConsultationTimelineProps {
     consultations: MedicalTimelineRow[];
     onSelect?: (id: string, kind: "consultation" | "surgery") => void;
+    /**
+     * Quando preenchido (ex.: usuário é médico), exibe botão "Retorno" no card
+     * para consultas concluídas ainda sem retorno (sem abrir o painel de detalhe).
+     */
+    onRequestReturn?: (payload: { consultationId: string; healthInsuranceId: string | null }) => void;
+    /** Enquanto o retorno está sendo criado no servidor (evita duplo clique). */
+    isRequestReturnLoading?: boolean;
 }
 
-export function ConsultationTimeline({ consultations = [], onSelect }: ConsultationTimelineProps) {
+export function ConsultationTimeline({
+    consultations = [],
+    onSelect,
+    onRequestReturn,
+    isRequestReturnLoading = false,
+}: ConsultationTimelineProps) {
     if (consultations.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center gap-4 py-20 text-muted-foreground">
@@ -53,6 +70,13 @@ export function ConsultationTimeline({ consultations = [], onSelect }: Consultat
                     serviceTypeTimelineColorHex: consultation.serviceTypeTimelineColorHex,
                 });
                 const { Icon } = visual;
+                const canQuickReturn =
+                    onRequestReturn &&
+                    kind === "consultation" &&
+                    consultation.status === "finished" &&
+                    !consultation.parentConsultationId &&
+                    !consultation.hasReturn;
+
                 return (
                     <div key={`${kind}-${consultation.id}`} className="group relative">
                         {/* Indicador na timeline — alinhado ao trilho; padding à esquerda evita corte */}
@@ -116,8 +140,47 @@ export function ConsultationTimeline({ consultations = [], onSelect }: Consultat
                                                 {consultation.cidCode}
                                             </Badge>
                                         ) : null}
+                                        {kind === "consultation" && consultation.hasReturn ? (
+                                            <Badge
+                                                variant="secondary"
+                                                className="h-5 border-indigo-500/30 bg-indigo-500/12 px-2 py-0 text-[10px] font-bold uppercase text-indigo-900 md:text-xs dark:text-indigo-100"
+                                            >
+                                                Retorno realizado
+                                            </Badge>
+                                        ) : null}
+                                        {kind === "consultation" && consultation.serviceTypeWorkflow === "return" ? (
+                                            <Badge
+                                                variant="secondary"
+                                                className="h-5 border-indigo-500/30 bg-indigo-500/12 px-2 py-0 text-[10px] font-bold uppercase text-indigo-900 md:text-xs dark:text-indigo-100"
+                                            >
+                                                Retorno
+                                            </Badge>
+                                        ) : null}
                                     </div>
-                                    <ChevronRight className="size-4 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-primary md:size-5" />
+                                    <div className="flex shrink-0 items-center gap-1.5">
+                                        {canQuickReturn ? (
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="default"
+                                                className="h-8 gap-1.5 px-2.5 text-xs font-semibold"
+                                                disabled={isRequestReturnLoading}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    onRequestReturn({
+                                                        consultationId: consultation.id,
+                                                        healthInsuranceId: consultation.healthInsuranceId ?? null,
+                                                    });
+                                                }}
+                                                onPointerDown={(e) => e.stopPropagation()}
+                                            >
+                                                <RotateCcw className="size-3.5" />
+                                                {isRequestReturnLoading ? "Abrindo…" : "Retorno"}
+                                            </Button>
+                                        ) : null}
+                                        <ChevronRight className="size-4 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-primary md:size-5" />
+                                    </div>
                                 </div>
                             </div>
                         </Card>

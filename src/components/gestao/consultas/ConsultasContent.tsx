@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ExternalLink, Search } from "lucide-react";
+import { ExternalLink, RotateCcw, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import type { ClinicConsultationListRow } from "@/db/queries/consultations";
 import { matchesNormalizedSearch } from "@/lib/search-normalize";
 import { Button } from "@/components/ui/button";
@@ -145,6 +146,7 @@ export function ConsultasContent({ rows, doctors, showDoctorFilter }: ConsultasC
                             <TableHead>Médico</TableHead>
                             <TableHead>Convênio</TableHead>
                             <TableHead>Tipo</TableHead>
+                            <TableHead className="w-[140px]">Retorno</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Data/Hora</TableHead>
                             <TableHead className="text-right">Ações</TableHead>
@@ -153,7 +155,7 @@ export function ConsultasContent({ rows, doctors, showDoctorFilter }: ConsultasC
                     <TableBody>
                         {filtered.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                                     Nenhuma consulta encontrada com os filtros atuais.
                                 </TableCell>
                             </TableRow>
@@ -164,6 +166,29 @@ export function ConsultasContent({ rows, doctors, showDoctorFilter }: ConsultasC
                                     <TableCell>{r.doctorName ?? "—"}</TableCell>
                                     <TableCell>{r.healthInsuranceName ?? "—"}</TableCell>
                                     <TableCell>{r.serviceTypeName ?? "—"}</TableCell>
+                                    <TableCell>
+                                        {r.parentConsultationId ? (
+                                            <Badge
+                                                variant="secondary"
+                                                className="gap-1 border-indigo-500/30 bg-indigo-500/10 font-normal text-indigo-900 dark:text-indigo-100"
+                                            >
+                                                <RotateCcw className="h-3 w-3" />
+                                                Registro de retorno
+                                            </Badge>
+                                        ) : r.hasReturn ? (
+                                            <Badge
+                                                variant="secondary"
+                                                className="gap-1 border-emerald-500/30 bg-emerald-500/10 font-normal text-emerald-900 dark:text-emerald-100"
+                                            >
+                                                <RotateCcw className="h-3 w-3" />
+                                                Com retorno
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-muted-foreground" title="Ainda sem registro de retorno">
+                                                —
+                                            </span>
+                                        )}
+                                    </TableCell>
                                     <TableCell>
                                         <EncounterStatusBadge status={r.status} />
                                     </TableCell>

@@ -19,7 +19,8 @@ import {
     Pill,
     Microscope,
     Pencil,
-    Trash2
+    Trash2,
+    RotateCcw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -85,6 +86,11 @@ export type ConsultationDetailData = {
         workflow?: string | null;
     } | null;
     serviceTypeId?: string | null;
+    /** Se este registro é um retorno, aponta para a consulta original */
+    parentConsultationId?: string | null;
+    /** Só na consulta “mãe”: se já existe retorno vinculado */
+    hasReturn?: boolean;
+    returnConsultationId?: string;
     healthInsurance?: {
         name?: string | null;
     } | null;
@@ -102,6 +108,13 @@ interface ConsultationDetailSheetProps {
     consultationId: string | null;
     onClose: () => void;
     onEdit?: (consultation: ConsultationDetailData) => void;
+    /** Abre o fluxo de retorno (somente médico; consulta finalizada; ainda sem retorno). */
+    onStartReturn?: (consultation: ConsultationDetailData) => void;
+    /** Enquanto `startConsultation` do retorno está em andamento (desabilita o botão Retorno). */
+    isReturnStarting?: boolean;
+    isDoctor?: boolean;
+    /** Abre o detalhe de outra consulta na timeline (ex.: id do retorno ou da consulta original). */
+    onSelectConsultation?: (consultationId: string) => void;
     patientId: string;
     currentDoctorId?: string;
     /** Admin da clínica (ou super admin) pode excluir atendimento mesmo sem ser o médico do registro */
@@ -114,6 +127,10 @@ export function ConsultationDetailSheet({
     consultationId,
     onClose,
     onEdit,
+    onStartReturn,
+    isReturnStarting = false,
+    isDoctor = false,
+    onSelectConsultation,
     patientId,
     currentDoctorId,
     canDeleteAsAdmin = false,
@@ -231,12 +248,65 @@ export function ConsultationDetailSheet({
                                             {consultation.soap?.diagnosisFreeText || "Atendimento Clínico"}
                                         </SheetTitle>
                                     </div>
-                                    {(isAuthor && onEdit) || canDeleteConsultation ? (
-                                        <div className="flex items-center gap-2">
+                                    {(isAuthor && onEdit) ||
+                                    canDeleteConsultation ||
+                                    (onStartReturn &&
+                                        isDoctor &&
+                                        consultation.status === "finished" &&
+                                        !consultation.parentConsultationId &&
+                                        !consultation.hasReturn) ||
+                                    (consultation.hasReturn && consultation.returnConsultationId && onSelectConsultation) ||
+                                    (consultation.parentConsultationId && onSelectConsultation) ? (
+                                        <div className="flex flex-wrap items-center justify-end gap-2">
                                             {isAuthor && onEdit ? (
                                                 <Button variant="outline" size="sm" className="gap-2" onClick={handleEdit}>
                                                     <Pencil className="h-4 w-4" />
                                                     Editar
+                                                </Button>
+                                            ) : null}
+                                            {onStartReturn &&
+                                            isDoctor &&
+                                            consultation.status === "finished" &&
+                                            !consultation.parentConsultationId &&
+                                            !consultation.hasReturn ? (
+                                                <Button
+                                                    type="button"
+                                                    variant="default"
+                                                    size="sm"
+                                                    className="gap-2"
+                                                    disabled={isReturnStarting}
+                                                    onClick={() => consultation && onStartReturn(consultation)}
+                                                >
+                                                    <RotateCcw className="h-4 w-4" />
+                                                    {isReturnStarting ? "Abrindo…" : "Retorno"}
+                                                </Button>
+                                            ) : null}
+                                            {consultation.hasReturn && consultation.returnConsultationId && onSelectConsultation ? (
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    className="gap-2"
+                                                    onClick={() => {
+                                                        onClose();
+                                                        onSelectConsultation(consultation.returnConsultationId!);
+                                                    }}
+                                                >
+                                                    Ver retorno registrado
+                                                </Button>
+                                            ) : null}
+                                            {consultation.parentConsultationId && onSelectConsultation ? (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-2"
+                                                    onClick={() => {
+                                                        onClose();
+                                                        onSelectConsultation(consultation.parentConsultationId!);
+                                                    }}
+                                                >
+                                                    Ver consulta original
                                                 </Button>
                                             ) : null}
                                             {canDeleteConsultation ? (

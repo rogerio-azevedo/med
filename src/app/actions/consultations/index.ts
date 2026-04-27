@@ -40,6 +40,7 @@ export async function startConsultationAction(data: Record<string, unknown>) {
         serviceTypeId: validated.serviceTypeId,
         healthInsuranceId: validated.healthInsuranceId,
         checkInId: validated.checkInId,
+        parentConsultationId: validated.parentConsultationId,
     });
 
     if (result.success) {

@@ -215,7 +215,7 @@ export function NewAppointmentDrawer({
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="flex flex-col w-full sm:max-w-md overflow-hidden bg-background p-0">
+            <SheetContent className="flex flex-col w-full sm:max-w-lg overflow-hidden bg-background p-0">
                 <SheetHeader className="px-6 py-5 border-b bg-card">
                     <SheetTitle className="text-xl">Agendar Consulta</SheetTitle>
                     <SheetDescription className="text-sm">
@@ -434,7 +434,11 @@ export function NewAppointmentDrawer({
                                                 ? "grid-cols-2"
                                                 : serviceTypes.length === 3
                                                   ? "grid-cols-3"
-                                                  : "grid-cols-2 sm:grid-cols-4"
+                                                  : serviceTypes.length === 4
+                                                    ? "grid-cols-4"
+                                                    : serviceTypes.length === 5
+                                                      ? "grid-cols-5"
+                                                      : "grid-cols-3 sm:grid-cols-4"
                                         )}
                                     >
                                         {serviceTypes.map((st) => {

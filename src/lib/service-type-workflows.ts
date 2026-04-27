@@ -24,6 +24,11 @@ export const SERVICE_TYPE_WORKFLOWS = [
         label: "Cirurgia",
         description: "Fluxo específico para registro e gestão de cirurgias.",
     },
+    {
+        value: "return",
+        label: "Retorno",
+        description: "Registro de retorno vinculado a uma consulta anterior.",
+    },
 ] as const;
 
 export type ServiceTypeWorkflow = (typeof SERVICE_TYPE_WORKFLOWS)[number]["value"];

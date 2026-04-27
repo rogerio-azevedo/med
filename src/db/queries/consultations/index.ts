@@ -11,7 +11,7 @@ import {
     patients,
     healthInsurances,
 } from "@/db/schema";
-import { eq, and, desc, or, ilike, isNull, ne, gte, lte } from "drizzle-orm";
+import { eq, and, desc, or, ilike, isNull, ne, gte, lte, sql } from "drizzle-orm";
 import type { consultationSchema, consultationSoapSchema, vitalSignsSchema } from "@/validations/medical-records";
 import type { z } from "zod";
 
@@ -69,6 +69,16 @@ export async function getPatientConsultationsTimeline(
             diagnosis: consultationSoap.diagnosisFreeText,
             cidCode: icd10Codes.code,
             cidDescription: icd10Codes.description,
+            parentConsultationId: consultations.parentConsultationId,
+            healthInsuranceId: consultations.healthInsuranceId,
+            hasReturn: sql<boolean>`(
+                exists (
+                    select 1
+                    from ${consultations} c_ret
+                    where c_ret.parent_consultation_id = ${consultations.id}
+                      and c_ret.clinic_id = ${clinicId}::uuid
+                )
+            )`,
         })
         .from(consultations)
         .leftJoin(consultationSoap, eq(consultations.id, consultationSoap.consultationId))
@@ -133,6 +143,9 @@ export type ClinicConsultationListRow = {
     endTime: Date | null;
     serviceTypeName: string | null;
     healthInsuranceName: string | null;
+    /** Já existe registro de retorno vinculado a esta consulta. */
+    hasReturn: boolean;
+    parentConsultationId: string | null;
 };
 
 export type GetAllConsultationsForClinicOptions = {
@@ -184,6 +197,15 @@ export async function getAllConsultationsForClinic(
             endTime: consultations.endTime,
             serviceTypeName: serviceTypes.name,
             healthInsuranceName: healthInsurances.name,
+            parentConsultationId: consultations.parentConsultationId,
+            hasReturn: sql<boolean>`(
+                exists (
+                    select 1
+                    from ${consultations} c_ret
+                    where c_ret.parent_consultation_id = ${consultations.id}
+                      and c_ret.clinic_id = ${clinicId}::uuid
+                )
+            )`,
         })
         .from(consultations)
         .innerJoin(patients, eq(consultations.patientId, patients.id))
@@ -283,6 +305,20 @@ export async function getConsultationDetailsWithDoctor(consultationId: string, c
     });
 
     return consultation;
+}
+
+/**
+ * Se esta consulta é a “mãe”, indica se já existe registro de retorno e o id dele.
+ */
+export async function getConsultationReturnStatus(consultationId: string, clinicId: string) {
+    const child = await db.query.consultations.findFirst({
+        where: and(
+            eq(consultations.parentConsultationId, consultationId),
+            eq(consultations.clinicId, clinicId)
+        ),
+        columns: { id: true },
+    });
+    return { hasReturn: !!child, returnConsultationId: child?.id as string | undefined };
 }
 
 /**

@@ -36,6 +36,7 @@ import {
     Scissors,
     FlaskConical,
     FileText,
+    RotateCcw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -82,6 +83,8 @@ export type ConsultationFormSubmitData = {
     vitals: VitalsState;
     /** Present after "Continuar" on a new encounter or when editing an existing one. */
     consultationId?: string | null;
+    /** Só usado se `consultationId` ainda não existir no envio (fluxo raro; retorno cria a consulta antes de abrir o form). */
+    parentConsultationId?: string | null;
 };
 
 type ServiceTypeOption = {
@@ -140,6 +143,7 @@ function getServiceTypeIcon(name: string, workflow: ServiceTypeWorkflow) {
     if (workflow === "surgery") return Scissors;
     if (workflow === "procedure") return ClipboardList;
     if (workflow === "exam_review") return Microscope;
+    if (workflow === "return") return RotateCcw;
     return FileText;
 }
 
@@ -411,8 +415,8 @@ export function ConsultationForm({
                                     serviceTypes.length <= 2
                                         ? "grid-cols-2"
                                         : serviceTypes.length === 3
-                                          ? "grid-cols-3"
-                                          : "grid-cols-2 sm:grid-cols-4"
+                                            ? "grid-cols-3"
+                                            : "grid-cols-2 sm:grid-cols-4"
                                 )}
                             >
                                 {serviceTypes.map((st) => {
@@ -647,40 +651,55 @@ export function ConsultationForm({
                                     </CardContent>
                                 </Card>
 
-                                <div className="space-y-2">
-                                    <Label className="text-lg font-semibold">{recordMeta.titleLabel}</Label>
-                                    <Input
-                                        placeholder={recordMeta.titlePlaceholder}
-                                        value={soap.diagnosisFreeText}
-                                        onChange={(e) => setSoap({ ...soap, diagnosisFreeText: e.target.value })}
-                                    />
-                                </div>
+                                {recordMeta.isSingleFieldReturn === true ? (
+                                    <div className="space-y-2">
+                                        <Label className="text-lg font-semibold">{recordMeta.primaryLabel}</Label>
+                                        <Textarea
+                                            placeholder={recordMeta.primaryPlaceholder}
+                                            className="min-h-[360px] text-base"
+                                            value={soap.assessment}
+                                            onChange={(e) => setSoap({ ...soap, assessment: e.target.value })}
+                                        />
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="space-y-2">
+                                            <Label className="text-lg font-semibold">{recordMeta.titleLabel}</Label>
+                                            <Input
+                                                placeholder={recordMeta.titlePlaceholder}
+                                                value={soap.diagnosisFreeText}
+                                                onChange={(e) => setSoap({ ...soap, diagnosisFreeText: e.target.value })}
+                                            />
+                                        </div>
 
-                                <div className="space-y-2">
-                                    <Label className="text-lg font-semibold">{recordMeta.primaryLabel}</Label>
-                                    <Textarea
-                                        placeholder={recordMeta.primaryPlaceholder}
-                                        className="min-h-[300px]"
-                                        value={soap.assessment}
-                                        onChange={(e) => setSoap({ ...soap, assessment: e.target.value })}
-                                    />
-                                </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-lg font-semibold">{recordMeta.primaryLabel}</Label>
+                                            <Textarea
+                                                placeholder={recordMeta.primaryPlaceholder}
+                                                className="min-h-[300px]"
+                                                value={soap.assessment}
+                                                onChange={(e) => setSoap({ ...soap, assessment: e.target.value })}
+                                            />
+                                        </div>
 
-                                <div className="space-y-2">
-                                    <Label className="text-lg font-semibold">{recordMeta.secondaryLabel}</Label>
-                                    <Textarea
-                                        placeholder={recordMeta.secondaryPlaceholder}
-                                        className="min-h-[250px]"
-                                        value={soap.plan}
-                                        onChange={(e) => setSoap({ ...soap, plan: e.target.value })}
-                                    />
-                                </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-lg font-semibold">{recordMeta.secondaryLabel}</Label>
+                                            <Textarea
+                                                placeholder={recordMeta.secondaryPlaceholder}
+                                                className="min-h-[250px]"
+                                                value={soap.plan}
+                                                onChange={(e) => setSoap({ ...soap, plan: e.target.value })}
+                                            />
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 
                         <DialogFooter className="gap-3 border-t p-6">
                             <Button variant="outline" onClick={onClose}>Cancelar</Button>
                             <Button
+                                disabled={!effectiveConsultationId}
                                 onClick={() =>
                                     onSubmit({
                                         patientId: selectedPatientId,
@@ -693,7 +712,7 @@ export function ConsultationForm({
                                     })
                                 }
                             >
-                                Salvar Atendimento
+                                {activeWorkflow === "return" ? "Finalizar retorno" : "Salvar Atendimento"}
                             </Button>
                         </DialogFooter>
                     </>
@@ -703,8 +722,35 @@ export function ConsultationForm({
     );
 }
 
-function getRecordMeta(workflow: ServiceTypeWorkflow | null) {
+type RecordMeta =
+    | {
+        description: string;
+        isSingleFieldReturn: true;
+        primaryLabel: string;
+        primaryPlaceholder: string;
+    }
+    | {
+        description: string;
+        isSingleFieldReturn?: false;
+        titleLabel: string;
+        titlePlaceholder: string;
+        primaryLabel: string;
+        primaryPlaceholder: string;
+        secondaryLabel: string;
+        secondaryPlaceholder: string;
+    };
+
+function getRecordMeta(workflow: ServiceTypeWorkflow | null): RecordMeta {
     switch (workflow) {
+        case "return":
+            return {
+                description:
+                    "Retorno vinculado à consulta anterior. Registre a evolução, achados e conduta de forma resumida.",
+                isSingleFieldReturn: true,
+                primaryLabel: "Evolução do retorno",
+                primaryPlaceholder:
+                    "Descreva a evolução, exame (se houver), conduta e orientações ao paciente…",
+            };
         case "procedure":
             return {
                 description: "Registre de forma objetiva o procedimento executado, intercorrências e orientações finais.",

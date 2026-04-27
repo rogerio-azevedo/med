@@ -31,10 +31,34 @@ export async function startConsultation(data: {
     serviceTypeId?: string | null;
     healthInsuranceId?: string | null;
     checkInId?: string | null;
+    parentConsultationId?: string | null;
 }) {
     const ins = await assertHealthInsuranceForClinic(data.clinicId, data.healthInsuranceId);
     if (!ins.ok) {
         return { success: false, error: ins.error };
+    }
+
+    if (data.parentConsultationId) {
+        const parent = await db.query.consultations.findFirst({
+            where: and(eq(consultations.id, data.parentConsultationId), eq(consultations.clinicId, data.clinicId)),
+            columns: { id: true, patientId: true, status: true },
+        });
+        if (!parent) {
+            return { success: false, error: "Consulta de origem não encontrada." };
+        }
+        if (parent.patientId !== data.patientId) {
+            return { success: false, error: "Paciente incompatível com a consulta de origem." };
+        }
+        if (parent.status !== "finished") {
+            return { success: false, error: "Apenas consultas finalizadas podem ter retorno." };
+        }
+        const existingChild = await db.query.consultations.findFirst({
+            where: eq(consultations.parentConsultationId, data.parentConsultationId),
+            columns: { id: true },
+        });
+        if (existingChild) {
+            return { success: false, error: "Já existe um retorno registrado para esta consulta." };
+        }
     }
 
     try {
@@ -48,6 +72,7 @@ export async function startConsultation(data: {
                 serviceTypeId: data.serviceTypeId ?? null,
                 healthInsuranceId: data.healthInsuranceId ?? null,
                 checkInId: data.checkInId ?? null,
+                parentConsultationId: data.parentConsultationId ?? null,
                 status: "in_progress",
                 startTime: new Date(),
             })

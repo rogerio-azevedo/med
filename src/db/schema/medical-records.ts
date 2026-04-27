@@ -9,6 +9,7 @@ import {
     integer,
     date,
 } from "drizzle-orm/pg-core";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { patients } from "./patients";
 import { doctors } from "./doctors";
@@ -69,6 +70,10 @@ export const consultations = pgTable("consultations", {
     serviceTypeId: uuid("service_type_id").references(() => serviceTypes.id, { onDelete: "set null" }),
     healthInsuranceId: uuid("health_insurance_id").references(() => healthInsurances.id, { onDelete: "set null" }),
     checkInId: uuid("check_in_id").references(() => checkIns.id, { onDelete: "set null" }),
+    /** Retorno vinculado a uma consulta anterior (1 retorno por consulta). */
+    parentConsultationId: uuid("parent_consultation_id").references((): AnyPgColumn => consultations.id, {
+        onDelete: "set null",
+    }),
     status: varchar("status", { length: 20 }).notNull().default("in_progress"), // waiting, in_progress, finished, cancelled
     startTime: timestamp("start_time").defaultNow().notNull(),
     endTime: timestamp("end_time"),
@@ -281,6 +286,14 @@ export const consultationsRelations = relations(consultations, ({ one, many }) =
     patient: one(patients, {
         fields: [consultations.patientId],
         references: [patients.id],
+    }),
+    parentConsultation: one(consultations, {
+        fields: [consultations.parentConsultationId],
+        references: [consultations.id],
+        relationName: "consultationReturnChain",
+    }),
+    returnFollowUps: many(consultations, {
+        relationName: "consultationReturnChain",
     }),
     doctor: one(doctors, {
         fields: [consultations.doctorId],
