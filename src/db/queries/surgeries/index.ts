@@ -16,9 +16,6 @@ import type { InferInsertModel } from "drizzle-orm";
 
 export type SurgeryInsert = InferInsertModel<typeof surgeries>;
 
-/**
- * Linha da timeline de cirurgias do paciente.
- */
 export async function getPatientSurgeriesTimeline(patientId: string, clinicId: string) {
     const rows = await db
         .select({
@@ -48,7 +45,9 @@ export async function getPatientSurgeriesTimeline(patientId: string, clinicId: s
         id: r.id,
         serviceTypeId: r.serviceTypeId,
         status: r.status,
-        startTime: r.surgeryDate ?? r.createdAt,
+        startTime: r.surgeryDate
+            ? `${String(r.surgeryDate).slice(0, 10)}T12:00:00`
+            : r.createdAt,
         doctorName: r.surgeonName,
         diagnosis: null as string | null,
         cidCode: null as string | null,
@@ -106,7 +105,6 @@ export type ClinicSurgeryListRow = {
     surgeonId: string | null;
     surgeonName: string | null;
     status: string;
-    /** Coluna `date` no PG pode vir como string no driver. */
     surgeryDate: string | Date | null;
     createdAt: Date;
     serviceTypeName: string | null;
@@ -122,10 +120,6 @@ export type GetAllSurgeriesForClinicOptions = {
     dateTo?: Date;
 };
 
-/**
- * Lista cirurgias da clínica para o painel Gestão.
- * Filtro de período usa `coalesce(surgery_date, created_at::date)`.
- */
 export async function getAllSurgeriesForClinic(
     clinicId: string,
     options?: GetAllSurgeriesForClinicOptions

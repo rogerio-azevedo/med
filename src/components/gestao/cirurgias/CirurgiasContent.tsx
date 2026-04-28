@@ -31,11 +31,12 @@ const SURGERY_STATUSES = ["scheduled", "waiting", "in_progress", "finished", "ca
 function parseSurgeryDate(value: string | Date | null): Date | null {
     if (value == null) return null;
     if (value instanceof Date) return value;
-    const d = new Date(value);
+    const s = String(value).trim();
+    // Evita new Date("YYYY-MM-DD") = meia-noite UTC (dia errado no fuso BR)
+    const d = s.length <= 10 ? new Date(`${s.slice(0, 10)}T12:00:00`) : new Date(s);
     return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** Data efetiva para filtro: data da cirurgia ou dia de criação do registro. */
 function effectiveDay(row: ClinicSurgeryListRow): Date {
     const sd = parseSurgeryDate(row.surgeryDate);
     if (sd) {
