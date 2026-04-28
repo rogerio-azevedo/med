@@ -13,7 +13,7 @@ import {
     proposals,
     surgeries,
 } from "@/db/schema";
-import { and, count, eq, gte, lte, sql } from "drizzle-orm";
+import { and, count, eq, gte, isNotNull, lte, sql } from "drizzle-orm";
 import { users } from "@/db/schema/auth";
 
 // Helpers
@@ -75,6 +75,19 @@ export async function getAdminDashboardStats(clinicId: string) {
             )
         );
 
+    const [monthReturnsResult] = await db
+        .select({ count: count() })
+        .from(consultations)
+        .where(
+            and(
+                eq(consultations.clinicId, clinicId),
+                eq(consultations.status, "finished"),
+                isNotNull(consultations.parentConsultationId),
+                gte(consultations.startTime, monthStart),
+                lte(consultations.startTime, monthEnd),
+            )
+        );
+
     const [monthSurgeriesResult] = await db
         .select({ count: count() })
         .from(surgeries)
@@ -115,6 +128,7 @@ export async function getAdminDashboardStats(clinicId: string) {
         totalAppointments: totalAppointmentsResult?.count ?? 0,
         todayAppointments: todayAppointmentsResult?.count ?? 0,
         monthServiceRecords: monthConsultationsResult?.count ?? 0,
+        monthReturns: monthReturnsResult?.count ?? 0,
         monthSurgeries: monthSurgeriesResult?.count ?? 0,
         monthExams: monthExamsResult?.count ?? 0,
         monthProposals: monthProposalsResult?.count ?? 0,
@@ -198,6 +212,20 @@ export async function getDoctorDashboardStats(clinicId: string, doctorId: string
             )
         );
 
+    const [monthReturnsResult] = await db
+        .select({ count: count() })
+        .from(consultations)
+        .where(
+            and(
+                eq(consultations.clinicId, clinicId),
+                eq(consultations.doctorId, doctorId),
+                eq(consultations.status, "finished"),
+                isNotNull(consultations.parentConsultationId),
+                gte(consultations.startTime, monthStart),
+                lte(consultations.startTime, monthEnd),
+            )
+        );
+
     const [monthSurgeriesResult] = await db
         .select({ count: count() })
         .from(surgeries)
@@ -241,6 +269,7 @@ export async function getDoctorDashboardStats(clinicId: string, doctorId: string
         totalPatients: totalPatientsResult?.count ?? 0,
         todayAppointments: todayAppointmentsResult?.count ?? 0,
         monthServiceRecords: monthConsultationsResult?.count ?? 0,
+        monthReturns: monthReturnsResult?.count ?? 0,
         monthSurgeries: monthSurgeriesResult?.count ?? 0,
         monthExams: monthExamsResult?.count ?? 0,
         monthProposals: monthProposalsResult?.count ?? 0,

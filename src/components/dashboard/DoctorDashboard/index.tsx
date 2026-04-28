@@ -14,6 +14,7 @@ import {
     ClipboardCheck,
     FileText,
     FlaskConical,
+    RefreshCw,
     Scissors,
     Users,
 } from "lucide-react";
@@ -64,8 +65,8 @@ export async function DoctorDashboard({
 
             <WaitingEncountersBanner items={waitingEncounters} />
 
-            {/* Stat Cards — 2 linhas em xl (4+2) */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {/* Stat Cards — 2 linhas em xl (5+2) */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <StatCard
                     title="Meus Pacientes"
                     value={stats.totalPatients}
@@ -99,6 +100,14 @@ export async function DoctorDashboard({
                     description="Realizadas este mês"
                     iconColorClass="text-rose-500"
                     iconBgClass="bg-rose-500/10"
+                />
+                <StatCard
+                    title="Retornos"
+                    value={stats.monthReturns}
+                    icon={RefreshCw}
+                    description="Realizados este mês"
+                    iconColorClass="text-teal-500"
+                    iconBgClass="bg-teal-500/10"
                 />
                 <StatCard
                     title="Exames"

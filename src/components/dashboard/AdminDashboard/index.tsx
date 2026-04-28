@@ -11,6 +11,7 @@ import {
     ClipboardCheck,
     FileText,
     FlaskConical,
+    RefreshCw,
     Scissors,
     Stethoscope,
     Users,
@@ -37,8 +38,8 @@ export async function AdminDashboard({ clinicId, userName }: AdminDashboardProps
                 userName={userName}
             />
 
-            {/* Stat Cards — 2 linhas em xl (4+4) */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {/* Stat Cards — 2 linhas em xl (5+4) */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <StatCard
                     title="Total de Médicos"
                     value={stats.totalDoctors}
@@ -74,6 +75,14 @@ export async function AdminDashboard({ clinicId, userName }: AdminDashboardProps
                     iconColorClass="text-sky-500"
                     iconBgClass="bg-sky-500/10"
                     href="/schedule"
+                />
+                <StatCard
+                    title="Retornos"
+                    value={stats.monthReturns}
+                    icon={RefreshCw}
+                    description="Realizados este mês"
+                    iconColorClass="text-teal-500"
+                    iconBgClass="bg-teal-500/10"
                 />
                 <StatCard
                     title="Consultas"
