@@ -44,24 +44,24 @@ export function DoctorProfile({ doctor, hideHeader = false }: DoctorProfileProps
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Informações Principais */}
                 <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col gap-4">
-                    <div className="flex items-center gap-4 border-b pb-4">
-                        <div className="h-16 w-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                    <div className="flex items-center gap-4 border-b pb-4 min-w-0">
+                        <div className="h-16 w-16 shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                             <Stethoscope className="h-8 w-8" />
                         </div>
-                        <div>
-                            <h2 className="text-xl font-bold">{doctor.name}</h2>
+                        <div className="min-w-0">
+                            <h2 className="text-xl font-bold truncate">{doctor.name}</h2>
                             {doctor.email && (
                                 <a
                                     href={`mailto:${doctor.email}`}
-                                    className="text-muted-foreground flex items-center gap-2 mt-1 hover:text-primary transition-colors text-sm"
+                                    className="text-muted-foreground flex items-center gap-2 mt-1 hover:text-primary transition-colors text-sm min-w-0"
                                 >
-                                    <Mail className="h-4 w-4" />
-                                    {doctor.email}
+                                    <Mail className="h-4 w-4 shrink-0" />
+                                    <span className="truncate">{doctor.email}</span>
                                 </a>
                             )}
                             {!doctor.email && (
                                 <p className="text-muted-foreground flex items-center gap-2 mt-1 text-sm">
-                                    <Mail className="h-4 w-4" /> —
+                                    <Mail className="h-4 w-4 shrink-0" /> —
                                 </p>
                             )}
                             {doctor.phone && (
