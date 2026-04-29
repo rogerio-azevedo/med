@@ -267,7 +267,9 @@ export function ScheduleView({
                         placeholder="Todos os médicos"
                         filterOption={accentInsensitiveSelectFilter}
                         classNamePrefix="rs"
-                        menuPortalTarget={document.body}
+                        menuPortalTarget={
+                            typeof document !== "undefined" ? document.body : undefined
+                        }
                         styles={{
                             menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                         }}
