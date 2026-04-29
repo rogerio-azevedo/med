@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Select from "react-select";
 import {
     Loader2,
@@ -35,11 +35,23 @@ type Option = {
     label: string;
 };
 
+export type CheckInDialogInitialValues = {
+    patientId?: string;
+    doctorId?: string;
+    serviceTypeId?: string;
+};
+
 interface AddCheckInDialogProps {
     patients: { id: string; name: string }[];
     serviceTypes: { id: string; name: string; workflow: string }[];
     healthInsurances: { id: string; name: string }[];
     doctors: { id: string; name: string | null }[];
+    /** Modo controlado (ex.: check-in a partir da agenda): sem trigger interno */
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+    initialValues?: CheckInDialogInitialValues;
+    dialogTitle?: string;
+    dialogDescription?: string;
 }
 
 function getServiceTypeIcon(name: string, workflow: string) {
@@ -54,8 +66,21 @@ function getServiceTypeIcon(name: string, workflow: string) {
     return FileText;
 }
 
-export function AddCheckInDialog({ patients, serviceTypes, healthInsurances, doctors }: AddCheckInDialogProps) {
-    const [open, setOpen] = useState(false);
+export function AddCheckInDialog({
+    patients,
+    serviceTypes,
+    healthInsurances,
+    doctors,
+    open: controlledOpen,
+    onOpenChange: controlledOnOpenChange,
+    initialValues,
+    dialogTitle = "Novo Check-in",
+    dialogDescription = "Registre a chegada do paciente, o tipo de atendimento, o médico e o convênio.",
+}: AddCheckInDialogProps) {
+    const isControlled = controlledOpen !== undefined && controlledOnOpenChange !== undefined;
+    const [internalOpen, setInternalOpen] = useState(false);
+    const open = isControlled ? controlledOpen : internalOpen;
+
     const [isPending, setIsPending] = useState(false);
     const [patientId, setPatientId] = useState("");
     const [serviceTypeId, setServiceTypeId] = useState("");
@@ -81,6 +106,31 @@ export function AddCheckInDialog({ patients, serviceTypes, healthInsurances, doc
         setNotes("");
     }
 
+    function handleOpenChange(nextOpen: boolean) {
+        if (!isControlled) {
+            setInternalOpen(nextOpen);
+        } else {
+            controlledOnOpenChange?.(nextOpen);
+        }
+        if (!nextOpen) {
+            resetForm();
+        }
+    }
+
+    useEffect(() => {
+        if (!open || !initialValues) return;
+        setPatientId(initialValues.patientId ?? "");
+        setDoctorId(initialValues.doctorId ?? "");
+        setServiceTypeId(initialValues.serviceTypeId ?? "");
+        setHealthInsuranceId("");
+        setNotes("");
+    }, [
+        open,
+        initialValues?.patientId,
+        initialValues?.doctorId,
+        initialValues?.serviceTypeId,
+    ]);
+
     async function handleSubmit() {
         setIsPending(true);
         try {
@@ -99,7 +149,7 @@ export function AddCheckInDialog({ patients, serviceTypes, healthInsurances, doc
 
             toast.success("Check-in registrado. O paciente entrou na fila de atendimento do médico.");
             resetForm();
-            setOpen(false);
+            handleOpenChange(false);
         } catch {
             toast.error("Erro ao registrar check-in");
         } finally {
@@ -130,27 +180,19 @@ export function AddCheckInDialog({ patients, serviceTypes, healthInsurances, doc
     };
 
     return (
-        <Dialog
-            open={open}
-            onOpenChange={(nextOpen) => {
-                setOpen(nextOpen);
-                if (!nextOpen) {
-                    resetForm();
-                }
-            }}
-        >
-            <DialogTrigger asChild>
-                <Button className="bg-primary text-white hover:bg-primary/90">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Novo Check-in
-                </Button>
-            </DialogTrigger>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+            {!isControlled ? (
+                <DialogTrigger asChild>
+                    <Button className="bg-primary text-white hover:bg-primary/90">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Novo Check-in
+                    </Button>
+                </DialogTrigger>
+            ) : null}
             <DialogContent className="flex max-h-[90vh] flex-col overflow-y-auto sm:max-w-2xl">
                 <div className="space-y-1">
-                    <DialogTitle>Novo Check-in</DialogTitle>
-                    <DialogDescription>
-                        Registre a chegada do paciente, o tipo de atendimento, o médico e o convênio.
-                    </DialogDescription>
+                    <DialogTitle>{dialogTitle}</DialogTitle>
+                    <DialogDescription>{dialogDescription}</DialogDescription>
                 </div>
 
                 <div className="space-y-6 pt-2">
@@ -262,7 +304,7 @@ export function AddCheckInDialog({ patients, serviceTypes, healthInsurances, doc
                 </div>
 
                 <DialogFooter className="gap-2 sm:gap-0">
-                    <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+                    <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
                         Cancelar
                     </Button>
                     <Button type="button" disabled={!isFormValid || isPending} onClick={handleSubmit}>

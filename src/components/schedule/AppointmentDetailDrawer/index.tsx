@@ -47,6 +47,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { EditAppointmentDrawer } from "@/components/schedule/EditAppointmentDrawer";
+import { QuickCheckInButton } from "@/components/schedule/QuickCheckInButton";
 import { resolveServiceTypeDisplayIcon } from "@/lib/formatters/resolve-service-type-display";
 import { toast } from "sonner";
 
@@ -121,6 +122,8 @@ interface AppointmentDetailDrawerProps {
     onAppointmentDeleted?: (appointmentId: string) => void;
     canEdit: boolean;
     canDelete: boolean;
+    /** Atalho de check-in pré-preenchido (permissão check-ins). */
+    canQuickCheckIn?: boolean;
     doctors: { id: string; name: string | null; relationshipType: "linked" | "partner" | null }[];
     patients: { id: string; name: string; phone: string | null }[];
     serviceTypes: {
@@ -140,6 +143,7 @@ export function AppointmentDetailDrawer({
     onAppointmentDeleted,
     canEdit,
     canDelete,
+    canQuickCheckIn = false,
     doctors,
     patients,
     serviceTypes,
@@ -341,6 +345,17 @@ export function AppointmentDetailDrawer({
 
                 {/* Rodapé de Ações */}
                 <div className="p-6 bg-card border-t space-y-4">
+                    {canQuickCheckIn &&
+                        (appointment.status === "scheduled" || appointment.status === "confirmed") && (
+                            <QuickCheckInButton
+                                status={appointment.status}
+                                patientId={appointment.patient.id}
+                                doctorId={appointment.doctor.id}
+                                serviceTypeId={appointment.serviceType?.id ?? null}
+                                variant="full"
+                            />
+                        )}
+
                     {canMutateSchedule && (
                         <Button
                             variant="outline"

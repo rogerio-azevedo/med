@@ -27,7 +27,7 @@ export default async function DashboardLayout({
             />
             <SidebarInset>
                 <Header />
-                <main className="flex-1 overflow-y-auto bg-muted/10 px-4 pb-6 pt-3 md:px-6 md:pb-8 md:pt-4">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10 px-4 pb-6 pt-3 md:px-6 md:pb-8 md:pt-4">
                     {children}
                 </main>
             </SidebarInset>

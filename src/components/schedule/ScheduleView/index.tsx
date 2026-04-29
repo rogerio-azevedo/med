@@ -67,6 +67,8 @@ interface ScheduleViewProps {
     isAdmin: boolean;
     /** Médico logado (quando `session.user.role === "doctor"`). */
     currentUserDoctorId?: string;
+    /** Permite atalho de check-in nos cards (mesma regra que a página de check-ins). */
+    canQuickCheckIn?: boolean;
 }
 
 type TimeGranularity = "day" | "week" | "month";
@@ -112,6 +114,7 @@ export function ScheduleView({
     serviceTypes,
     isAdmin,
     currentUserDoctorId,
+    canQuickCheckIn = false,
 }: ScheduleViewProps) {
     const setHeader = useHeaderStore((s) => s.setHeader);
     const setToolbar = useHeaderStore((s) => s.setToolbar);
@@ -418,6 +421,7 @@ export function ScheduleView({
                     startDate={rangeStart}
                     endDate={rangeEnd}
                     onAppointmentClick={handleAppointmentClick}
+                    showQuickCheckIn={canQuickCheckIn}
                 />
             ) : showMonthGrid ? (
                 <AppointmentMonthView
@@ -434,6 +438,7 @@ export function ScheduleView({
                     dayDate={granularity === "day" ? anchorDate : undefined}
                     onAppointmentClick={handleAppointmentClick}
                     onSlotClick={handleSlotClick}
+                    showQuickCheckIn={canQuickCheckIn}
                 />
             ) : null}
 
@@ -455,6 +460,7 @@ export function ScheduleView({
                 onAppointmentDeleted={handleAppointmentDeleted}
                 canEdit={detailCanEdit}
                 canDelete={detailCanDelete}
+                canQuickCheckIn={canQuickCheckIn}
                 doctors={doctors}
                 patients={patients}
                 serviceTypes={serviceTypes}

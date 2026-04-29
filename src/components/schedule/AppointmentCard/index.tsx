@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { User } from "lucide-react";
 import Link from "next/link";
 import { resolveServiceTypeDisplayIcon } from "@/lib/formatters/resolve-service-type-display";
+import { QuickCheckInButton } from "@/components/schedule/QuickCheckInButton";
 
 type AppointmentStatus =
     | "scheduled"
@@ -90,6 +91,8 @@ interface AppointmentCardProps {
     compact?: boolean;
     /** Vista calendário com faixas lado a lado: destaca tom estável por médico */
     compactDoctorTint?: boolean;
+    /** Exibe atalho de check-in (requer permissão de check-ins na página) */
+    showQuickCheckIn?: boolean;
 }
 
 export function AppointmentCard({
@@ -98,6 +101,7 @@ export function AppointmentCard({
     style,
     compact = false,
     compactDoctorTint = false,
+    showQuickCheckIn = false,
 }: AppointmentCardProps) {
     const modStyle = modalityStyles[appointment.modality] || modalityStyles.in_person;
     const st = appointment.serviceType;
@@ -137,6 +141,18 @@ export function AppointmentCard({
             {compact ? (
                 /* Compact (calendar view): hora + ícone na primeira linha; nome com até 2 linhas. */
                 <div className="relative z-10 flex h-full min-h-0 flex-col gap-0.5 overflow-hidden px-1.5 py-1">
+                    {showQuickCheckIn ? (
+                        <div className="absolute bottom-0 right-0 z-20 opacity-0 pointer-events-none transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+                            <QuickCheckInButton
+                                status={appointment.status}
+                                patientId={appointment.patient.id}
+                                doctorId={appointment.doctor.id}
+                                serviceTypeId={appointment.serviceType?.id ?? null}
+                                variant="icon"
+                                className="size-6 bg-background/80 shadow-sm hover:bg-background"
+                            />
+                        </div>
+                    ) : null}
                     <div className="flex shrink-0 items-center justify-between gap-0.5">
                         <div
                             className={`truncate text-[10px] font-bold tabular-nums leading-none ${modStyle.text}`}
@@ -159,7 +175,9 @@ export function AppointmentCard({
                             )}
                         </div>
                     </div>
-                    <div className="flex-1 min-h-0 overflow-hidden">
+                    <div
+                        className={`flex-1 min-h-0 overflow-hidden ${showQuickCheckIn ? "pr-5 pb-0.5" : ""}`}
+                    >
                         <Link
                             href={medicalRecordHref}
                             onClick={(e) => e.stopPropagation()}
@@ -181,7 +199,17 @@ export function AppointmentCard({
                                 {appointment.durationMinutes} min
                             </span>
                         </div>
-                        <div className="text-sm opacity-90 flex items-center gap-1.5 border px-2 py-0.5 rounded-full bg-background/50 shadow-sm">
+                        <div className="flex shrink-0 items-center gap-1.5">
+                            {showQuickCheckIn ? (
+                                <QuickCheckInButton
+                                    status={appointment.status}
+                                    patientId={appointment.patient.id}
+                                    doctorId={appointment.doctor.id}
+                                    serviceTypeId={appointment.serviceType?.id ?? null}
+                                    variant="inline"
+                                />
+                            ) : null}
+                            <div className="text-sm opacity-90 flex items-center gap-1.5 border px-2 py-0.5 rounded-full bg-background/50 shadow-sm">
                             {ServiceIcon && st ? (
                                 <span
                                     className="flex items-center gap-1"
@@ -196,6 +224,7 @@ export function AppointmentCard({
                             ) : (
                                 modStyle.icon
                             )}
+                            </div>
                         </div>
                     </div>
 

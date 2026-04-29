@@ -1,10 +1,42 @@
 import { db } from "@/db";
 import { proposals, proposalItems, proposalStatusEnum } from "@/db/schema";
-import { desc, eq, and, sql } from "drizzle-orm";
+import { desc, eq, and, sql, gte, lte } from "drizzle-orm";
 
-export async function getProposals(clinicId: string) {
+export type ProposalQueryFilters = {
+    status?: (typeof proposalStatusEnum.enumValues)[number];
+    /** ISO date `YYYY-MM-DD` (inclusive), compared em UTC */
+    dateFrom?: string;
+    /** ISO date `YYYY-MM-DD` (inclusive), compared em UTC */
+    dateTo?: string;
+};
+
+function buildProposalWhere(clinicId: string, filters?: ProposalQueryFilters) {
+    const conditions = [eq(proposals.clinicId, clinicId)];
+
+    if (filters?.status) {
+        conditions.push(eq(proposals.status, filters.status));
+    }
+
+    if (filters?.dateFrom) {
+        const d = new Date(`${filters.dateFrom}T00:00:00.000Z`);
+        if (!Number.isNaN(d.getTime())) {
+            conditions.push(gte(proposals.createdAt, d));
+        }
+    }
+
+    if (filters?.dateTo) {
+        const d = new Date(`${filters.dateTo}T23:59:59.999Z`);
+        if (!Number.isNaN(d.getTime())) {
+            conditions.push(lte(proposals.createdAt, d));
+        }
+    }
+
+    return and(...conditions);
+}
+
+export async function getProposals(clinicId: string, filters?: ProposalQueryFilters) {
     return db.query.proposals.findMany({
-        where: eq(proposals.clinicId, clinicId),
+        where: buildProposalWhere(clinicId, filters),
         with: {
             patient: true,
             createdBy: {
@@ -125,7 +157,7 @@ export async function updateProposalStatus(
     return updated;
 }
 
-export async function getProposalStats(clinicId: string) {
+export async function getProposalStats(clinicId: string, filters?: ProposalQueryFilters) {
     const stats = await db
         .select({
             status: proposals.status,
@@ -133,8 +165,12 @@ export async function getProposalStats(clinicId: string) {
             totalValue: sql<number>`sum(${proposals.totalAmount})`,
         })
         .from(proposals)
-        .where(eq(proposals.clinicId, clinicId))
+        .where(buildProposalWhere(clinicId, filters))
         .groupBy(proposals.status);
-    
-    return stats;
+
+    return stats.map((s) => ({
+        status: s.status,
+        count: Number(s.count ?? 0),
+        totalValue: Number(s.totalValue ?? 0),
+    }));
 }

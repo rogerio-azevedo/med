@@ -25,6 +25,7 @@ interface AppointmentSlotListProps {
     startDate: Date;
     endDate: Date;
     onAppointmentClick: (appointment: AppointmentCardData) => void;
+    showQuickCheckIn?: boolean;
 }
 
 export function AppointmentSlotList({
@@ -32,6 +33,7 @@ export function AppointmentSlotList({
     startDate,
     endDate,
     onAppointmentClick,
+    showQuickCheckIn = false,
 }: AppointmentSlotListProps) {
     const days = useMemo(() => {
         const result: DayGroup[] = [];
@@ -110,6 +112,7 @@ export function AppointmentSlotList({
                                         key={appt.id}
                                         appointment={appt}
                                         onClick={onAppointmentClick}
+                                        showQuickCheckIn={showQuickCheckIn}
                                     />
                                 ))}
                             </div>

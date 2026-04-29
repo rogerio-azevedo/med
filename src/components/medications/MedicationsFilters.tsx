@@ -56,10 +56,10 @@ export function MedicationsFilters({
   const hasActiveFilters = useMemo(() => {
     return Boolean(
       initialValues.q ||
-        initialValues.status ||
-        initialValues.controlled ||
-        initialValues.prescription ||
-        initialValues.pharmaceuticalForm
+      initialValues.status ||
+      initialValues.controlled ||
+      initialValues.prescription ||
+      initialValues.pharmaceuticalForm
     );
   }, [initialValues]);
 

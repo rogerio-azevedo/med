@@ -24,6 +24,8 @@ export default async function SchedulePage() {
     const allowed = await can("schedule", "can_read");
     if (!allowed) redirect("/dashboard");
 
+    const canQuickCheckIn = await can("checkins", "can_read");
+
     const clinicId = session.user.clinicId;
 
     const now = new Date();
@@ -100,6 +102,7 @@ export default async function SchedulePage() {
                 }))}
                 isAdmin={isAdmin}
                 currentUserDoctorId={session.user.doctorId ?? undefined}
+                canQuickCheckIn={canQuickCheckIn}
             />
         </div>
     );

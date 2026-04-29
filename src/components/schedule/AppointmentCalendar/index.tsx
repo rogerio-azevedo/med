@@ -24,6 +24,7 @@ interface AppointmentCalendarProps {
   mode?: "week" | "day"
   onAppointmentClick: (appointment: AppointmentCardData) => void
   onSlotClick?: (date: Date) => void
+  showQuickCheckIn?: boolean
 }
 
 export function AppointmentCalendar({
@@ -33,6 +34,7 @@ export function AppointmentCalendar({
   mode = "week",
   onAppointmentClick,
   onSlotClick,
+  showQuickCheckIn = false,
 }: AppointmentCalendarProps) {
   const [now, setNow] = useState(new Date())
 
@@ -227,6 +229,7 @@ export function AppointmentCalendar({
                       style={getSlotStyle(appt, lane)}
                       compact
                       compactDoctorTint={(lane?.totalColumns ?? 1) > 1}
+                      showQuickCheckIn={showQuickCheckIn}
                     />
                   )
                 })}

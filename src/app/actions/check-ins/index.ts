@@ -1,15 +1,71 @@
 "use server";
 
 import { auth } from "@/auth";
+import { can } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getCheckIns } from "@/db/queries/check-ins";
+import { getClinicHealthInsurances } from "@/db/queries/health-insurances";
+import { getDoctorsSimple } from "@/db/queries/doctors";
+import { getPatientsByClinic } from "@/db/queries/patients";
+import { getActiveServiceTypes } from "@/db/queries/service-types";
 import { checkInSchema } from "@/validations/check-ins";
 import { createCheckInService } from "@/services/check-ins";
+
+export type CheckInDialogDataPayload = {
+    patients: { id: string; name: string }[];
+    serviceTypes: { id: string; name: string; workflow: string }[];
+    healthInsurances: { id: string; name: string }[];
+    doctors: { id: string; name: string | null }[];
+};
 
 function getFirstError(error: z.ZodError) {
     const flattened = z.flattenError(error);
     return Object.values(flattened.fieldErrors).flat().find(Boolean);
+}
+
+export async function getCheckInDialogDataAction(): Promise<
+    { success: true; data: CheckInDialogDataPayload } | { success: false; error: string }
+> {
+    const session = await auth();
+    const clinicId = session?.user?.clinicId;
+
+    if (!clinicId) {
+        return { success: false, error: "Clínica não encontrada" };
+    }
+
+    const allowed = await can("checkins", "can_read");
+    if (!allowed) {
+        return { success: false, error: "Sem permissão para check-ins" };
+    }
+
+    try {
+        const [patients, serviceTypes, healthInsurances, doctors] = await Promise.all([
+            getPatientsByClinic(clinicId),
+            getActiveServiceTypes(clinicId),
+            getClinicHealthInsurances(clinicId),
+            getDoctorsSimple(clinicId, { relationshipTypes: ["linked"] }),
+        ]);
+
+        return {
+            success: true,
+            data: {
+                patients: patients.map((item) => ({ id: item.id, name: item.name })),
+                serviceTypes: serviceTypes.map((item) => ({
+                    id: item.id,
+                    name: item.name,
+                    workflow: item.workflow,
+                })),
+                healthInsurances: healthInsurances.map((item) => ({
+                    id: item.id,
+                    name: item.name,
+                })),
+                doctors: doctors.map((d) => ({ id: d.id, name: d.name })),
+            },
+        };
+    } catch {
+        return { success: false, error: "Erro ao carregar dados do check-in" };
+    }
 }
 
 export async function getCheckInsAction() {
