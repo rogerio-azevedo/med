@@ -142,7 +142,10 @@ export function AppointmentCard({
                 /* Compact (calendar view): hora + ícone na primeira linha; nome com até 2 linhas. */
                 <div className="relative z-10 flex h-full min-h-0 flex-col gap-0.5 overflow-hidden px-1.5 py-1">
                     {showQuickCheckIn ? (
-                        <div className="absolute bottom-0 right-0 z-20 opacity-0 pointer-events-none transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+                        <div
+                            className="absolute bottom-0 right-0 z-20 cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <QuickCheckInButton
                                 status={appointment.status}
                                 patientId={appointment.patient.id}

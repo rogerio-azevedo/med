@@ -70,10 +70,10 @@ export function QuickCheckInButton({
 
     const triggerClass =
         variant === "icon"
-            ? "size-7 shrink-0 p-0 text-muted-foreground hover:text-primary"
+            ? "size-7 shrink-0 cursor-pointer p-0 text-muted-foreground hover:text-primary"
             : variant === "full"
-              ? "w-full justify-center gap-2"
-              : "h-8 gap-1.5 px-2.5 text-xs shrink-0";
+              ? "w-full cursor-pointer justify-center gap-2"
+              : "h-8 cursor-pointer gap-1.5 px-2.5 text-xs shrink-0";
 
     return (
         <>

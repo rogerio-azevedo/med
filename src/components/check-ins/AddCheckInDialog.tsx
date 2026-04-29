@@ -189,7 +189,13 @@ export function AddCheckInDialog({
                     </Button>
                 </DialogTrigger>
             ) : null}
-            <DialogContent className="flex max-h-[90vh] flex-col overflow-y-auto sm:max-w-2xl">
+            <DialogContent
+                className="flex max-h-[90vh] flex-col overflow-y-auto sm:max-w-2xl"
+                onPointerDownOutside={(e) => {
+                    e.preventDefault();
+                    handleOpenChange(false);
+                }}
+            >
                 <div className="space-y-1">
                     <DialogTitle>{dialogTitle}</DialogTitle>
                     <DialogDescription>{dialogDescription}</DialogDescription>
