@@ -11,6 +11,7 @@ import { getDoctorByUserId } from "@/db/queries/dashboard";
 import { getWaitingConsultationsForClinic } from "@/db/queries/consultations";
 import { getWaitingSurgeriesForClinic } from "@/db/queries/surgeries";
 import { WaitingEncountersBanner } from "@/components/medical-records/WaitingEncountersBanner";
+import { getCheckInExistenceForAppointments } from "@/db/queries/check-ins";
 
 export const metadata = {
     title: "Agenda | Med",
@@ -54,6 +55,19 @@ export default async function SchedulePage() {
         (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
     );
 
+    // Detectar quais agendamentos já possuem check-in (paciente + médico + dia)
+    const existingCheckInIds = canQuickCheckIn
+        ? await getCheckInExistenceForAppointments(
+              clinicId,
+              rawAppointments.map((a) => ({
+                  id: a.id,
+                  patientId: a.patient.id,
+                  doctorId: a.doctor.id,
+                  scheduledAt: a.scheduledAt,
+              }))
+          )
+        : new Set<string>();
+
     const isAdmin =
         session.user.role === "super_admin" || session.user.clinicRole === "admin";
 
@@ -77,6 +91,7 @@ export default async function SchedulePage() {
                       timelineColorHex: a.serviceType.timelineColorHex,
                   }
                 : null,
+        hasCheckIn: existingCheckInIds.has(a.id),
     }));
 
     return (

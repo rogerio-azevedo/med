@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import {
@@ -55,6 +55,63 @@ export async function getCheckIns(clinicId: string) {
         .leftJoin(healthInsurances, eq(checkIns.healthInsuranceId, healthInsurances.id))
         .where(eq(checkIns.clinicId, clinicId))
         .orderBy(desc(checkIns.createdAt), asc(patients.name));
+}
+
+/**
+ * Retorna um Set com os IDs dos agendamentos que já possuem um check-in
+ * correspondente (mesmo paciente + médico + dia).
+ * Usada na agenda para exibir o ícone verde quando o check-in já foi feito.
+ */
+export async function getCheckInExistenceForAppointments(
+    clinicId: string,
+    appointments: {
+        id: string;
+        patientId: string;
+        doctorId: string | null;
+        scheduledAt: Date | string;
+    }[]
+): Promise<Set<string>> {
+    if (appointments.length === 0) return new Set();
+
+    const dates = appointments.map((a) => new Date(a.scheduledAt));
+    const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
+    const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
+    minDate.setHours(0, 0, 0, 0);
+    maxDate.setHours(23, 59, 59, 999);
+
+    const existing = await db
+        .select({
+            patientId: checkIns.patientId,
+            doctorId: checkIns.doctorId,
+            createdAt: checkIns.createdAt,
+        })
+        .from(checkIns)
+        .where(
+            and(
+                eq(checkIns.clinicId, clinicId),
+                gte(checkIns.createdAt, minDate),
+                lte(checkIns.createdAt, maxDate)
+            )
+        );
+
+    // Chave de lookup: patientId|doctorId|YYYY-M-D (dia local UTC)
+    const checkedKeys = new Set(
+        existing.map((ci) => {
+            const d = new Date(ci.createdAt);
+            return `${ci.patientId}|${ci.doctorId ?? ""}|${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+        })
+    );
+
+    const result = new Set<string>();
+    for (const appt of appointments) {
+        const d = new Date(appt.scheduledAt);
+        const key = `${appt.patientId}|${appt.doctorId ?? ""}|${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+        if (checkedKeys.has(key)) {
+            result.add(appt.id);
+        }
+    }
+
+    return result;
 }
 
 export async function createCheckInQuery(data: typeof checkIns.$inferInsert) {

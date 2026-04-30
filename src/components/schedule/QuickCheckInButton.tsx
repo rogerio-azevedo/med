@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ClipboardCheck, Loader2 } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
     getCheckInDialogDataAction,
@@ -24,6 +24,8 @@ export type QuickCheckInButtonProps = {
     patientId: string;
     doctorId: string;
     serviceTypeId: string | null;
+    /** true quando já existe um check-in para este agendamento */
+    hasCheckIn?: boolean;
     /** icon: só ícone (cards compactos); inline: texto curto; full: largura total */
     variant?: "icon" | "inline" | "full";
     className?: string;
@@ -34,12 +36,37 @@ export function QuickCheckInButton({
     patientId,
     doctorId,
     serviceTypeId,
+    hasCheckIn = false,
     variant = "icon",
     className,
 }: QuickCheckInButtonProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogData, setDialogData] = useState<CheckInDialogDataPayload | null>(null);
     const [loading, setLoading] = useState(false);
+
+    // Já tem check-in: exibe ícone verde desabilitado
+    if (hasCheckIn) {
+        const doneClass =
+            variant === "icon"
+                ? "size-7 shrink-0 p-0 text-green-700 cursor-default"
+                : variant === "full"
+                  ? "w-full justify-center gap-2 text-green-700"
+                  : "h-8 gap-1.5 px-2.5 text-xs shrink-0 text-green-700 cursor-default";
+        return (
+            <Button
+                type="button"
+                variant={variant === "icon" ? "ghost" : "outline"}
+                size={variant === "full" ? "default" : "sm"}
+                className={cn(doneClass, className)}
+                title="Check-in já realizado"
+                disabled
+            >
+                <CheckCircle2 className="size-3.5 text-green-700" />
+                {variant === "inline" ? <span>Check-in</span> : null}
+                {variant === "full" ? <span>Check-in realizado</span> : null}
+            </Button>
+        );
+    }
 
     if (status !== "scheduled" && status !== "confirmed") {
         return null;

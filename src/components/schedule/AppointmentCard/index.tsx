@@ -32,6 +32,8 @@ export type AppointmentCardData = {
         timelineIconKey: string | null;
         timelineColorHex: string | null;
     } | null;
+    /** true quando já existe um check-in vinculado a este agendamento */
+    hasCheckIn?: boolean;
 };
 
 const statusColors: Record<AppointmentStatus, string> = {
@@ -151,6 +153,7 @@ export function AppointmentCard({
                                 patientId={appointment.patient.id}
                                 doctorId={appointment.doctor.id}
                                 serviceTypeId={appointment.serviceType?.id ?? null}
+                                hasCheckIn={appointment.hasCheckIn}
                                 variant="icon"
                                 className="size-6 bg-background/80 shadow-sm hover:bg-background"
                             />
@@ -209,6 +212,7 @@ export function AppointmentCard({
                                     patientId={appointment.patient.id}
                                     doctorId={appointment.doctor.id}
                                     serviceTypeId={appointment.serviceType?.id ?? null}
+                                    hasCheckIn={appointment.hasCheckIn}
                                     variant="inline"
                                 />
                             ) : null}

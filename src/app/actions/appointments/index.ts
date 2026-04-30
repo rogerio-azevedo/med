@@ -19,6 +19,8 @@ import {
     updateAppointmentSchema,
 } from "@/validations/appointments";
 import { createScheduleBlockSchema } from "@/validations/schedule-blocks";
+import { getCheckInExistenceForAppointments } from "@/db/queries/check-ins";
+import { can } from "@/lib/permissions";
 
 const EDITABLE_STATUSES = ["scheduled", "confirmed"] as const;
 
@@ -253,10 +255,26 @@ export async function listScheduleAppointmentsAction(startIso: string, endIso: s
         return { error: "Período inválido" };
     }
 
-    const rows = await getAppointmentsByClinic(session.user.clinicId, {
+    const clinicId = session.user.clinicId;
+
+    const rows = await getAppointmentsByClinic(clinicId, {
         startDate,
         endDate,
     });
+
+    // Detectar check-ins existentes (só se o usuário tem permissão de check-in)
+    const canQuickCheckIn = await can("checkins", "can_read");
+    const existingCheckInIds = canQuickCheckIn
+        ? await getCheckInExistenceForAppointments(
+              clinicId,
+              rows.map((a) => ({
+                  id: a.id,
+                  patientId: a.patient.id,
+                  doctorId: a.doctor.id,
+                  scheduledAt: a.scheduledAt,
+              }))
+          )
+        : new Set<string>();
 
     return {
         success: true as const,
@@ -280,6 +298,7 @@ export async function listScheduleAppointmentsAction(startIso: string, endIso: s
                           timelineColorHex: a.serviceType.timelineColorHex,
                       }
                     : null,
+            hasCheckIn: existingCheckInIds.has(a.id),
         })),
     };
 }
