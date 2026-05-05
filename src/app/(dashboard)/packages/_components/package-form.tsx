@@ -1,6 +1,7 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
     Form,
@@ -22,7 +23,6 @@ import {
 } from "@/components/ui/select";
 import { createProductSchema, CreateProductInput } from "@/validations/products";
 import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
 
 interface PackageFormProps {
     initialData?: Partial<CreateProductInput> & { id?: string };
@@ -46,8 +46,19 @@ export function PackageForm({
             costPrice: initialData?.costPrice || 0,
             sellingPrice: initialData?.sellingPrice || 0,
             isActive: initialData?.isActive ?? true,
+            durationMonths: initialData?.durationMonths ?? 12,
         } as CreateProductInput,
     });
+
+    const productType = useWatch({ control: form.control, name: "type" });
+
+    useEffect(() => {
+        if (productType !== "plan_package") {
+            form.setValue("durationMonths", null);
+        } else if (form.getValues("durationMonths") == null) {
+            form.setValue("durationMonths", 12);
+        }
+    }, [productType, form]);
 
     useEffect(() => {
         if (initialData) {
@@ -58,6 +69,8 @@ export function PackageForm({
                 costPrice: initialData.costPrice || 0,
                 sellingPrice: initialData.sellingPrice || 0,
                 isActive: initialData.isActive ?? true,
+                durationMonths:
+                    initialData.durationMonths ?? (initialData.type === "plan_package" ? 12 : undefined),
             });
         }
     }, [initialData, form]);
@@ -109,6 +122,35 @@ export function PackageForm({
                         )}
                     />
                 </div>
+
+                {productType === "plan_package" && (
+                    <FormField
+                        control={form.control}
+                        name="durationMonths"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Prazo (meses)</FormLabel>
+                                <Select
+                                    onValueChange={(v) => field.onChange(parseInt(v, 10))}
+                                    value={field.value != null ? String(field.value) : ""}
+                                    disabled={isPending}
+                                >
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione a duração" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="6">6 meses</SelectItem>
+                                        <SelectItem value="12">12 meses</SelectItem>
+                                        <SelectItem value="18">18 meses</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
 
                 <FormField
                     control={form.control}

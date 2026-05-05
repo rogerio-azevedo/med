@@ -33,6 +33,7 @@ interface Product {
     costPrice: number;
     sellingPrice: number;
     isActive: boolean;
+    durationMonths?: number | null;
 }
 
 interface PackagesTableProps {
@@ -144,10 +145,12 @@ export function PackagesTable({ products }: PackagesTableProps) {
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                         <DropdownMenuSeparator />
-                                        <PackageDialog initialData={{
-                                            ...product,
-                                            description: product.description || undefined
-                                        }}>
+                                        <PackageDialog
+                                            initialData={{
+                                                ...product,
+                                                description: product.description || undefined,
+                                            }}
+                                        >
                                             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                                                 <Edit className="mr-2 h-4 w-4" />
                                                 Editar

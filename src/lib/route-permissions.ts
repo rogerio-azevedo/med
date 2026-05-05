@@ -21,6 +21,7 @@ export const ROUTE_PERMISSIONS: Record<string, FeatureSlug> = {
     "/medical-records": "medical-records",
     "/tarefas": "tasks",
     "/proposals": "proposals",
+    "/patient-plans": "patient-plans",
     "/maps": "map",
     "/checkins": "checkins",
     "/gestao/consultas": "consultations",

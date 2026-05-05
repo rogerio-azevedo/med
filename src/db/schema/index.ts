@@ -18,4 +18,5 @@ export * from "./permissions";
 export * from "./payment-terms";
 export * from "./products";
 export * from "./proposals";
+export * from "./patient-plans";
 export * from "./score-items";

@@ -13,9 +13,9 @@ import {
   ClipboardList,
   Map as MapIcon,
   ShieldCheck,
-  FileText,
   LogIn,
   LayoutList,
+  Briefcase,
 } from "lucide-react"
 
 import { NavMain } from "@/components/shared/Sidebar/nav-main"
@@ -69,9 +69,13 @@ const data = {
       icon: KanbanSquare,
     },
     {
-      title: "Orçamentos",
-      url: "/proposals",
-      icon: FileText,
+      title: "Comercial",
+      url: "#",
+      icon: Briefcase,
+      items: [
+        { title: "Orçamentos", url: "/proposals" },
+        { title: "Planos Ativos", url: "/patient-plans" },
+      ],
     },
     {
       title: "Gestão",

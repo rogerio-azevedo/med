@@ -379,6 +379,13 @@
       "when": 1778695200021,
       "tag": "0053_consultations_parent_consultation_id",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1778695200022,
+      "tag": "0054_patient_plans_product_duration",
+      "breakpoints": true
     }
   ]
 }

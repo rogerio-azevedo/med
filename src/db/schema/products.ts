@@ -30,6 +30,8 @@ export const products = pgTable("products", {
     costPrice: integer("cost_price").default(0).notNull(), // Centavos
     sellingPrice: integer("selling_price").default(0).notNull(), // Centavos
     isActive: boolean("is_active").default(true).notNull(),
+    /** Duração em meses; relevante principalmente para `plan_package`. */
+    durationMonths: integer("duration_months"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

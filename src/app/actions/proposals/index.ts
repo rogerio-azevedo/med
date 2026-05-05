@@ -11,6 +11,7 @@ import {
     getNextProposalNumber,
     updateProposal,
 } from "@/db/queries/proposals";
+import { syncPatientPlansForWonProposal } from "@/db/queries/patient-plans";
 import { getPaymentTermById } from "@/db/queries/payment-terms";
 import { proposalItems } from "@/db/schema";
 import {
@@ -179,6 +180,12 @@ export async function updateProposalStatusAction(id: string, status: string) {
 
     try {
         const updated = await updateProposalStatus(id, validated.data.status, session.user.id);
+
+        if (validated.data.status === "won" && session.user?.clinicId) {
+            await syncPatientPlansForWonProposal(session.user.clinicId, id);
+            revalidatePath("/patient-plans");
+        }
+
         revalidatePath("/proposals");
         revalidatePath(`/proposals/${id}`);
         revalidatePath(`/proposals/${id}/print`);

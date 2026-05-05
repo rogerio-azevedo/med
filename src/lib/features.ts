@@ -15,6 +15,7 @@ export type FeatureSlug =
     | "medical-records"
     | "tasks"
     | "proposals"
+    | "patient-plans"
     | "checkins"
     | "map"
     | "consultations"
@@ -48,6 +49,7 @@ export const ALL_FEATURES: FeatureDefinition[] = [
     { slug: "medical-records",    name: "Prontuário",             description: "Acesso ao prontuário eletrônico",             category: "Operações" },
     { slug: "tasks",              name: "Tarefas",                description: "Gestão de tarefas no quadro Kanban",          category: "Operações" },
     { slug: "proposals",          name: "Orçamentos",             description: "Criação e gestão de orçamentos/propostas",    category: "Operações" },
+    { slug: "patient-plans",      name: "Planos ativos",          description: "Acompanhamento de planos vendidos a pacientes", category: "Operações" },
     { slug: "checkins",           name: "Check-ins",              description: "Registro e acompanhamento de check-ins",      category: "Operações" },
     { slug: "map",                name: "Mapa de Profissionais",  description: "Visualização do mapa de profissionais",       category: "Operações" },
     { slug: "consultations",      name: "Consultas",              description: "Listagem e gestão de consultas da clínica",   category: "Operações" },
