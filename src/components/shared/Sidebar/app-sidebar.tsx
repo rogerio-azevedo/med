@@ -7,12 +7,12 @@ import {
   KanbanSquare,
   Users,
   Stethoscope,
-    Settings,
-    Building2,
-    Calendar,
-    ClipboardList,
-    Map as MapIcon,
-    ShieldCheck,
+  Settings,
+  Building2,
+  Calendar,
+  ClipboardList,
+  Map as MapIcon,
+  ShieldCheck,
   FileText,
   LogIn,
   LayoutList,
@@ -41,17 +41,27 @@ const data = {
       url: "/schedule",
       icon: Calendar,
     },
-        {
-            title: "Mapa de Profissionais",
-            url: "/maps",
-            icon: MapIcon,
-        },
+    {
+      title: "Mapa de Profissionais",
+      url: "/maps",
+      icon: MapIcon,
+    },
   ],
   navMain: [
     {
       title: "Dashboard",
       url: "/dashboard",
       icon: LayoutDashboard,
+    },
+    {
+      title: "Pacientes",
+      url: "/patients",
+      icon: Users,
+    },
+    {
+      title: "Check-ins",
+      url: "/checkins",
+      icon: LogIn,
     },
     {
       title: "Tarefas",
@@ -74,20 +84,12 @@ const data = {
         { title: "Video Consultas", url: "/gestao/video-consultas" },
       ],
     },
-    {
-      title: "Check-ins",
-      url: "/checkins",
-      icon: LogIn,
-    },
+
     {
       title: "Cadastros",
       url: "#",
       icon: ClipboardList,
       items: [
-        {
-          title: "Pacientes",
-          url: "/patients",
-        },
         {
           title: "Médicos",
           url: "/doctors",
@@ -139,11 +141,11 @@ const data = {
       url: "/schedule",
       icon: Calendar,
     },
-        {
-            title: "Mapa de Profissionais",
-            url: "/maps",
-            icon: MapIcon,
-        },
+    {
+      title: "Mapa de Profissionais",
+      url: "/maps",
+      icon: MapIcon,
+    },
   ],
   admin: [
     {
