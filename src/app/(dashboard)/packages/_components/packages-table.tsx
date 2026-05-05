@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
     Table,
     TableBody,
@@ -18,12 +19,20 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Trash2, EyeOff, Eye } from "lucide-react";
+import {
+    MoreHorizontal,
+    Edit,
+    Trash2,
+    EyeOff,
+    Eye,
+    Search,
+} from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { deleteProductAction, toggleProductStatusAction } from "@/app/actions/products";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { PackageDialog } from "./package-dialog";
+import { Input } from "@/components/ui/input";
 
 interface Product {
     id: string;
@@ -42,6 +51,17 @@ interface PackagesTableProps {
 
 export function PackagesTable({ products }: PackagesTableProps) {
     const router = useRouter();
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const filteredProducts = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return products;
+        return products.filter((p) => {
+            const nameMatch = p.name.toLowerCase().includes(q);
+            const descMatch = (p.description ?? "").toLowerCase().includes(q);
+            return nameMatch || descMatch;
+        });
+    }, [products, searchQuery]);
 
     async function onDelete(id: string) {
         if (!confirm("Tem certeza que deseja excluir este produto?")) return;
@@ -90,8 +110,38 @@ export function PackagesTable({ products }: PackagesTableProps) {
         );
     }
 
+    if (filteredProducts.length === 0) {
+        return (
+            <div className="flex flex-col gap-4">
+                <div className="relative w-full md:max-w-md">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Buscar por nome ou descrição..."
+                        className="pl-9 bg-white border-muted shadow-sm hover:border-primary/30 transition-colors"
+                    />
+                </div>
+                <div className="p-12 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground gap-2 bg-muted/20">
+                    <p>Nenhum produto encontrado para &quot;{searchQuery.trim()}&quot;.</p>
+                    <p className="text-sm">Tente outro termo ou limpe a busca.</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="rounded-md border bg-white shadow-sm overflow-hidden">
+        <div className="flex flex-col gap-4">
+            <div className="relative w-full md:max-w-md">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar por nome ou descrição..."
+                    className="pl-9 bg-white border-muted shadow-sm hover:border-primary/30 transition-colors"
+                />
+            </div>
+            <div className="rounded-md border bg-white shadow-sm overflow-hidden">
             <Table>
                 <TableHeader className="bg-muted/30">
                     <TableRow>
@@ -104,7 +154,7 @@ export function PackagesTable({ products }: PackagesTableProps) {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {products.map((product) => (
+                    {filteredProducts.map((product) => (
                         <TableRow key={product.id} className="hover:bg-muted/10 transition-colors">
                             <TableCell>
                                 <div className="flex flex-col">
@@ -178,6 +228,7 @@ export function PackagesTable({ products }: PackagesTableProps) {
                     ))}
                 </TableBody>
             </Table>
+            </div>
         </div>
     );
 }
