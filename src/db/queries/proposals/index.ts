@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { proposals, proposalItems, proposalStatusEnum } from "@/db/schema";
-import { desc, eq, and, sql, gte, lte } from "drizzle-orm";
+import { proposals, proposalItems, proposalStatusEnum, patients } from "@/db/schema";
+import { desc, eq, and, sql, gte, lte, or, ilike, exists, type SQL } from "drizzle-orm";
 
 export type ProposalQueryFilters = {
     status?: (typeof proposalStatusEnum.enumValues)[number];
@@ -8,10 +8,12 @@ export type ProposalQueryFilters = {
     dateFrom?: string;
     /** ISO date `YYYY-MM-DD` (inclusive), compared em UTC */
     dateTo?: string;
+    /** Search by number or patient name */
+    q?: string;
 };
 
 function buildProposalWhere(clinicId: string, filters?: ProposalQueryFilters) {
-    const conditions = [eq(proposals.clinicId, clinicId)];
+    const conditions: (SQL | undefined)[] = [eq(proposals.clinicId, clinicId)];
 
     if (filters?.status) {
         conditions.push(eq(proposals.status, filters.status));
@@ -29,6 +31,30 @@ function buildProposalWhere(clinicId: string, filters?: ProposalQueryFilters) {
         if (!Number.isNaN(d.getTime())) {
             conditions.push(lte(proposals.createdAt, d));
         }
+    }
+
+    if (filters?.q) {
+        const search = `%${filters.q}%`;
+        const num = parseInt(filters.q);
+        
+        const subConditions = [
+            exists(
+                db.select()
+                  .from(patients)
+                  .where(
+                      and(
+                          eq(patients.id, proposals.patientId),
+                          ilike(patients.name, search)
+                      )
+                  )
+            )
+        ];
+
+        if (!isNaN(num)) {
+            subConditions.push(eq(proposals.number, num));
+        }
+
+        conditions.push(or(...subConditions));
     }
 
     return and(...conditions);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { X } from "lucide-react";
+import { X, Search } from "lucide-react";
 
 const STATUS_LABELS = {
     draft: "Rascunho",
@@ -32,19 +32,23 @@ export type ProposalFiltersProps = {
     defaultStatus?: string;
     defaultDateFrom?: string;
     defaultDateTo?: string;
+    defaultQ?: string;
 };
 
 export function ProposalFilters({
     defaultStatus = "",
     defaultDateFrom = "",
     defaultDateTo = "",
+    defaultQ = "",
 }: ProposalFiltersProps) {
     const router = useRouter();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     const [status, setStatus] = useState(defaultStatus);
     const [dateFrom, setDateFrom] = useState(defaultDateFrom);
     const [dateTo, setDateTo] = useState(defaultDateTo);
+    const [q, setQ] = useState(defaultQ);
 
     const applyFilters = useCallback(() => {
         const params = new URLSearchParams();
@@ -53,21 +57,24 @@ export function ProposalFilters({
         }
         if (dateFrom) params.set("dateFrom", dateFrom);
         if (dateTo) params.set("dateTo", dateTo);
-        const q = params.toString();
-        router.push(q ? `${pathname}?${q}` : pathname);
-    }, [dateFrom, dateTo, pathname, router, status]);
+        if (q) params.set("q", q);
+        
+        const queryString = params.toString();
+        router.push(queryString ? `${pathname}?${queryString}` : pathname);
+    }, [dateFrom, dateTo, pathname, q, router, status]);
 
     const clearFilters = useCallback(() => {
         setStatus("");
         setDateFrom("");
         setDateTo("");
+        setQ("");
         router.push(pathname);
     }, [pathname, router]);
 
     const statusSelectValue = status && isProposalStatus(status) ? status : "all";
 
     return (
-        <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:flex-wrap md:items-end md:gap-6">
+        <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:flex-row md:flex-wrap md:items-end md:gap-4">
             <div className="flex min-w-[180px] flex-col gap-2">
                 <Label htmlFor="proposal-filter-status" className="text-xs font-semibold text-muted-foreground">
                     Status
@@ -76,7 +83,7 @@ export function ProposalFilters({
                     value={statusSelectValue}
                     onValueChange={(value) => setStatus(value === "all" ? "" : value)}
                 >
-                    <SelectTrigger id="proposal-filter-status" className="h-11 rounded-xl border-slate-200 bg-white">
+                    <SelectTrigger id="proposal-filter-status" className="h-10 rounded-xl border-slate-200 bg-white">
                         <SelectValue placeholder="Todos" />
                     </SelectTrigger>
                     <SelectContent>
@@ -100,7 +107,7 @@ export function ProposalFilters({
                         type="date"
                         value={dateFrom}
                         onChange={(e) => setDateFrom(e.target.value)}
-                        className="h-11 rounded-xl border-slate-200"
+                        className="h-10 rounded-xl border-slate-200"
                     />
                 </div>
                 <div className="flex min-w-[140px] flex-col gap-2">
@@ -112,16 +119,33 @@ export function ProposalFilters({
                         type="date"
                         value={dateTo}
                         onChange={(e) => setDateTo(e.target.value)}
-                        className="h-11 rounded-xl border-slate-200"
+                        className="h-10 rounded-xl border-slate-200"
+                    />
+                </div>
+            </div>
+
+            <div className="flex flex-1 min-w-[240px] flex-col gap-2">
+                <Label htmlFor="proposal-filter-search" className="text-xs font-semibold text-muted-foreground">
+                    Busca
+                </Label>
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Input
+                        id="proposal-filter-search"
+                        placeholder="Paciente ou número..."
+                        value={q}
+                        onChange={(e) => setQ(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && applyFilters()}
+                        className="h-10 pl-9 rounded-xl border-slate-200"
                     />
                 </div>
             </div>
 
             <div className="flex flex-wrap gap-2 md:ml-auto">
-                <Button type="button" onClick={applyFilters} className="h-11 rounded-xl font-semibold">
+                <Button type="button" onClick={applyFilters} className="h-10 rounded-xl font-semibold">
                     Aplicar filtros
                 </Button>
-                <Button type="button" variant="outline" onClick={clearFilters} className="h-11 gap-2 rounded-xl font-semibold">
+                <Button type="button" variant="outline" onClick={clearFilters} className="h-10 gap-2 rounded-xl font-semibold">
                     <X className="h-4 w-4" />
                     Limpar filtros
                 </Button>

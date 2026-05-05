@@ -103,23 +103,23 @@ export function ProposalsTable({ proposals }: ProposalsTableProps) {
 
     return (
         <TooltipProvider>
-            <div className="rounded-3xl border bg-white shadow-xl shadow-slate-200/50 overflow-hidden">
+            <div className="rounded-2xl border bg-white shadow-xl shadow-slate-200/50 overflow-hidden">
                 <Table>
                     <TableHeader className="bg-slate-50/50">
                         <TableRow className="hover:bg-transparent border-0 h-14">
-                            <TableHead className="font-bold text-slate-900 pl-8"># Número</TableHead>
+                            <TableHead className="font-bold text-slate-900 pl-6"># Número</TableHead>
                             <TableHead className="font-bold text-slate-900">Paciente</TableHead>
                             <TableHead className="font-bold text-slate-900">Data / Validade</TableHead>
                             <TableHead className="font-bold text-slate-900 text-right">Valor Total</TableHead>
                             <TableHead className="font-bold text-slate-900 text-center">Status</TableHead>
                             <TableHead className="font-bold text-slate-900">Rastreabilidade</TableHead>
-                            <TableHead className="w-[80px] pr-8"></TableHead>
+                            <TableHead className="w-[80px] pr-6"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {proposals.map((proposal) => (
-                            <TableRow key={proposal.id} className="hover:bg-slate-50/30 transition-all border-b border-slate-100 last:border-0 h-20">
-                                <TableCell className="font-bold text-slate-600 pl-8">
+                            <TableRow key={proposal.id} className="hover:bg-slate-50/30 transition-all border-b border-slate-100 last:border-0 h-16">
+                                <TableCell className="font-bold text-slate-600 pl-6">
                                     #{String(proposal.number).padStart(4, '0')}
                                 </TableCell>
                                 <TableCell>
@@ -182,7 +182,7 @@ export function ProposalsTable({ proposals }: ProposalsTableProps) {
                                         </div>
                                     </div>
                                 </TableCell>
-                                <TableCell className="pr-8">
+                                <TableCell className="pr-6">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl hover:bg-slate-100">

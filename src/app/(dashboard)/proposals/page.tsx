@@ -11,8 +11,6 @@ import { ProposalsTable } from "./_components/proposals-table";
 import { ProposalStats } from "./_components/proposal-stats";
 import { ProposalFilters } from "./_components/proposal-filters";
 import { ProposalsPageHeader } from "./_components/proposals-page-header";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -20,6 +18,7 @@ function parseProposalQueryFilters(params: {
     status?: string;
     dateFrom?: string;
     dateTo?: string;
+    q?: string;
 }): ProposalQueryFilters | undefined {
     const filters: ProposalQueryFilters = {};
 
@@ -40,6 +39,10 @@ function parseProposalQueryFilters(params: {
         filters.dateTo = params.dateTo;
     }
 
+    if (params.q) {
+        filters.q = params.q;
+    }
+
     return Object.keys(filters).length > 0 ? filters : undefined;
 }
 
@@ -50,6 +53,7 @@ export default async function ProposalsPage({
         status?: string;
         dateFrom?: string;
         dateTo?: string;
+        q?: string;
     }>;
 }) {
     const session = await auth();
@@ -74,12 +78,12 @@ export default async function ProposalsPage({
     ]);
 
     return (
-        <div className="flex-1 space-y-8 p-8 pt-6">
+        <div className="flex-1 space-y-4 p-6 pt-2">
             <ProposalsPageHeader patients={patients} products={products} paymentTerms={paymentTerms} />
 
             <ProposalStats stats={stats} />
 
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
                 <ProposalFilters
                     key={[
                         queryFilters?.status ?? "",
@@ -89,15 +93,9 @@ export default async function ProposalsPage({
                     defaultStatus={queryFilters?.status ?? ""}
                     defaultDateFrom={queryFilters?.dateFrom ?? ""}
                     defaultDateTo={queryFilters?.dateTo ?? ""}
+                    defaultQ={query.q ?? ""}
                 />
 
-                <div className="relative w-full md:max-w-md">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                    <Input
-                        placeholder="Buscar por paciente ou número..."
-                        className="pl-12 h-12 bg-white border-slate-200 rounded-2xl shadow-sm hover:border-primary/30 focus:border-primary transition-all text-base"
-                    />
-                </div>
 
                 <div className="transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
                     <ProposalsTable proposals={proposals} />
