@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import ReactSelect from "react-select";
 import {
@@ -26,6 +26,8 @@ import { Label } from "@/components/ui/label";
 import { Icd10Search } from "../Icd10Search";
 import { PlanTab } from "./PlanTab";
 import { PlanActionsToolbar } from "./PlanTab/PlanActionsToolbar";
+import { ConsultationRecordSplitLayout } from "./ConsultationRecordSplitLayout";
+import type { ConsultationHistoryPanelEntry } from "./ConsultationHistoryPanel";
 import {
     ArrowLeft,
     ClipboardList,
@@ -133,6 +135,16 @@ type Option = {
     label: string;
 };
 
+type ConsultationUiMode = "simple" | "structured";
+
+function inferConsultationUiMode(initial: ConsultationInitialData | undefined): ConsultationUiMode {
+    if (!initial?.id) return "simple";
+    const soap = initial.soap;
+    const hasStructured =
+        !!(soap?.objective?.trim() || soap?.assessment?.trim() || soap?.plan?.trim());
+    return hasStructured ? "structured" : "simple";
+}
+
 /** Mapeia nomes/workflows a ícones lucide-react. */
 function getServiceTypeIcon(name: string, workflow: ServiceTypeWorkflow) {
     const lower = name.toLowerCase();
@@ -194,6 +206,14 @@ export function ConsultationForm({
         temperature: initialData?.vitals?.temperature || "",
     });
 
+    const [consultationUiMode, setConsultationUiMode] = useState<ConsultationUiMode>(() =>
+        inferConsultationUiMode(initialData ?? null)
+    );
+
+    const [historyEntries, setHistoryEntries] = useState<ConsultationHistoryPanelEntry[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyError, setHistoryError] = useState<string | null>(null);
+
     /** Created when the user clicks Continue on a brand-new encounter (enables Plan / prescriptions). */
     const [liveConsultationId, setLiveConsultationId] = useState<string | null>(null);
     const [startingEncounter, setStartingEncounter] = useState(false);
@@ -219,6 +239,45 @@ export function ConsultationForm({
         | ServiceTypeWorkflow
         | "surgery"
         | null;
+
+    useEffect(() => {
+        if (!isOpen || step !== "record") return;
+        if (activeWorkflow !== "consultation") return;
+        setConsultationUiMode(inferConsultationUiMode(initialData ?? null));
+    }, [isOpen, step, activeWorkflow, initialData?.id]);
+
+    useEffect(() => {
+        if (!isOpen || step !== "record" || !selectedPatientId) return;
+
+        const ctrl = new AbortController();
+        setHistoryLoading(true);
+        setHistoryError(null);
+
+        const qs = effectiveConsultationId
+            ? `?exclude=${encodeURIComponent(effectiveConsultationId)}`
+            : "";
+
+        fetch(`/api/patients/${selectedPatientId}/consultation-history${qs}`, { signal: ctrl.signal })
+            .then(async (res) => {
+                if (!res.ok) {
+                    throw new Error("Não foi possível carregar o histórico.");
+                }
+                return res.json() as Promise<ConsultationHistoryPanelEntry[]>;
+            })
+            .then((data) => {
+                setHistoryEntries(Array.isArray(data) ? data : []);
+            })
+            .catch((err: unknown) => {
+                if (err instanceof DOMException && err.name === "AbortError") return;
+                setHistoryError(err instanceof Error ? err.message : "Erro ao carregar histórico.");
+                setHistoryEntries([]);
+            })
+            .finally(() => {
+                if (!ctrl.signal.aborted) setHistoryLoading(false);
+            });
+
+        return () => ctrl.abort();
+    }, [isOpen, step, selectedPatientId, effectiveConsultationId]);
 
     const handleSelectCid = (cid: { id: string; code: string; description: string }) => {
         setSoap((prev) => ({
@@ -318,7 +377,9 @@ export function ConsultationForm({
                     "flex min-h-0 flex-col overflow-hidden p-0",
                     isCompactSetup
                         ? "max-h-[min(88vh,640px)] sm:max-w-2xl"
-                        : "max-h-[90vh] sm:max-w-6xl"
+                        : step === "record"
+                          ? "max-h-[90vh] sm:max-w-7xl"
+                          : "max-h-[90vh] sm:max-w-6xl"
                 )}
                 onPointerDownOutside={(e) => {
                     // Evita que cliques no menu portal do react-select fechem o dialog
@@ -353,12 +414,14 @@ export function ConsultationForm({
                                       : `Registrar Atendimento: ${selectedPatient?.name || "Paciente"}`}
                             </DialogTitle>
                             {step === "record" ? (
-                                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                                    <Badge variant="outline">{selectedServiceType?.name || initialData?.serviceTypeName || "Atendimento"}</Badge>
-                                    {activeWorkflow ? (
-                                        <Badge variant="secondary">{getServiceTypeWorkflowLabel(activeWorkflow)}</Badge>
-                                    ) : null}
-                                </div>
+                                activeWorkflow === "consultation" ? null : (
+                                    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                                        <Badge variant="outline">{selectedServiceType?.name || initialData?.serviceTypeName || "Atendimento"}</Badge>
+                                        {activeWorkflow ? (
+                                            <Badge variant="secondary">{getServiceTypeWorkflowLabel(activeWorkflow)}</Badge>
+                                        ) : null}
+                                    </div>
+                                )
                             ) : (
                                 <p className="text-xs text-muted-foreground sm:text-sm">
                                     Selecione o paciente, o tipo de atendimento e o convênio.
@@ -503,143 +566,210 @@ export function ConsultationForm({
                         </DialogFooter>
                     </div>
                 ) : activeWorkflow === "consultation" ? (
-                    <>
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col pt-4">
-                            <div className="border-b px-6 pb-2">
-                                <PlanActionsToolbar
-                                    consultationId={effectiveConsultationId}
-                                    patientId={selectedPatientId}
-                                    clinicId={clinicId}
-                                    className="mb-2"
-                                />
-                                <TabsList className="h-11 w-full justify-start gap-6 rounded-none bg-transparent p-0">
-                                    <TabsTrigger value="subjective" className="h-full rounded-none px-2 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">
-                                        <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold">S</span>
-                                        Subjetivo
-                                    </TabsTrigger>
-                                    <TabsTrigger value="objective" className="h-full rounded-none px-2 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">
-                                        <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold">O</span>
-                                        Objetivo
-                                    </TabsTrigger>
-                                    <TabsTrigger value="assessment" className="h-full rounded-none px-2 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">
-                                        <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold">A</span>
-                                        Avaliação
-                                    </TabsTrigger>
-                                    <TabsTrigger value="plan" className="h-full rounded-none px-2 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">
-                                        <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold">P</span>
-                                        Plano
-                                    </TabsTrigger>
-                                </TabsList>
+                    <ConsultationRecordSplitLayout
+                        historyEntries={historyEntries}
+                        historyLoading={historyLoading}
+                        historyError={historyError}
+                    >
+                        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                            <div className="shrink-0 border-b px-6 pb-2 pt-3">
+                                <div className="flex gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setConsultationUiMode("simple")}
+                                        className={cn(
+                                            "-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+                                            consultationUiMode === "simple"
+                                                ? "border-primary text-foreground"
+                                                : "border-transparent text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        Consulta
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setConsultationUiMode("structured")}
+                                        className={cn(
+                                            "-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+                                            consultationUiMode === "structured"
+                                                ? "border-primary text-foreground"
+                                                : "border-transparent text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        Consulta estruturada
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto px-6 py-4">
-                                <TabsContent value="subjective" className="mt-0 space-y-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-lg font-semibold">Queixa Principal e História (HDA)</Label>
-                                        <Textarea
-                                            placeholder="Descreva o motivo da consulta, sintomas e histórico atual..."
-                                            className="min-h-[400px] text-base"
-                                            value={soap.subjective}
-                                            onChange={(e) => setSoap({ ...soap, subjective: e.target.value })}
+                            {consultationUiMode === "simple" ? (
+                                <>
+                                    <div className="shrink-0 border-b px-6 pb-3 pt-2">
+                                        <PlanActionsToolbar
+                                            consultationId={effectiveConsultationId}
+                                            patientId={selectedPatientId}
+                                            clinicId={clinicId}
                                         />
                                     </div>
-                                </TabsContent>
-
-                                <TabsContent value="objective" className="mt-0 space-y-6">
-                                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+                                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
                                         <div className="space-y-2">
-                                            <Label>Peso (kg)</Label>
-                                            <Input placeholder="70.5" value={vitals.weight} onChange={(e) => setVitals({ ...vitals, weight: e.target.value })} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Altura (cm)</Label>
-                                            <Input placeholder="175" value={vitals.height} onChange={(e) => setVitals({ ...vitals, height: e.target.value })} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>PA (mmHg)</Label>
-                                            <Input placeholder="120/80" value={vitals.bloodPressure} onChange={(e) => setVitals({ ...vitals, bloodPressure: e.target.value })} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>FC (bpm)</Label>
-                                            <Input placeholder="72" value={vitals.heartRate} onChange={(e) => setVitals({ ...vitals, heartRate: e.target.value })} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Temp (°C)</Label>
-                                            <Input placeholder="36.5" value={vitals.temperature} onChange={(e) => setVitals({ ...vitals, temperature: e.target.value })} />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-lg font-semibold">Exame Físico</Label>
-                                        <Textarea
-                                            placeholder="Descreva os achados do exame físico..."
-                                            className="min-h-[300px]"
-                                            value={soap.objective}
-                                            onChange={(e) => setSoap({ ...soap, objective: e.target.value })}
-                                        />
-                                    </div>
-                                </TabsContent>
-
-                                <TabsContent value="assessment" className="mt-0 space-y-6">
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label className="text-lg font-semibold italic">Diagnóstico / Hipótese Diagnóstica (CID-10)</Label>
-                                            <Icd10Search onSelect={handleSelectCid} />
-                                            {soap.diagnosisCode ? (
-                                                <div className="flex items-center justify-between rounded-md border border-primary/20 bg-primary/5 p-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <Badge className="h-8 text-md">{soap.diagnosisCode}</Badge>
-                                                        <span className="font-medium">{soap.diagnosisDescription}</span>
-                                                    </div>
-                                                    <Button variant="ghost" size="sm" onClick={() => setSoap({ ...soap, diagnosisCidId: null, diagnosisCode: "", diagnosisDescription: "" })}>
-                                                        Remover
-                                                    </Button>
-                                                </div>
-                                            ) : null}
-                                        </div>
-                                        <Separator />
-                                        <div className="space-y-2">
-                                            <Label className="text-lg font-semibold">Avaliação Clínica / Observações</Label>
+                                            <Label className="text-lg font-semibold">Registro da consulta</Label>
                                             <Textarea
-                                                placeholder="Discuta o raciocínio clínico, gravidade e prognóstico..."
-                                                className="min-h-[300px]"
-                                                value={soap.assessment}
-                                                onChange={(e) => setSoap({ ...soap, assessment: e.target.value })}
+                                                placeholder="Descreva o atendimento: queixa, história, exame, avaliação e plano..."
+                                                className="min-h-[min(420px,48vh)] text-base md:min-h-[380px]"
+                                                value={soap.subjective}
+                                                onChange={(e) => setSoap({ ...soap, subjective: e.target.value })}
                                             />
                                         </div>
                                     </div>
-                                </TabsContent>
+                                </>
+                            ) : (
+                                <Tabs
+                                    value={activeTab}
+                                    onValueChange={setActiveTab}
+                                    className="flex min-h-0 flex-1 flex-col pt-2"
+                                >
+                                    <div className="shrink-0 border-b px-6 pb-2">
+                                        <PlanActionsToolbar
+                                            consultationId={effectiveConsultationId}
+                                            patientId={selectedPatientId}
+                                            clinicId={clinicId}
+                                            className="mb-2"
+                                        />
+                                        <TabsList className="h-11 w-full justify-start gap-6 rounded-none bg-transparent p-0">
+                                            <TabsTrigger value="subjective" className="h-full rounded-none px-2 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                                                <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold">S</span>
+                                                Subjetivo
+                                            </TabsTrigger>
+                                            <TabsTrigger value="objective" className="h-full rounded-none px-2 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                                                <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold">O</span>
+                                                Objetivo
+                                            </TabsTrigger>
+                                            <TabsTrigger value="assessment" className="h-full rounded-none px-2 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                                                <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold">A</span>
+                                                Avaliação
+                                            </TabsTrigger>
+                                            <TabsTrigger value="plan" className="h-full rounded-none px-2 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                                                <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold">P</span>
+                                                Plano
+                                            </TabsTrigger>
+                                        </TabsList>
+                                    </div>
 
-                                <TabsContent value="plan" className="mt-0 space-y-6">
-                                    <PlanTab
-                                        planValue={soap.plan}
-                                        onPlanChange={(plan) => setSoap({ ...soap, plan })}
-                                    />
-                                </TabsContent>
-                            </div>
-                        </Tabs>
+                                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
+                                        <TabsContent value="subjective" className="mt-0 space-y-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-lg font-semibold">Queixa Principal e História (HDA)</Label>
+                                                <Textarea
+                                                    placeholder="Descreva o motivo da consulta, sintomas e histórico atual..."
+                                                    className="min-h-[400px] text-base"
+                                                    value={soap.subjective}
+                                                    onChange={(e) => setSoap({ ...soap, subjective: e.target.value })}
+                                                />
+                                            </div>
+                                        </TabsContent>
 
-                        <DialogFooter className="gap-3 border-t p-6">
-                            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-                            <Button
-                                onClick={() =>
-                                    onSubmit({
-                                        patientId: selectedPatientId,
-                                        serviceTypeId: selectedServiceTypeId,
-                                        healthInsuranceId: selectedHealthInsuranceId || null,
-                                        workflow: activeWorkflow,
-                                        soap,
-                                        vitals,
-                                        consultationId: effectiveConsultationId,
-                                    })
-                                }
-                            >
-                                Finalizar e Salvar Atendimento
-                            </Button>
-                        </DialogFooter>
-                    </>
+                                        <TabsContent value="objective" className="mt-0 space-y-6">
+                                            <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+                                                <div className="space-y-2">
+                                                    <Label>Peso (kg)</Label>
+                                                    <Input placeholder="70.5" value={vitals.weight} onChange={(e) => setVitals({ ...vitals, weight: e.target.value })} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Altura (cm)</Label>
+                                                    <Input placeholder="175" value={vitals.height} onChange={(e) => setVitals({ ...vitals, height: e.target.value })} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>PA (mmHg)</Label>
+                                                    <Input placeholder="120/80" value={vitals.bloodPressure} onChange={(e) => setVitals({ ...vitals, bloodPressure: e.target.value })} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>FC (bpm)</Label>
+                                                    <Input placeholder="72" value={vitals.heartRate} onChange={(e) => setVitals({ ...vitals, heartRate: e.target.value })} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Temp (°C)</Label>
+                                                    <Input placeholder="36.5" value={vitals.temperature} onChange={(e) => setVitals({ ...vitals, temperature: e.target.value })} />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-lg font-semibold">Exame Físico</Label>
+                                                <Textarea
+                                                    placeholder="Descreva os achados do exame físico..."
+                                                    className="min-h-[300px]"
+                                                    value={soap.objective}
+                                                    onChange={(e) => setSoap({ ...soap, objective: e.target.value })}
+                                                />
+                                            </div>
+                                        </TabsContent>
+
+                                        <TabsContent value="assessment" className="mt-0 space-y-6">
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-lg font-semibold italic">Diagnóstico / Hipótese Diagnóstica (CID-10)</Label>
+                                                    <Icd10Search onSelect={handleSelectCid} />
+                                                    {soap.diagnosisCode ? (
+                                                        <div className="flex items-center justify-between rounded-md border border-primary/20 bg-primary/5 p-3">
+                                                            <div className="flex items-center gap-3">
+                                                                <Badge className="h-8 text-md">{soap.diagnosisCode}</Badge>
+                                                                <span className="font-medium">{soap.diagnosisDescription}</span>
+                                                            </div>
+                                                            <Button variant="ghost" size="sm" onClick={() => setSoap({ ...soap, diagnosisCidId: null, diagnosisCode: "", diagnosisDescription: "" })}>
+                                                                Remover
+                                                            </Button>
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                                <Separator />
+                                                <div className="space-y-2">
+                                                    <Label className="text-lg font-semibold">Avaliação Clínica / Observações</Label>
+                                                    <Textarea
+                                                        placeholder="Discuta o raciocínio clínico, gravidade e prognóstico..."
+                                                        className="min-h-[300px]"
+                                                        value={soap.assessment}
+                                                        onChange={(e) => setSoap({ ...soap, assessment: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </TabsContent>
+
+                                        <TabsContent value="plan" className="mt-0 space-y-6">
+                                            <PlanTab
+                                                planValue={soap.plan}
+                                                onPlanChange={(plan) => setSoap({ ...soap, plan })}
+                                            />
+                                        </TabsContent>
+                                    </div>
+                                </Tabs>
+                            )}
+
+                            <DialogFooter className="mt-auto shrink-0 gap-3 border-t p-6">
+                                <Button variant="outline" onClick={onClose}>Cancelar</Button>
+                                <Button
+                                    onClick={() =>
+                                        onSubmit({
+                                            patientId: selectedPatientId,
+                                            serviceTypeId: selectedServiceTypeId,
+                                            healthInsuranceId: selectedHealthInsuranceId || null,
+                                            workflow: activeWorkflow,
+                                            soap,
+                                            vitals,
+                                            consultationId: effectiveConsultationId,
+                                        })
+                                    }
+                                >
+                                    Finalizar e Salvar Atendimento
+                                </Button>
+                            </DialogFooter>
+                        </div>
+                    </ConsultationRecordSplitLayout>
                 ) : (
-                    <>
-                        <div className="flex-1 overflow-y-auto px-6 py-4">
+                    <ConsultationRecordSplitLayout
+                        historyEntries={historyEntries}
+                        historyLoading={historyLoading}
+                        historyError={historyError}
+                    >
+                        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
                             <div className="space-y-6">
                                 <Card className="border-dashed">
                                     <CardContent className="space-y-2 p-4 text-sm text-muted-foreground">
@@ -696,7 +826,7 @@ export function ConsultationForm({
                             </div>
                         </div>
 
-                        <DialogFooter className="gap-3 border-t p-6">
+                        <DialogFooter className="mt-auto shrink-0 gap-3 border-t p-6">
                             <Button variant="outline" onClick={onClose}>Cancelar</Button>
                             <Button
                                 disabled={!effectiveConsultationId}
@@ -715,7 +845,8 @@ export function ConsultationForm({
                                 {activeWorkflow === "return" ? "Finalizar retorno" : "Salvar Atendimento"}
                             </Button>
                         </DialogFooter>
-                    </>
+                        </div>
+                    </ConsultationRecordSplitLayout>
                 )}
             </DialogContent>
         </Dialog>
