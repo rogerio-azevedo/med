@@ -20,3 +20,4 @@ export * from "./products";
 export * from "./proposals";
 export * from "./patient-plans";
 export * from "./score-items";
+export * from "./document-templates";

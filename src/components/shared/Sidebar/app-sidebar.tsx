@@ -135,6 +135,10 @@ const data = {
           url: "/scores",
         },
         {
+          title: "Modelos de Documentos",
+          url: "/document-templates",
+        },
+        {
           title: "Tipos de Atendimento",
           url: "/service-types",
         },

@@ -386,6 +386,13 @@
       "when": 1778695200022,
       "tag": "0054_patient_plans_product_duration",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1778695200023,
+      "tag": "0055_minor_vulture",
+      "breakpoints": true
     }
   ]
 }

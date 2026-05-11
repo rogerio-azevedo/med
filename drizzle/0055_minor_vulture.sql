@@ -1,0 +1,3 @@
+-- Migration já aplicada no banco através do drizzle-kit push.
+-- Este arquivo foi esvaziado para permitir que o histórico de migrações
+-- seja atualizado sem conflitos de "já existe".

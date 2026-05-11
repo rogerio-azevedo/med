@@ -8,9 +8,11 @@ import { CertificateModal } from "./modals/CertificateModal";
 import { ExamsModal } from "./modals/ExamsModal";
 import { ReportsModal } from "./modals/ReportsModal";
 import { PrescriptionModal } from "./modals/PrescriptionModal";
+import { GenerateDocumentModal } from "@/components/document-templates/GenerateDocumentModal";
+import { getTemplatesAction } from "@/app/actions/document-templates";
 import { cn } from "@/lib/utils";
 
-type OpenPlanModal = "prescription" | "certificate" | "exams" | "reports" | null;
+type OpenPlanModal = "prescription" | "certificate" | "exams" | "reports" | "templates" | null;
 
 export type PlanActionsToolbarProps = {
     consultationId?: string | null;
@@ -24,6 +26,7 @@ const MODAL_ORDER: Exclude<OpenPlanModal, null>[] = [
     "certificate",
     "exams",
     "reports",
+    "templates",
 ];
 
 export function PlanActionsToolbar({
@@ -33,18 +36,31 @@ export function PlanActionsToolbar({
     className,
 }: PlanActionsToolbarProps) {
     const [openModal, setOpenModal] = useState<OpenPlanModal>(null);
+    const [templates, setTemplates] = useState<any[]>([]);
 
     const activeIndex = useMemo(() => {
         if (!openModal) return -1;
         return MODAL_ORDER.indexOf(openModal);
     }, [openModal]);
 
+    const handleOpenTemplates = async () => {
+        setOpenModal("templates");
+        if (templates.length === 0) {
+            try {
+                const data = await getTemplatesAction();
+                setTemplates(data);
+            } catch (error) {
+                console.error("Erro ao carregar modelos", error);
+            }
+        }
+    };
+
     return (
         <div className={cn("space-y-2", className)}>
             <Label className="text-xs font-semibold text-muted-foreground">
                 Ações do atendimento
             </Label>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-2.5">
                 <PlanActionButton
                     label="Prescrever"
                     icon={Pill}
@@ -68,6 +84,12 @@ export function PlanActionsToolbar({
                     icon={ClipboardList}
                     active={openModal === "reports"}
                     onClick={() => setOpenModal("reports")}
+                />
+                <PlanActionButton
+                    label="Modelos"
+                    icon={FileText}
+                    active={openModal === "templates"}
+                    onClick={handleOpenTemplates}
                 />
             </div>
             <div
@@ -107,6 +129,13 @@ export function PlanActionsToolbar({
             <ReportsModal
                 open={openModal === "reports"}
                 onOpenChange={(open) => setOpenModal(open ? "reports" : null)}
+            />
+            <GenerateDocumentModal
+                isOpen={openModal === "templates"}
+                setIsOpen={(open) => setOpenModal(open ? "templates" : null)}
+                patientId={patientId || ""}
+                consultationId={consultationId || undefined}
+                templates={templates}
             />
         </div>
     );
