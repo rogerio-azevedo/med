@@ -23,9 +23,41 @@ function variableAsHtml(value: string): string {
   return `<strong>${escapeHtml(value)}</strong>`;
 }
 
+type TemplateAddress = {
+  isPrimary?: boolean | null;
+  street?: string | null;
+  number?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+};
+
+type TemplatePatient = {
+  id?: string | null;
+  name?: string | null;
+  cpf?: string | null;
+  sex?: string | null;
+  birthDate?: Date | string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  email?: string | null;
+  observations?: string | null;
+  addresses?: TemplateAddress[] | null;
+  healthInsurances?: Array<{
+    cardNumber?: string | null;
+    healthInsurance?: { name?: string | null } | null;
+  }> | null;
+};
+
+type TemplateConsultation = {
+  startTime?: Date | string | null;
+  surgeryProcedures?: Array<{ name?: string | null }> | null;
+  doctor?: { user?: { name?: string | null } | null } | null;
+};
+
 export type TemplateData = {
-  patient: any;
-  consultation?: any;
+  patient: TemplatePatient;
+  consultation?: TemplateConsultation | null;
 };
 
 export function parseTemplate(content: string, data: TemplateData): string {
@@ -34,7 +66,7 @@ export function parseTemplate(content: string, data: TemplateData): string {
   let result = content;
   const { patient, consultation } = data;
 
-  const getAge = (birthDate: Date | string | null) => {
+  const getAge = (birthDate: Date | string | null | undefined) => {
     if (!birthDate) return "";
     const today = new Date();
     const birth = new Date(birthDate);
@@ -56,7 +88,7 @@ export function parseTemplate(content: string, data: TemplateData): string {
   result = result.replace(/@@email/g, variableAsHtml(patient?.email || ""));
   result = result.replace(/@@idpaciente/g, variableAsHtml(patient?.id?.substring(0, 8) || ""));
   
-  const primaryAddress = patient?.addresses?.find((a: any) => a.isPrimary) || patient?.addresses?.[0];
+  const primaryAddress = patient?.addresses?.find((a) => a.isPrimary) || patient?.addresses?.[0];
   const addressStr = primaryAddress 
     ? `${primaryAddress.street || ""}, ${primaryAddress.number || ""} - ${primaryAddress.neighborhood || ""}, ${primaryAddress.city || ""} - ${primaryAddress.state || ""}`
     : "";
@@ -79,7 +111,7 @@ export function parseTemplate(content: string, data: TemplateData): string {
       variableAsHtml(formatDate(consultation.startTime, "dd 'de' MMMM 'de' yyyy"))
     );
 
-    const proced = consultation.surgeryProcedures?.map((p: any) => p.name).join(", ") || "";
+    const proced = consultation.surgeryProcedures?.map((p) => p.name).join(", ") || "";
     result = result.replace(/@@proced/g, variableAsHtml(proced));
 
     const profissional = consultation.doctor?.user?.name || "";

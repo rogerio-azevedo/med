@@ -1,4 +1,4 @@
-"use server"
+"use server";
 
 import { revalidatePath } from "next/cache";
 import { requireClinicServer } from "@/lib/auth/require-clinic-server";
@@ -17,7 +17,7 @@ export async function createDocumentTemplateAction(formData: FormData) {
   const data = {
     title: formData.get("title") as string,
     description: formData.get("description") as string,
-    category: formData.get("category") as any,
+    category: formData.get("category") as string,
     content: formData.get("content") as string,
     visibility: formData.get("visibility") as "private" | "shared",
     hideTitleWhenPrinted: formData.get("hideTitleWhenPrinted") === "true",
@@ -43,7 +43,7 @@ export async function updateDocumentTemplateAction(id: string, formData: FormDat
   const data = {
     title: formData.get("title") as string,
     description: formData.get("description") as string,
-    category: formData.get("category") as any,
+    category: formData.get("category") as string,
     content: formData.get("content") as string,
     visibility: formData.get("visibility") as "private" | "shared",
     hideTitleWhenPrinted: formData.get("hideTitleWhenPrinted") === "true",

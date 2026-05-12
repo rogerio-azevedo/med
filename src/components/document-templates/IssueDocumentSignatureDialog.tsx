@@ -48,9 +48,10 @@ export function IssueDocumentSignatureDialog({
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
-        if (open) {
+        if (!open) return;
+        queueMicrotask(() => {
             setPadResetSeq((n) => n + 1);
-        }
+        });
     }, [open]);
 
     const finishAndOpen = useCallback(

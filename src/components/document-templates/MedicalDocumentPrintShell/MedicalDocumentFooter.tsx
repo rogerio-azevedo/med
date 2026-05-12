@@ -30,16 +30,6 @@ export function MedicalDocumentFooter({ clinic }: MedicalDocumentFooterProps) {
                         ))
                     )}
                 </div>
-                {/* <div className="space-y-1 leading-relaxed sm:text-right">
-                    <p className="font-bold">Contatos</p>
-                    {clinic.phone?.trim() ? <p>Telefone: {clinic.phone.trim()}</p> : null}
-                    {clinic.websiteUrl?.trim() ? (
-                        <p>
-                            Site: {displaySiteLabel(clinic.websiteUrl)}
-                        </p>
-                    ) : null}
-                    {!hasContacts ? <p className="text-slate-600">—</p> : null}
-                </div> */}
             </div>
         </footer>
     );
