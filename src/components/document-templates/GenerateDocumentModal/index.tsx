@@ -8,14 +8,14 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import {
     generateDocumentAction,
     renderDocumentTemplateAction,
     getDocumentTemplateModalPreviewShellAction,
 } from "@/app/actions/document-templates";
 import { toast } from "sonner";
-import { Loader2, Search, FileText, Printer, Download, ArrowLeft } from "lucide-react";
+import { Loader2, Search, FileText, Printer, Download, ArrowLeft, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TEMPLATE_CATEGORY_LABELS } from "@/lib/validations/document-templates";
@@ -23,6 +23,7 @@ import { MedicalDocumentPrintShell } from "@/components/document-templates/Medic
 import { IssueDocumentSignaturePanel } from "@/components/document-templates/IssueDocumentSignaturePanel";
 import type { DocumentModalPreviewShell } from "@/db/queries/document-templates/modal-shell-preview";
 import { documentTemplates } from "@/db/schema/document-templates";
+import { GeneratedDocumentBodyEditor } from "@/components/document-templates/GeneratedDocumentBodyEditor";
 
 export type DocumentTemplateListItem = Pick<
     typeof documentTemplates.$inferSelect,
@@ -58,6 +59,10 @@ export function GenerateDocumentModal({
         templateId: string;
         printMode: "print" | "pdf";
     } | null>(null);
+    const [isEditingBody, setIsEditingBody] = useState(false);
+    const [bodyEditSession, setBodyEditSession] = useState(0);
+    const [hasConfirmedBodyEdits, setHasConfirmedBodyEdits] = useState(false);
+    const lexicalBridgeRef = useRef<{ getHtml: () => string } | null>(null);
 
     const handleDialogOpenChange = (open: boolean) => {
         setIsOpen(open);
@@ -67,11 +72,17 @@ export function GenerateDocumentModal({
             setPreviewShell(null);
             setSearchTerm("");
             setIssueSig(null);
+            setIsEditingBody(false);
+            setHasConfirmedBodyEdits(false);
+            setBodyEditSession(0);
         }
     };
 
     const handleSelectTemplate = (template: DocumentTemplateListItem) => {
         setSelectedTemplate(template);
+        setIsEditingBody(false);
+        setHasConfirmedBodyEdits(false);
+        setBodyEditSession(0);
 
         startTransition(async () => {
             try {
@@ -91,19 +102,41 @@ export function GenerateDocumentModal({
     };
 
     const runGenerate = (printMode: "print" | "pdf") => {
-        if (!selectedTemplate) return;
+        if (!selectedTemplate || !renderedData) return;
         startTransition(async () => {
             try {
                 const doc = await generateDocumentAction(
                     selectedTemplate.id,
                     patientId,
-                    consultationId
+                    consultationId,
+                    hasConfirmedBodyEdits ? renderedData.renderedContent : undefined
                 );
                 setIssueSig({ docId: doc.id, templateId: selectedTemplate.id, printMode });
             } catch {
                 toast.error("Erro ao gerar documento.");
             }
         });
+    };
+
+    const handleStartBodyEdit = () => {
+        setBodyEditSession((n) => n + 1);
+        setIsEditingBody(true);
+    };
+
+    const handleConfirmBodyEdit = () => {
+        const getter = lexicalBridgeRef.current?.getHtml;
+        if (!getter) {
+            toast.error("Editor ainda não está pronto. Tente novamente.");
+            return;
+        }
+        const html = getter();
+        setRenderedData((prev) => (prev ? { ...prev, renderedContent: html } : null));
+        setHasConfirmedBodyEdits(true);
+        setIsEditingBody(false);
+    };
+
+    const handleCancelBodyEdit = () => {
+        setIsEditingBody(false);
     };
 
     const filteredTemplates = templates.filter(
@@ -268,11 +301,44 @@ export function GenerateDocumentModal({
                                                 )}
                                             </h3>
                                             <div className="flex flex-wrap gap-2">
+                                                {!isEditingBody ? (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        disabled={isPending}
+                                                        onClick={handleStartBodyEdit}
+                                                    >
+                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                        Editar documento
+                                                    </Button>
+                                                ) : (
+                                                    <>
+                                                        <Button
+                                                            type="button"
+                                                            variant="default"
+                                                            size="sm"
+                                                            disabled={isPending}
+                                                            onClick={handleConfirmBodyEdit}
+                                                        >
+                                                            Confirmar edição
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            disabled={isPending}
+                                                            onClick={handleCancelBodyEdit}
+                                                        >
+                                                            Cancelar
+                                                        </Button>
+                                                    </>
+                                                )}
                                                 <Button
                                                     type="button"
                                                     variant="outline"
                                                     size="sm"
-                                                    disabled={isPending}
+                                                    disabled={isPending || isEditingBody}
                                                     onClick={() => runGenerate("print")}
                                                 >
                                                     <Printer className="mr-2 h-4 w-4" />
@@ -282,7 +348,7 @@ export function GenerateDocumentModal({
                                                     type="button"
                                                     variant="outline"
                                                     size="sm"
-                                                    disabled={isPending}
+                                                    disabled={isPending || isEditingBody}
                                                     onClick={() => runGenerate("pdf")}
                                                 >
                                                     <Download className="mr-2 h-4 w-4" />
@@ -291,17 +357,26 @@ export function GenerateDocumentModal({
                                             </div>
                                         </div>
                                         <div className="min-h-0 flex-1 overflow-y-auto p-6 md:p-8">
-                                            <div className="mx-auto max-w-[21cm] border bg-white shadow-sm">
-                                                <MedicalDocumentPrintShell
-                                                    doctor={previewShell.doctor}
-                                                    clinic={previewShell.clinic}
-                                                    documentTitle={renderedData.title}
-                                                    renderedContentHtml={renderedData.renderedContent}
-                                                    hideDocumentTitle={renderedData.hideTitleWhenPrinted}
-                                                    issuedAtLine={previewShell.sampleIssuedAtLine}
-                                                    signatureImageUrl={previewShell.sampleSignatureImageUrl}
+                                            {isEditingBody ? (
+                                                <GeneratedDocumentBodyEditor
+                                                    key={bodyEditSession}
+                                                    html={renderedData.renderedContent}
+                                                    bridgeRef={lexicalBridgeRef}
+                                                    className="mx-auto max-w-[21cm] shadow-sm"
                                                 />
-                                            </div>
+                                            ) : (
+                                                <div className="mx-auto max-w-[21cm] border bg-white shadow-sm">
+                                                    <MedicalDocumentPrintShell
+                                                        doctor={previewShell.doctor}
+                                                        clinic={previewShell.clinic}
+                                                        documentTitle={renderedData.title}
+                                                        renderedContentHtml={renderedData.renderedContent}
+                                                        hideDocumentTitle={renderedData.hideTitleWhenPrinted}
+                                                        issuedAtLine={previewShell.sampleIssuedAtLine}
+                                                        signatureImageUrl={previewShell.sampleSignatureImageUrl}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                     </>
                                 ) : (

@@ -5,8 +5,10 @@ import {
   getTemplateRenderData,
   getDocumentTemplateById,
   saveGeneratedDocument,
+  updateGeneratedDocumentEditedContent,
   NewDocumentTemplate,
 } from "../db/queries/document-templates";
+import { sanitizeEditedDocumentHtml } from "../lib/medical-document/sanitize-edited-document-html";
 import { parseTemplate } from "../utils/parse-template";
 
 export async function createDocumentTemplate(
@@ -114,7 +116,8 @@ export async function generateAndSaveDocument(
   patientId: string,
   clinicId: string,
   userId: string,
-  consultationId?: string
+  consultationId?: string,
+  options?: { editedContent?: string }
 ) {
   const rendered = await renderDocumentTemplate(templateId, patientId, clinicId, consultationId);
 
@@ -129,5 +132,29 @@ export async function generateAndSaveDocument(
     generatedByUserId: userId,
   });
 
+  const candidateRaw = options?.editedContent?.trim();
+  if (candidateRaw) {
+    const candidate = sanitizeEditedDocumentHtml(candidateRaw);
+    if (candidate && candidate !== rendered.renderedContent) {
+      const updated = await updateGeneratedDocumentEditedContent(doc.id, clinicId, candidate);
+      if (!updated) {
+        throw new Error("Não foi possível salvar a edição do documento.");
+      }
+    }
+  }
+
   return doc;
+}
+
+/** Atualiza apenas o corpo editado; exige documento da clínica. */
+export async function updateGeneratedDocumentContent(docId: string, clinicId: string, editedContent: string) {
+  const sanitized = sanitizeEditedDocumentHtml(editedContent);
+  if (!sanitized) {
+    throw new Error("Conteúdo editado vazio após validação.");
+  }
+  const row = await updateGeneratedDocumentEditedContent(docId, clinicId, sanitized);
+  if (!row) {
+    throw new Error("Documento não encontrado.");
+  }
+  return row;
 }

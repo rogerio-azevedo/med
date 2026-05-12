@@ -63,6 +63,19 @@ export async function saveGeneratedDocument(data: NewGeneratedDocument) {
   return doc;
 }
 
+export async function updateGeneratedDocumentEditedContent(
+  docId: string,
+  clinicId: string,
+  editedContent: string
+) {
+  const [row] = await db
+    .update(generatedDocuments)
+    .set({ editedContent })
+    .where(and(eq(generatedDocuments.id, docId), eq(generatedDocuments.clinicId, clinicId)))
+    .returning();
+  return row ?? null;
+}
+
 export async function getGeneratedDocuments(patientId: string, clinicId: string) {
   return db.query.generatedDocuments.findMany({
     where: and(

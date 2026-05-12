@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { requireClinicServer } from "@/lib/auth/require-clinic-server";
 import { documentTemplateSchema } from "@/lib/validations/document-templates";
 import {
@@ -9,7 +10,12 @@ import {
   deleteDocumentTemplate as deleteService,
   renderDocumentTemplate as renderService,
   generateAndSaveDocument as generateService,
+  updateGeneratedDocumentContent as updateGeneratedDocumentContentService,
 } from "@/services/document-templates";
+
+const optionalEditedDocumentHtmlSchema = z.string().max(400_000).optional();
+
+const updateEditedDocumentBodySchema = z.string().min(1).max(400_000);
 
 export async function createDocumentTemplateAction(formData: FormData) {
   const { currentClinic, user, clinicUser } = await requireClinicServer();
@@ -77,12 +83,32 @@ export async function renderDocumentTemplateAction(
 export async function generateDocumentAction(
   templateId: string,
   patientId: string,
-  consultationId?: string
+  consultationId?: string,
+  editedContent?: string
 ) {
+  const parsed = optionalEditedDocumentHtmlSchema.safeParse(editedContent);
+  if (!parsed.success) {
+    throw new Error("Conteúdo editado inválido ou muito longo.");
+  }
+
   const { currentClinic, user } = await requireClinicServer();
-  const doc = await generateService(templateId, patientId, currentClinic.id, user.id, consultationId);
+  const doc = await generateService(templateId, patientId, currentClinic.id, user.id, consultationId, {
+    editedContent: parsed.data,
+  });
   revalidatePath(`/medical-records/${patientId}`);
   return doc;
+}
+
+export async function updateGeneratedDocumentContentAction(docId: string, editedContent: string) {
+  const parsed = updateEditedDocumentBodySchema.safeParse(editedContent);
+  if (!parsed.success) {
+    throw new Error("Conteúdo editado inválido ou muito longo.");
+  }
+
+  const { currentClinic } = await requireClinicServer();
+  const row = await updateGeneratedDocumentContentService(docId, currentClinic.id, parsed.data);
+  revalidatePath(`/medical-records/${row.patientId}`);
+  return { success: true as const };
 }
 
 export async function getTemplatesAction() {

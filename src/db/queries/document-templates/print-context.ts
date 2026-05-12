@@ -18,6 +18,7 @@ export type GeneratedDocumentPrintContext = {
     document: {
         id: string;
         title: string;
+        /** HTML do corpo para o shell de impressão: `edited_content` do médico ou `rendered_content` automático. */
         renderedContent: string;
         /** ISO (UTC); seguro para passar a Client Components. */
         generatedAt: string;
@@ -164,11 +165,13 @@ export async function getGeneratedDocumentPrintContext(
         }
     }
 
+    const bodyHtml = document.editedContent ?? document.renderedContent;
+
     return {
         document: {
             id: document.id,
             title: document.title,
-            renderedContent: document.renderedContent,
+            renderedContent: bodyHtml,
             generatedAt: generatedAt.toISOString(),
         },
         template: template

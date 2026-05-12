@@ -55,7 +55,9 @@ export const generatedDocuments = pgTable("generated_documents", {
   consultationId: uuid("consultation_id").references(() => consultations.id, { onDelete: "set null" }),
   title: varchar("title", { length: 255 }).notNull(),
   originalContent: text("original_content").notNull(), // Snapshot do template no momento da geração
-  renderedContent: text("rendered_content").notNull(), // Conteúdo final com atalhos substituídos
+  renderedContent: text("rendered_content").notNull(), // Conteúdo final com atalhos substituídos (canônico do servidor)
+  /** Conteúdo após edição pelo médico no modal; null = impressão usa rendered_content */
+  editedContent: text("edited_content"),
   generatedByUserId: text("generated_by_user_id").references(() => users.id, { onDelete: "set null" }),
   generatedAt: timestamp("generated_at").defaultNow().notNull(),
 });
