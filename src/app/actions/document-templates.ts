@@ -80,12 +80,13 @@ export async function renderDocumentTemplateAction(
   return renderService(templateId, patientId, currentClinic.id, consultationId);
 }
 
-export async function generateDocumentAction(
-  templateId: string,
-  patientId: string,
-  consultationId?: string,
-  editedContent?: string
-) {
+export async function generateDocumentAction(input: {
+  templateId: string;
+  patientId: string;
+  consultationId?: string;
+  editedContent?: string;
+}) {
+  const { templateId, patientId, consultationId, editedContent } = input;
   const parsed = optionalEditedDocumentHtmlSchema.safeParse(editedContent);
   if (!parsed.success) {
     throw new Error("Conteúdo editado inválido ou muito longo.");
@@ -96,7 +97,7 @@ export async function generateDocumentAction(
     editedContent: parsed.data,
   });
   revalidatePath(`/medical-records/${patientId}`);
-  return doc;
+  return { id: doc.id };
 }
 
 export async function updateGeneratedDocumentContentAction(docId: string, editedContent: string) {

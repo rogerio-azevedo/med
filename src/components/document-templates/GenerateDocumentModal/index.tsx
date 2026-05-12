@@ -105,15 +105,15 @@ export function GenerateDocumentModal({
         if (!selectedTemplate || !renderedData) return;
         startTransition(async () => {
             try {
-                const doc = await generateDocumentAction(
-                    selectedTemplate.id,
+                const doc = await generateDocumentAction({
+                    templateId: selectedTemplate.id,
                     patientId,
                     consultationId,
-                    hasConfirmedBodyEdits ? renderedData.renderedContent : undefined
-                );
+                    editedContent: hasConfirmedBodyEdits ? renderedData.renderedContent : undefined,
+                });
                 setIssueSig({ docId: doc.id, templateId: selectedTemplate.id, printMode });
-            } catch {
-                toast.error("Erro ao gerar documento.");
+            } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Erro ao gerar documento.");
             }
         });
     };
