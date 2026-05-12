@@ -1,12 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ClipboardList, FileText, Microscope, Pill } from "lucide-react";
+import { FileStack, Microscope, Pill } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { PlanActionButton } from "./PlanActionButton";
-import { CertificateModal } from "./modals/CertificateModal";
 import { ExamsModal } from "./modals/ExamsModal";
-import { ReportsModal } from "./modals/ReportsModal";
 import { PrescriptionModal } from "./modals/PrescriptionModal";
 import {
     GenerateDocumentModal,
@@ -15,7 +13,7 @@ import {
 import { getTemplatesAction } from "@/app/actions/document-templates";
 import { cn } from "@/lib/utils";
 
-type OpenPlanModal = "prescription" | "certificate" | "exams" | "reports" | "templates" | null;
+type OpenPlanModal = "prescription" | "exams" | "documents" | null;
 
 export type PlanActionsToolbarProps = {
     consultationId?: string | null;
@@ -26,10 +24,8 @@ export type PlanActionsToolbarProps = {
 
 const MODAL_ORDER: Exclude<OpenPlanModal, null>[] = [
     "prescription",
-    "certificate",
     "exams",
-    "reports",
-    "templates",
+    "documents",
 ];
 
 export function PlanActionsToolbar({
@@ -46,8 +42,8 @@ export function PlanActionsToolbar({
         return MODAL_ORDER.indexOf(openModal);
     }, [openModal]);
 
-    const handleOpenTemplates = async () => {
-        setOpenModal("templates");
+    const handleOpenDocuments = async () => {
+        setOpenModal("documents");
         if (templates.length === 0) {
             try {
                 const data = await getTemplatesAction();
@@ -63,18 +59,12 @@ export function PlanActionsToolbar({
             <Label className="text-xs font-semibold text-muted-foreground">
                 Ações do atendimento
             </Label>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-2.5">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5">
                 <PlanActionButton
                     label="Prescrever"
                     icon={Pill}
                     active={openModal === "prescription"}
                     onClick={() => setOpenModal("prescription")}
-                />
-                <PlanActionButton
-                    label="Atestado"
-                    icon={FileText}
-                    active={openModal === "certificate"}
-                    onClick={() => setOpenModal("certificate")}
                 />
                 <PlanActionButton
                     label="Exames"
@@ -83,16 +73,10 @@ export function PlanActionsToolbar({
                     onClick={() => setOpenModal("exams")}
                 />
                 <PlanActionButton
-                    label="Laudos"
-                    icon={ClipboardList}
-                    active={openModal === "reports"}
-                    onClick={() => setOpenModal("reports")}
-                />
-                <PlanActionButton
-                    label="Modelos"
-                    icon={FileText}
-                    active={openModal === "templates"}
-                    onClick={handleOpenTemplates}
+                    label="Documentos"
+                    icon={FileStack}
+                    active={openModal === "documents"}
+                    onClick={handleOpenDocuments}
                 />
             </div>
             <div
@@ -121,21 +105,13 @@ export function PlanActionsToolbar({
                 patientId={patientId}
                 clinicId={clinicId}
             />
-            <CertificateModal
-                open={openModal === "certificate"}
-                onOpenChange={(open) => setOpenModal(open ? "certificate" : null)}
-            />
             <ExamsModal
                 open={openModal === "exams"}
                 onOpenChange={(open) => setOpenModal(open ? "exams" : null)}
             />
-            <ReportsModal
-                open={openModal === "reports"}
-                onOpenChange={(open) => setOpenModal(open ? "reports" : null)}
-            />
             <GenerateDocumentModal
-                isOpen={openModal === "templates"}
-                setIsOpen={(open) => setOpenModal(open ? "templates" : null)}
+                isOpen={openModal === "documents"}
+                setIsOpen={(open) => setOpenModal(open ? "documents" : null)}
                 patientId={patientId || ""}
                 consultationId={consultationId || undefined}
                 templates={templates}
