@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Loader2, Building2, Mail, Phone, FileText, FileStack } from "lucide-react";
+import { Loader2, Building2, Mail, Phone, FileText, FileStack, Globe } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ interface ClinicSettingsFormProps {
         email?: string | null;
         phone?: string | null;
         cnpj?: string | null;
+        websiteUrl?: string | null;
         proposalGeneralNotes?: string | null;
     };
     address: AddressFormProps["initialData"];
@@ -42,6 +43,7 @@ export function ClinicSettingsForm({ clinic, address }: ClinicSettingsFormProps)
             email: clinic.email ?? "",
             phone: clinic.phone ?? "",
             cnpj: clinic.cnpj ?? "",
+            websiteUrl: clinic.websiteUrl ?? "",
             proposalGeneralNotes: clinic.proposalGeneralNotes ?? "",
         },
     });
@@ -123,6 +125,22 @@ export function ClinicSettingsForm({ clinic, address }: ClinicSettingsFormProps)
                                     className="h-11"
                                     {...register("phone")}
                                 />
+                            </div>
+
+                            <div className="flex flex-col gap-1.5 md:col-span-2">
+                                <Label htmlFor="websiteUrl" className="flex items-center gap-1.5">
+                                    <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                                    Site (opcional)
+                                </Label>
+                                <Input
+                                    id="websiteUrl"
+                                    placeholder="www.suaclinica.com.br ou https://…"
+                                    className="h-11"
+                                    {...register("websiteUrl")}
+                                />
+                                {errors.websiteUrl && (
+                                    <p className="text-xs text-destructive">{errors.websiteUrl.message}</p>
+                                )}
                             </div>
 
                             <div className="flex flex-col gap-1.5 md:col-span-2">

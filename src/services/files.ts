@@ -37,6 +37,25 @@ export function assertRemoteKeyForPatient(
     }
 }
 
+const DOCTOR_SIG_SUBFOLDER = "doctor-signatures";
+
+export function buildDoctorSignatureRemoteKey(
+    clinicId: string,
+    doctorId: string,
+    originalFileName: string
+): string {
+    const ext = extname(originalFileName).slice(0, 10).toLowerCase();
+    const safeExt = ext && /^\.[a-z0-9]+$/i.test(ext) ? ext : ".png";
+    return `${clinicId}/${DOCTOR_SIG_SUBFOLDER}/${doctorId}/${randomUUID()}${safeExt}`;
+}
+
+export function assertDoctorSignatureRemoteKey(remoteKey: string, clinicId: string, doctorId: string): void {
+    const prefix = `${clinicId}/${DOCTOR_SIG_SUBFOLDER}/${doctorId}/`;
+    if (!remoteKey.startsWith(prefix) || remoteKey.includes("..")) {
+        throw new Error("Chave de objeto inválida");
+    }
+}
+
 export async function validateFileUploadContext(input: {
     clinicId: string;
     patientId: string;

@@ -25,6 +25,15 @@ export async function createClinic(
     }
 }
 
+function normalizeWebsiteUrlForStorage(raw: string | undefined): string | null {
+    const t = raw?.trim();
+    if (!t) return null;
+    if (/^https?:\/\//i.test(t)) return t;
+    if (/^www\./i.test(t)) return `https://${t}`;
+    if (/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(\/.*)?$/i.test(t)) return `https://${t}`;
+    return t;
+}
+
 export async function updateClinicInfo(
     clinicId: string,
     data: UpdateClinicInput
@@ -37,6 +46,7 @@ export async function updateClinicInfo(
                 email: data.email || null,
                 phone: data.phone || null,
                 cnpj: data.cnpj || null,
+                websiteUrl: normalizeWebsiteUrlForStorage(data.websiteUrl),
                 proposalGeneralNotes: data.proposalGeneralNotes?.trim()
                     ? data.proposalGeneralNotes.trim()
                     : null,

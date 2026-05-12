@@ -8,7 +8,10 @@ import { CertificateModal } from "./modals/CertificateModal";
 import { ExamsModal } from "./modals/ExamsModal";
 import { ReportsModal } from "./modals/ReportsModal";
 import { PrescriptionModal } from "./modals/PrescriptionModal";
-import { GenerateDocumentModal } from "@/components/document-templates/GenerateDocumentModal";
+import {
+    GenerateDocumentModal,
+    type DocumentTemplateListItem,
+} from "@/components/document-templates/GenerateDocumentModal";
 import { getTemplatesAction } from "@/app/actions/document-templates";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +39,7 @@ export function PlanActionsToolbar({
     className,
 }: PlanActionsToolbarProps) {
     const [openModal, setOpenModal] = useState<OpenPlanModal>(null);
-    const [templates, setTemplates] = useState<any[]>([]);
+    const [templates, setTemplates] = useState<DocumentTemplateListItem[]>([]);
 
     const activeIndex = useMemo(() => {
         if (!openModal) return -1;

@@ -4,6 +4,7 @@ import { clinicUsers, clinics, addresses } from "@/db/schema";
 import { redirect } from "next/navigation";
 import { eq, and } from "drizzle-orm";
 import { ClinicSettingsForm } from "@/components/conta/ClinicSettingsForm";
+import { DoctorSignatureSettingsCard } from "@/components/conta/DoctorSignatureSettingsCard";
 import { PasswordSettingsCard } from "@/components/conta/PasswordSettingsCard";
 import { PageHeader } from "@/components/shared/PageHeader";
 
@@ -21,6 +22,7 @@ export default async function ContaPage() {
         email: string | null;
         phone: string | null;
         cnpj: string | null;
+        websiteUrl: string | null;
         proposalGeneralNotes: string | null;
     } | null = null;
     let clinicAddress: typeof addresses.$inferSelect | null = null;
@@ -60,6 +62,10 @@ export default async function ContaPage() {
             <div className="mx-auto w-full max-w-4xl space-y-6">
                 <PasswordSettingsCard />
 
+                {session.user.role === "doctor" && session.user.doctorId ? (
+                    <DoctorSignatureSettingsCard />
+                ) : null}
+
                 {clinic && (
                     <ClinicSettingsForm
                         clinic={{
@@ -68,6 +74,7 @@ export default async function ContaPage() {
                             email: clinic.email,
                             phone: clinic.phone,
                             cnpj: clinic.cnpj,
+                            websiteUrl: clinic.websiteUrl,
                             proposalGeneralNotes: clinic.proposalGeneralNotes,
                         }}
                         address={clinicAddress ?? null}

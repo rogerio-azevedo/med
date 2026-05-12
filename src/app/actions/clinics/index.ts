@@ -63,6 +63,7 @@ export async function updateClinicInfoAction(formData: FormData) {
         email: (formData.get("email") as string) || "",
         phone: (formData.get("phone") as string) || "",
         cnpj: (formData.get("cnpj") as string) || "",
+        websiteUrl: (formData.get("websiteUrl") as string) || "",
         proposalGeneralNotes: (formData.get("proposalGeneralNotes") as string) ?? "",
     };
 

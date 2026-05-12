@@ -10,6 +10,7 @@ export const updateClinicSchema = z.object({
     email: z.email("E-mail inválido").optional().or(z.literal("")),
     phone: z.string().optional(),
     cnpj: z.string().optional(),
+    websiteUrl: z.union([z.literal(""), z.string().max(500, "Site muito longo")]).optional(),
     /** OBS / condições gerais no PDF de propostas; vazio = padrão do sistema. */
     proposalGeneralNotes: z.string().max(20000, "Texto muito longo").optional(),
 });

@@ -393,6 +393,13 @@
       "when": 1778695200023,
       "tag": "0055_minor_vulture",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1778695200024,
+      "tag": "0056_clinic_website_doctor_signature",
+      "breakpoints": true
     }
   ]
 }

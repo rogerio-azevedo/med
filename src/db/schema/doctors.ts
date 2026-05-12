@@ -17,6 +17,11 @@ export const doctors = pgTable("doctors", {
         .references(() => users.id, { onDelete: "cascade" }),
     crm: varchar("crm", { length: 20 }),
     crmState: varchar("crm_state", { length: 2 }),
+    /**
+     * Assinatura para PDF/impressão: URL https pública ou chave de objeto no R2
+     * (prefixo de caminho sem protocolo; resolvida com URL assinada na impressão).
+     */
+    signatureUrl: varchar("signature_url", { length: 800 }),
     phone: varchar("phone", { length: 20 }),
     bio: text("bio"),
     observations: text("observations"),

@@ -97,3 +97,15 @@ export async function getTemplatesAction() {
   return templates;
 }
 
+export async function getDocumentTemplateModalPreviewShellAction() {
+  const { currentClinic, user, clinicUser } = await requireClinicServer();
+  const { getDocumentTemplateModalPreviewShell } = await import(
+    "@/db/queries/document-templates/modal-shell-preview"
+  );
+  return getDocumentTemplateModalPreviewShell(
+    currentClinic.id,
+    user.id,
+    clinicUser.doctorId ?? null
+  );
+}
+
