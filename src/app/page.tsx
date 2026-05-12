@@ -62,7 +62,7 @@ const features = [
     icon: FileText,
   },
   {
-    title: "E muito mais",
+    title: "E muito mais!",
     description:
       "Um ecossistema pensado para crescer com clínicas e consultórios sem perder simplicidade.",
     icon: ClipboardPlus,
