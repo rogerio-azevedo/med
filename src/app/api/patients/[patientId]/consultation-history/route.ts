@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { patientBelongsToClinic } from "@/db/queries/files";
+import { patientClinicAssociationExists } from "@/db/queries/files";
 import { getPatientConsultationsSummaryForPanel } from "@/db/queries/patient-consultation-history-panel";
 
 export async function GET(
@@ -13,7 +13,7 @@ export async function GET(
     }
 
     const { patientId } = await params;
-    const ok = await patientBelongsToClinic(patientId, session.user.clinicId);
+    const ok = await patientClinicAssociationExists(patientId, session.user.clinicId);
     if (!ok) {
         return NextResponse.json({ error: "Not found" }, { status: 404 });
     }

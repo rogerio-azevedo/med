@@ -14,6 +14,14 @@ export async function patientBelongsToClinic(patientId: string, clinicId: string
     return !!row;
 }
 
+/** Mesmo critério de `getPatientById`: vínculo paciente–clínica existe (inclui `isActive` falso). */
+export async function patientClinicAssociationExists(patientId: string, clinicId: string): Promise<boolean> {
+    const row = await db.query.clinicPatients.findFirst({
+        where: and(eq(clinicPatients.patientId, patientId), eq(clinicPatients.clinicId, clinicId)),
+    });
+    return !!row;
+}
+
 export async function getConsultationForPatientInClinic(
     consultationId: string,
     clinicId: string,
