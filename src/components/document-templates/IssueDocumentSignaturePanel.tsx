@@ -2,29 +2,22 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import imageCompression from "browser-image-compression";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { medicalDocumentPrintSignatureKey } from "@/lib/constants/medical-document-print-storage";
 import { DoctorSignaturePad, type DoctorSignaturePadHandle } from "@/components/shared/DoctorSignaturePad";
 import { uploadDoctorSignaturePngBlob } from "@/lib/client/doctor-signature-upload";
 
-type IssueDocumentSignatureDialogProps = {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
+export type IssueDocumentSignaturePanelProps = {
     docId: string;
     templateId: string;
     printMode: "print" | "pdf";
     onComplete: () => void;
+    /** Desativa interações (ex.: operação global no modal pai). */
+    disabled?: boolean;
 };
 
 function openPrintWindow(templateId: string, docId: string, printMode: "print" | "pdf") {
@@ -33,26 +26,26 @@ function openPrintWindow(templateId: string, docId: string, printMode: "print" |
     window.open(`/document-templates/${templateId}/print?${params.toString()}`, "_blank", "noopener,noreferrer");
 }
 
-export function IssueDocumentSignatureDialog({
-    open,
-    onOpenChange,
+export function IssueDocumentSignaturePanel({
     docId,
     templateId,
     printMode,
     onComplete,
-}: IssueDocumentSignatureDialogProps) {
+    disabled: disabledFromParent = false,
+}: IssueDocumentSignaturePanelProps) {
     const [hasSavedSignatureHint, setHasSavedSignatureHint] = useState(false);
     const [isPending, startTransition] = useTransition();
     const [padResetSeq, setPadResetSeq] = useState(0);
     const padRef = useRef<DoctorSignaturePadHandle | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+    const disabled = disabledFromParent || isPending;
+
     useEffect(() => {
-        if (!open) return;
         queueMicrotask(() => {
             setPadResetSeq((n) => n + 1);
         });
-    }, [open]);
+    }, [docId]);
 
     const finishAndOpen = useCallback(
         (dataUrl: string | null) => {
@@ -65,10 +58,9 @@ export function IssueDocumentSignatureDialog({
                 return;
             }
             openPrintWindow(templateId, docId, printMode);
-            onOpenChange(false);
             onComplete();
         },
-        [docId, onComplete, onOpenChange, printMode, templateId]
+        [docId, onComplete, printMode, templateId]
     );
 
     const handleUseDefault = () => {
@@ -108,7 +100,6 @@ export function IssueDocumentSignatureDialog({
     const handlePickFile = () => fileInputRef.current?.click();
 
     useEffect(() => {
-        if (!open) return;
         let cancelled = false;
         void fetch("/api/doctor-signature/preview")
             .then((r) => (r.ok ? r.json() : Promise.resolve({ url: null })))
@@ -121,7 +112,7 @@ export function IssueDocumentSignatureDialog({
         return () => {
             cancelled = true;
         };
-    }, [open]);
+    }, [docId]);
 
     const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -148,77 +139,97 @@ export function IssueDocumentSignatureDialog({
         });
     };
 
+    const openVerb =
+        printMode === "pdf"
+            ? "gerar o PDF em uma nova aba"
+            : "abrir a janela de impressão em uma nova aba";
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>Assinatura neste documento</DialogTitle>
-                    <DialogDescription>
-                        Escolha como assinar esta emissão. A opção com rubrica ou imagem vale só para esta
-                        impressão, salvo se você já tiver assinatura salva no perfil.
-                        {hasSavedSignatureHint ? " Você possui assinatura salva no cadastro." : ""}
-                    </DialogDescription>
-                </DialogHeader>
+        <div className="flex flex-col gap-6">
+            <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                    Confira o documento nesta tela e escolha como a assinatura deve aparecer nesta emissão.
+                </p>
+                <Button
+                    type="button"
+                    variant="default"
+                    className="h-auto w-full flex-col items-start gap-1 py-3 text-left whitespace-normal"
+                    disabled={disabled}
+                    onClick={handleUseDefault}
+                >
+                    <span className="text-sm font-semibold">
+                        {hasSavedSignatureHint
+                            ? "Continuar com assinatura do cadastro"
+                            : "Continuar sem imagem na assinatura"}
+                    </span>
+                    <span className="text-xs font-normal opacity-90">
+                        {hasSavedSignatureHint
+                            ? `Usa a imagem salva no seu perfil e ${openVerb}.`
+                            : `Será exibida uma linha em branco para assinar à mão depois. Você pode ${openVerb} assim mesmo.`}
+                    </span>
+                </Button>
+            </div>
 
-                <div className="space-y-4 py-2">
-                    <div className="flex flex-wrap gap-2">
-                        <Button type="button" variant="secondary" disabled={isPending} onClick={handleUseDefault}>
-                            Usar assinatura do cadastro / linha em branco
-                        </Button>
-                        <Button type="button" variant="outline" disabled={isPending} onClick={handlePickFile}>
-                            Enviar imagem
-                        </Button>
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/png,image/jpeg,image/webp"
-                            className="hidden"
-                            onChange={onFileChange}
-                        />
-                    </div>
+            <Separator />
 
-                    <div>
-                        <Label className="text-sm">Rubricar (mouse ou toque)</Label>
-                        <DoctorSignaturePad
-                            ref={padRef}
-                            resetKey={padResetSeq}
-                            className="mt-2 h-36 w-full cursor-crosshair touch-none rounded-md border border-slate-300 bg-white"
-                        />
-                        <div className="mt-2 flex flex-wrap gap-2">
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => padRef.current?.clear()}
-                            >
-                                Limpar
-                            </Button>
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                disabled={isPending}
-                                onClick={handleSaveToProfile}
-                            >
-                                Salvar no cadastro
-                            </Button>
-                            <Button type="button" size="sm" disabled={isPending} onClick={handleConfirmRubric}>
-                                {isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    "Usar rubrica e abrir impressão"
-                                )}
-                            </Button>
-                        </div>
+            <div className="space-y-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Outras opções nesta emissão
+                </p>
+                <p className="text-xs text-muted-foreground">
+                    Rubrica e imagem enviada valem só para este documento, salvo se você salvar a rubrica no cadastro
+                    abaixo.
+                </p>
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-start gap-2 sm:w-auto"
+                    disabled={disabled}
+                    onClick={handlePickFile}
+                >
+                    <Upload className="h-4 w-4 shrink-0" />
+                    Enviar imagem (PNG, JPEG ou WebP)
+                </Button>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={onFileChange}
+                />
+
+                <div className="rounded-lg border bg-card p-3 sm:p-4">
+                    <Label className="text-sm font-medium">Rubricar (mouse ou toque)</Label>
+                    <DoctorSignaturePad
+                        ref={padRef}
+                        resetKey={padResetSeq}
+                        className="mt-2 h-36 w-full cursor-crosshair touch-none rounded-md border border-slate-300 bg-white"
+                    />
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        <Button type="button" size="sm" variant="ghost" onClick={() => padRef.current?.clear()}>
+                            Limpar
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={disabled}
+                            onClick={handleSaveToProfile}
+                        >
+                            Salvar no cadastro
+                        </Button>
+                        <Button type="button" size="sm" variant="secondary" disabled={disabled} onClick={handleConfirmRubric}>
+                            {isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : printMode === "pdf" ? (
+                                "Usar rubrica e gerar PDF"
+                            ) : (
+                                "Usar rubrica e abrir impressão"
+                            )}
+                        </Button>
                     </div>
                 </div>
-
-                <DialogFooter className="gap-2 sm:gap-0">
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancelar
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            </div>
+        </div>
     );
 }
