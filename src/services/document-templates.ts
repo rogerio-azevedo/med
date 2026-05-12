@@ -8,8 +8,14 @@ import {
   updateGeneratedDocumentEditedContent,
   NewDocumentTemplate,
 } from "../db/queries/document-templates";
-import { sanitizeEditedDocumentHtml } from "../lib/medical-document/sanitize-edited-document-html";
 import { parseTemplate } from "../utils/parse-template";
+
+async function loadSanitizeEditedDocumentHtml() {
+  const { sanitizeEditedDocumentHtml } = await import(
+    "../lib/medical-document/sanitize-edited-document-html"
+  );
+  return sanitizeEditedDocumentHtml;
+}
 
 export async function createDocumentTemplate(
   data: Omit<
@@ -134,6 +140,7 @@ export async function generateAndSaveDocument(
 
   const candidateRaw = options?.editedContent?.trim();
   if (candidateRaw) {
+    const sanitizeEditedDocumentHtml = await loadSanitizeEditedDocumentHtml();
     const candidate = sanitizeEditedDocumentHtml(candidateRaw);
     if (candidate && candidate !== rendered.renderedContent) {
       const updated = await updateGeneratedDocumentEditedContent(doc.id, clinicId, candidate);
@@ -148,6 +155,7 @@ export async function generateAndSaveDocument(
 
 /** Atualiza apenas o corpo editado; exige documento da clínica. */
 export async function updateGeneratedDocumentContent(docId: string, clinicId: string, editedContent: string) {
+  const sanitizeEditedDocumentHtml = await loadSanitizeEditedDocumentHtml();
   const sanitized = sanitizeEditedDocumentHtml(editedContent);
   if (!sanitized) {
     throw new Error("Conteúdo editado vazio após validação.");

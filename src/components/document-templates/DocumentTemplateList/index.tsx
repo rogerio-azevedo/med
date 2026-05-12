@@ -34,10 +34,12 @@ export function DocumentTemplateList({ templates, deleteAction, userId, isOwnerO
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const filteredTemplates = templates.filter(t => 
-    t.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    TEMPLATE_CATEGORY_LABELS[t.category as keyof typeof TEMPLATE_CATEGORY_LABELS].toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTemplates = templates.filter((t) => {
+    const label =
+      TEMPLATE_CATEGORY_LABELS[t.category as keyof typeof TEMPLATE_CATEGORY_LABELS] ?? t.category;
+    const q = searchTerm.toLowerCase();
+    return t.title.toLowerCase().includes(q) || String(label).toLowerCase().includes(q);
+  });
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -94,7 +96,9 @@ export function DocumentTemplateList({ templates, deleteAction, userId, isOwnerO
                   <TableRow key={template.id}>
                     <TableCell className="font-medium">{template.title}</TableCell>
                     <TableCell>
-                      {TEMPLATE_CATEGORY_LABELS[template.category as keyof typeof TEMPLATE_CATEGORY_LABELS]}
+                      {TEMPLATE_CATEGORY_LABELS[
+                        template.category as keyof typeof TEMPLATE_CATEGORY_LABELS
+                      ] ?? template.category}
                     </TableCell>
                     <TableCell>
                       {template.visibility === "shared" ? (
