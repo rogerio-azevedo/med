@@ -18,7 +18,7 @@ export function MedicalDocumentFooter({ clinic }: MedicalDocumentFooterProps) {
     const hasContacts = Boolean(clinic.phone?.trim()) || Boolean(clinic.websiteUrl?.trim());
 
     return (
-        <footer className="mt-10 border-t border-slate-300 pt-5 text-xs text-black print:mt-8">
+        <footer className="mt-10 border-t border-slate-300 pt-5 text-xs text-black print:mt-4">
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8">
                 <div className="space-y-0.5 leading-relaxed">
                     <p className="font-bold">{clinic.name}</p>
