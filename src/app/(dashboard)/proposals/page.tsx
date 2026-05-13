@@ -10,7 +10,7 @@ import { redirect } from "next/navigation";
 import { ProposalsTable } from "./_components/proposals-table";
 import { ProposalStats } from "./_components/proposal-stats";
 import { ProposalFilters } from "./_components/proposal-filters";
-import { ProposalsPageHeader } from "./_components/proposals-page-header";
+import { ProposalsListHeading } from "./_components/proposals-list-heading";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -79,7 +79,7 @@ export default async function ProposalsPage({
 
     return (
         <div className="flex-1 space-y-4 p-6 pt-2">
-            <ProposalsPageHeader patients={patients} products={products} paymentTerms={paymentTerms} />
+            <ProposalsListHeading patients={patients} products={products} paymentTerms={paymentTerms} />
 
             <ProposalStats stats={stats} />
 

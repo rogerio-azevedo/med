@@ -1,14 +1,18 @@
 "use client"
 
+import { usePathname } from "next/navigation"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useHeaderStore } from "@/store/header"
 import { cn } from "@/lib/utils"
 
 export function Header() {
+  const pathname = usePathname()
   const title = useHeaderStore((s) => s.title)
   const description = useHeaderStore((s) => s.description)
   const toolbar = useHeaderStore((s) => s.toolbar)
-  const hasSecondaryContent = Boolean(title || description || toolbar)
+
+  const useGlobalHeading = pathname !== "/proposals"
+  const hasSecondaryContent = useGlobalHeading && Boolean(title || description || toolbar)
 
   return (
     <header
