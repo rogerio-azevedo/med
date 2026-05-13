@@ -17,11 +17,14 @@ export function ProposalsPageHeader({ patients, products, paymentTerms }: Propos
 
     useLayoutEffect(() => {
         setHeader("Orçamentos e Propostas", "Gerencie o funil de vendas e rastreabilidade da clínica.");
+        return () => clearHeader();
+    }, [setHeader, clearHeader]);
+
+    useLayoutEffect(() => {
         setToolbar(
             <ProposalDialog patients={patients} products={products} paymentTerms={paymentTerms} />
         );
-        return () => clearHeader();
-    }, [setHeader, setToolbar, clearHeader, patients, products, paymentTerms]);
+    }, [patients, products, paymentTerms, setToolbar]);
 
     return null;
 }
