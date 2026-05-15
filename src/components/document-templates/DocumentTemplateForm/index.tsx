@@ -21,6 +21,7 @@ import { ShortcutHelperPanel } from "../ShortcutHelperPanel";
 import { TemplatePreviewModal } from "../TemplatePreviewModal";
 import { findInvalidShortcuts } from "@/utils/parse-template";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 interface DocumentTemplateFormProps {
   initialData?: DocumentTemplateFormData & { id: string };
@@ -76,37 +77,40 @@ export function DocumentTemplateForm({ initialData, actionFn, isOwnerOrAdmin, us
     });
   };
 
+  const headerTitle = (
+    <div className="flex items-center gap-2">
+      <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+        <Link href="/document-templates">
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      </Button>
+      <span>{initialData ? "Editar Modelo" : "Novo Modelo"}</span>
+    </div>
+  );
+
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setPreviewOpen(true)}
+        disabled={!contentValue}
+      >
+        <Eye className="h-4 w-4 mr-2" />
+        Visualizar
+      </Button>
+      {canEdit && (
+        <Button onClick={form.handleSubmit(onSubmit)} disabled={isPending}>
+          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Salvar Modelo
+        </Button>
+      )}
+    </div>
+  );
+
   return (
     <div className="flex flex-col h-[calc(100vh-120px)]">
-      <div className="flex items-center justify-between pb-4">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/document-templates">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {initialData ? "Editar Modelo" : "Novo Modelo"}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={() => setPreviewOpen(true)}
-            disabled={!contentValue}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            Visualizar
-          </Button>
-          {canEdit && (
-            <Button onClick={form.handleSubmit(onSubmit)} disabled={isPending}>
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Salvar Modelo
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader title={headerTitle} actions={headerActions} />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-1 min-h-0">
         <div className="md:col-span-3 overflow-y-auto pr-2 pb-8">

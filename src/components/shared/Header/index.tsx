@@ -27,9 +27,13 @@ export function Header() {
           <div className="flex min-w-0 flex-1 flex-col gap-2 md:flex-row md:items-start md:justify-between md:gap-4">
             <div className="min-w-0">
               {title ? (
-                <h1 className="bg-linear-to-r from-foreground to-foreground/60 bg-clip-text text-xl font-bold tracking-tight text-transparent">
-                  {title}
-                </h1>
+                typeof title === "string" ? (
+                  <h1 className="bg-linear-to-r from-foreground to-foreground/60 bg-clip-text text-xl font-bold tracking-tight text-transparent">
+                    {title}
+                  </h1>
+                ) : (
+                  <div className="text-xl font-bold tracking-tight">{title}</div>
+                )
               ) : null}
               {description ? (
                 <p className="mt-1 text-sm font-medium text-muted-foreground md:text-base">
