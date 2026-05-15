@@ -11,7 +11,7 @@ import Link from "next/link";
 import { documentTemplateSchema, DocumentTemplateFormData, TEMPLATE_CATEGORY_LABELS, TEMPLATE_CATEGORIES } from "@/lib/validations/document-templates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { TemplateBodyEditor } from "@/components/document-templates/TemplateBodyEditor";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -268,11 +268,10 @@ export function DocumentTemplateForm({ initialData, actionFn, isOwnerOrAdmin, us
                     render={({ field }) => (
                       <FormItem className="h-full">
                         <FormControl>
-                          <Textarea 
-                            placeholder="Digite o conteúdo do documento. Use o painel ao lado para inserir atalhos..." 
-                            className="min-h-[400px] resize-y font-mono text-sm leading-relaxed" 
+                          <TemplateBodyEditor
+                            value={field.value}
+                            onChange={field.onChange}
                             disabled={!canEdit}
-                            {...field} 
                           />
                         </FormControl>
                         <FormMessage />

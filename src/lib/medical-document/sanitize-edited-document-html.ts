@@ -36,6 +36,16 @@ export function sanitizeEditedDocumentHtml(html: string): string {
         allowedTags: [...ALLOWED_TAGS],
         allowedAttributes: {
             "*": ["class", "dir", "lang"],
+            p: ["style"],
+            div: ["style"],
+            h1: ["style"],
+            h2: ["style"],
+            h3: ["style"],
+        },
+        allowedStyles: {
+            "*": {
+                "text-align": [/^(left|center|right|justify|start|end)$/],
+            },
         },
         allowedSchemes: [],
         allowProtocolRelative: false,

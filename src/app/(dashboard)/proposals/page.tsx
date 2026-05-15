@@ -7,10 +7,11 @@ import { getProducts } from "@/db/queries/products";
 import { getActivePaymentTerms } from "@/db/queries/payment-terms";
 import { can } from "@/lib/permissions";
 import { redirect } from "next/navigation";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { ProposalsTable } from "./_components/proposals-table";
 import { ProposalStats } from "./_components/proposal-stats";
 import { ProposalFilters } from "./_components/proposal-filters";
-import { ProposalsListHeading } from "./_components/proposals-list-heading";
+import { ProposalDialog } from "./_components/proposal-dialog";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -79,7 +80,13 @@ export default async function ProposalsPage({
 
     return (
         <div className="flex-1 space-y-4 p-6 pt-2">
-            <ProposalsListHeading patients={patients} products={products} paymentTerms={paymentTerms} />
+            <PageHeader
+                title="Orçamentos e Propostas"
+                description="Gerencie o funil de vendas e rastreabilidade da clínica."
+                actions={
+                    <ProposalDialog patients={patients} products={products} paymentTerms={paymentTerms} />
+                }
+            />
 
             <ProposalStats stats={stats} />
 

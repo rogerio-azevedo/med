@@ -25,6 +25,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.2.2",
     "@lexical/html": "0.44.0",
+    "@lexical/list": "0.44.0",
     "@lexical/react": "^0.44.0",
     "@lexical/rich-text": "0.44.0",
     "@neondatabase/serverless": "^1.0.2",

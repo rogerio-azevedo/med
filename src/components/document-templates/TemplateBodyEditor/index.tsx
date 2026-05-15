@@ -2,10 +2,10 @@
 
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
+import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from "@lexical/html";
 import { ListItemNode, ListNode, registerList } from "@lexical/list";
@@ -17,13 +17,13 @@ import {
     TextNode,
     type EditorThemeClasses,
 } from "lexical";
-import { useEffect, useLayoutEffect, type MutableRefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, type MutableRefObject } from "react";
 import { RichTextToolbar } from "@/components/document-templates/_shared/RichTextToolbar";
 import { prepareLexicalImportHtml } from "@/components/document-templates/_shared/prepareLexicalImportHtml";
 import { LEXICAL_HTML_IMPORT_TAG } from "@/components/document-templates/_shared/lexicalHtmlImportTag";
 import { cn } from "@/lib/utils";
 
-const docEditorTheme: EditorThemeClasses = {
+const templateEditorTheme: EditorThemeClasses = {
     paragraph: "mb-2 text-[13px] leading-relaxed text-black last:mb-0",
     text: {
         bold: "font-semibold",
@@ -41,10 +41,31 @@ const docEditorTheme: EditorThemeClasses = {
     },
 };
 
-function ImportHtmlPlugin({ html }: { html: string }) {
+function EditableSyncPlugin({ editable }: { editable: boolean }) {
+    const [editor] = useLexicalComposerContext();
+
+    useEffect(() => {
+        editor.setEditable(editable);
+    }, [editor, editable]);
+
+    return null;
+}
+
+function ImportHtmlPlugin({
+    html,
+    lastEmittedRef,
+}: {
+    html: string;
+    lastEmittedRef: MutableRefObject<string | null>;
+}) {
     const [editor] = useLexicalComposerContext();
 
     useLayoutEffect(() => {
+        if (html === lastEmittedRef.current) {
+            lastEmittedRef.current = null;
+            return;
+        }
+
         editor.update(
             () => {
                 const root = $getRoot();
@@ -65,28 +86,7 @@ function ImportHtmlPlugin({ html }: { html: string }) {
             },
             { tag: LEXICAL_HTML_IMPORT_TAG }
         );
-    }, [editor, html]);
-
-    return null;
-}
-
-function ExportBridge({ bridgeRef }: { bridgeRef: MutableRefObject<{ getHtml: () => string } | null> }) {
-    const [editor] = useLexicalComposerContext();
-
-    useEffect(() => {
-        bridgeRef.current = {
-            getHtml: () => {
-                let out = "";
-                editor.getEditorState().read(() => {
-                    out = $generateHtmlFromNodes(editor, null);
-                });
-                return out;
-            },
-        };
-        return () => {
-            bridgeRef.current = null;
-        };
-    }, [bridgeRef, editor]);
+    }, [editor, html, lastEmittedRef]);
 
     return null;
 }
@@ -99,36 +99,77 @@ function ListRegistrationPlugin() {
     return null;
 }
 
-export type GeneratedDocumentBodyEditorProps = {
-    /** HTML do corpo (mesmo formato usado em MedicalDocumentPrintShell). */
-    html: string;
-    bridgeRef: MutableRefObject<{ getHtml: () => string } | null>;
+function OnChangeHtmlPlugin({
+    onChange,
+    lastEmittedRef,
+}: {
+    onChange: (html: string) => void;
+    lastEmittedRef: MutableRefObject<string | null>;
+}) {
+    const [editor] = useLexicalComposerContext();
+
+    useEffect(() => {
+        return editor.registerUpdateListener(({ editorState, tags }) => {
+            if (tags.has(LEXICAL_HTML_IMPORT_TAG)) return;
+            editorState.read(() => {
+                const out = $generateHtmlFromNodes(editor, null);
+                lastEmittedRef.current = out;
+                onChange(out);
+            });
+        });
+    }, [editor, onChange, lastEmittedRef]);
+
+    return null;
+}
+
+export type TemplateBodyEditorProps = {
+    value: string;
+    onChange: (html: string) => void;
+    disabled?: boolean;
     className?: string;
+    contentClassName?: string;
 };
 
-export function GeneratedDocumentBodyEditor({ html, bridgeRef, className }: GeneratedDocumentBodyEditorProps) {
+export function TemplateBodyEditor({
+    value,
+    onChange,
+    disabled,
+    className,
+    contentClassName,
+}: TemplateBodyEditorProps) {
+    const lastEmittedRef = useRef<string | null>(null);
+
     return (
-        <div className={cn("relative flex min-h-[280px] flex-col rounded-md border border-input bg-white", className)}>
+        <div
+            className={cn(
+                "relative flex min-h-[400px] flex-col overflow-hidden rounded-md border border-input bg-white",
+                className
+            )}
+        >
             <LexicalComposer
                 initialConfig={{
-                    namespace: "GeneratedDocumentBody",
-                    theme: docEditorTheme,
-                    editable: true,
+                    namespace: "DocumentTemplateBody",
+                    theme: templateEditorTheme,
+                    editable: !disabled,
                     onError: (e) => {
                         console.error(e);
                     },
                     nodes: [HeadingNode, QuoteNode, ParagraphNode, TextNode, LineBreakNode, ListNode, ListItemNode],
                 }}
             >
-                <ImportHtmlPlugin html={html} />
-                <ExportBridge bridgeRef={bridgeRef} />
+                <ImportHtmlPlugin html={value} lastEmittedRef={lastEmittedRef} />
+                <EditableSyncPlugin editable={!disabled} />
                 <ListRegistrationPlugin />
-                <RichTextToolbar />
+                <OnChangeHtmlPlugin onChange={onChange} lastEmittedRef={lastEmittedRef} />
+                <RichTextToolbar disabled={disabled} />
                 <RichTextPlugin
                     contentEditable={
                         <ContentEditable
-                            className="min-h-[260px] px-4 py-3 text-[13px] leading-relaxed text-black outline-none"
-                            aria-label="Editar corpo do documento"
+                            className={cn(
+                                "min-h-[360px] px-4 py-3 text-[13px] leading-relaxed text-black outline-none",
+                                contentClassName
+                            )}
+                            aria-label="Corpo do documento"
                         />
                     }
                     placeholder={null}
