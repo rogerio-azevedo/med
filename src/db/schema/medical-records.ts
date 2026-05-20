@@ -56,6 +56,10 @@ export const patientAlertTypeEnum = pgEnum("patient_alert_type", [
     "important_note",
 ]);
 
+export const examStatusEnum = pgEnum("exam_status", ["scheduled", "in_progress", "finished", "cancelled"]);
+
+export const examLocationEnum = pgEnum("exam_location", ["in_clinic", "external"]);
+
 // 1. Consultations (encounters)
 export const consultations = pgTable("consultations", {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -199,7 +203,7 @@ export const prescriptions = pgTable("prescriptions", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// 6. Exam requests
+// 6. Exam requests (pedido/solicitação; pode amarrar ao registro de realização em exams)
 export const examRequests = pgTable("exam_requests", {
     id: uuid("id").primaryKey().defaultRandom(),
     consultationId: uuid("consultation_id")
@@ -215,7 +219,49 @@ export const examRequests = pgTable("exam_requests", {
     type: examRequestTypeEnum("type").default("lab"),
     urgency: varchar("urgency", { length: 20 }).default("routine"),
     notes: text("notes"),
+    /** Quando preenchido, o pedido foi realizado/registrado neste exame. */
+    fulfilledByExamId: uuid("fulfilled_by_exam_id").references((): AnyPgColumn => exams.id, {
+        onDelete: "set null",
+    }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 6b. Exams (registro de realização / laudo)
+export const exams = pgTable("exams", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    patientId: uuid("patient_id")
+        .notNull()
+        .references(() => patients.id, { onDelete: "cascade" }),
+    doctorId: uuid("doctor_id").references(() => doctors.id, { onDelete: "set null" }),
+    clinicId: uuid("clinic_id")
+        .notNull()
+        .references(() => clinics.id, { onDelete: "cascade" }),
+    consultationId: uuid("consultation_id").references(() => consultations.id, { onDelete: "set null" }),
+    examRequestId: uuid("exam_request_id").references(() => examRequests.id, { onDelete: "set null" }),
+    serviceTypeId: uuid("service_type_id").references(() => serviceTypes.id, { onDelete: "set null" }),
+    healthInsuranceId: uuid("health_insurance_id").references(() => healthInsurances.id, {
+        onDelete: "set null",
+    }),
+    status: examStatusEnum("status").notNull().default("scheduled"),
+    location: examLocationEnum("location").notNull().default("in_clinic"),
+    notes: text("notes"),
+    scheduledAt: timestamp("scheduled_at"),
+    startTime: timestamp("start_time").defaultNow().notNull(),
+    endTime: timestamp("end_time"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const examProcedures = pgTable("exam_procedures", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    examId: uuid("exam_id")
+        .notNull()
+        .references(() => exams.id, { onDelete: "cascade" }),
+    procedureId: uuid("procedure_id")
+        .notNull()
+        .references(() => procedures.id, { onDelete: "restrict" }),
+    quantity: integer("quantity").notNull().default(1),
+    notes: text("notes"),
 });
 
 // 7. Referrals
@@ -322,6 +368,7 @@ export const consultationsRelations = relations(consultations, ({ one, many }) =
     vitalSigns: many(vitalSigns),
     prescriptions: many(prescriptions),
     examRequests: many(examRequests),
+    exams: many(exams),
     referrals: many(referrals),
     patientFiles: many(patientFiles),
 }));
@@ -355,10 +402,69 @@ export const prescriptionsRelations = relations(prescriptions, ({ one }) => ({
     }),
 }));
 
-export const examRequestsRelations = relations(examRequests, ({ one }) => ({
+export const examRequestsRelations = relations(examRequests, ({ one, many }) => ({
     consultation: one(consultations, {
         fields: [examRequests.consultationId],
         references: [consultations.id],
+    }),
+    fulfilledByExam: one(exams, {
+        fields: [examRequests.fulfilledByExamId],
+        references: [exams.id],
+        relationName: "examRequestFulfillment",
+    }),
+    /** Registros de exame que referenciam este pedido via `exam_request_id`. */
+    linkedExamRecords: many(exams, {
+        relationName: "examLinkedToRequest",
+    }),
+}));
+
+export const examsRelations = relations(exams, ({ one, many }) => ({
+    patient: one(patients, {
+        fields: [exams.patientId],
+        references: [patients.id],
+    }),
+    doctor: one(doctors, {
+        fields: [exams.doctorId],
+        references: [doctors.id],
+    }),
+    clinic: one(clinics, {
+        fields: [exams.clinicId],
+        references: [clinics.id],
+    }),
+    consultation: one(consultations, {
+        fields: [exams.consultationId],
+        references: [consultations.id],
+    }),
+    examRequest: one(examRequests, {
+        fields: [exams.examRequestId],
+        references: [examRequests.id],
+        relationName: "examLinkedToRequest",
+    }),
+    /** Pedido cuja coluna `fulfilled_by_exam_id` aponta para este exame. */
+    fulfillsExamRequest: one(examRequests, {
+        fields: [exams.id],
+        references: [examRequests.fulfilledByExamId],
+        relationName: "examRequestFulfillment",
+    }),
+    serviceType: one(serviceTypes, {
+        fields: [exams.serviceTypeId],
+        references: [serviceTypes.id],
+    }),
+    healthInsurance: one(healthInsurances, {
+        fields: [exams.healthInsuranceId],
+        references: [healthInsurances.id],
+    }),
+    procedureLinks: many(examProcedures),
+}));
+
+export const examProceduresRelations = relations(examProcedures, ({ one }) => ({
+    exam: one(exams, {
+        fields: [examProcedures.examId],
+        references: [exams.id],
+    }),
+    procedure: one(procedures, {
+        fields: [examProcedures.procedureId],
+        references: [procedures.id],
     }),
 }));
 

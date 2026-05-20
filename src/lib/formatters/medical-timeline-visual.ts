@@ -25,7 +25,7 @@ export type TimelineVisual = {
 };
 
 function heuristicVisual(input: {
-    timelineKind: "consultation" | "surgery";
+    timelineKind: "consultation" | "surgery" | "exam";
     serviceTypeWorkflow?: string | null;
     serviceTypeName?: string | null;
     serviceTypeSlug?: string | null;
@@ -33,6 +33,14 @@ function heuristicVisual(input: {
     const name = (input.serviceTypeName || "").toLowerCase();
     const slug = (input.serviceTypeSlug || "").toLowerCase();
     const wf = input.serviceTypeWorkflow || "";
+
+    if (input.timelineKind === "exam") {
+        return {
+            Icon: Microscope,
+            ringClass: "border-teal-500/65 bg-teal-500/12 text-teal-800 shadow-sm dark:text-teal-200",
+            typeBadgeClass: "border-teal-500/30 bg-teal-500/15 text-teal-950 dark:text-teal-50",
+        };
+    }
 
     if (input.timelineKind === "surgery" || wf === "surgery") {
         return {
@@ -101,7 +109,7 @@ function heuristicVisual(input: {
  * Identidade visual: prioriza ícone e cor configurados no tipo de atendimento; senão, heurística por workflow/nome.
  */
 export function resolveTimelineVisual(input: {
-    timelineKind: "consultation" | "surgery";
+    timelineKind: "consultation" | "surgery" | "exam";
     serviceTypeWorkflow?: string | null;
     serviceTypeName?: string | null;
     serviceTypeSlug?: string | null;

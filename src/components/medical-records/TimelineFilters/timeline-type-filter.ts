@@ -25,6 +25,9 @@ export function timelineRowMatchesTypeFilter(
     if (row.timelineKind === "surgery") {
         return filter.surgery;
     }
+    if (row.timelineKind === "exam") {
+        return filter.exam;
+    }
     const w = row.serviceTypeWorkflow;
     if (w === "return") {
         return filter.return;

@@ -5,6 +5,7 @@ import { FileStack, Microscope, Pill } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { PlanActionButton } from "./PlanActionButton";
 import { ExamsModal } from "./modals/ExamsModal";
+import type { ExamFormProcedureOption } from "@/components/medical-records/ExamForm";
 import { PrescriptionModal } from "./modals/PrescriptionModal";
 import {
     GenerateDocumentModal,
@@ -19,6 +20,13 @@ export type PlanActionsToolbarProps = {
     consultationId?: string | null;
     patientId?: string | null;
     clinicId?: string | null;
+    healthInsuranceId?: string | null;
+    serviceTypes?: { id: string; name: string; workflow: string | null; slug?: string | null }[];
+    healthInsurances?: { id: string; name: string }[];
+    doctors?: { id: string; name: string | null }[];
+    procedures?: ExamFormProcedureOption[];
+    currentDoctorId?: string;
+    patientName?: string | null;
     className?: string;
 };
 
@@ -32,6 +40,13 @@ export function PlanActionsToolbar({
     consultationId,
     patientId,
     clinicId,
+    healthInsuranceId,
+    serviceTypes = [],
+    healthInsurances = [],
+    doctors = [],
+    procedures = [],
+    currentDoctorId,
+    patientName,
     className,
 }: PlanActionsToolbarProps) {
     const [openModal, setOpenModal] = useState<OpenPlanModal>(null);
@@ -108,6 +123,16 @@ export function PlanActionsToolbar({
             <ExamsModal
                 open={openModal === "exams"}
                 onOpenChange={(open) => setOpenModal(open ? "exams" : null)}
+                clinicId={clinicId ?? ""}
+                patientId={patientId ?? ""}
+                patientName={patientName ?? undefined}
+                consultationId={consultationId ?? null}
+                healthInsuranceId={healthInsuranceId ?? null}
+                serviceTypes={serviceTypes}
+                healthInsurances={healthInsurances}
+                doctors={doctors}
+                procedures={procedures}
+                currentDoctorId={currentDoctorId}
             />
             <GenerateDocumentModal
                 isOpen={openModal === "documents"}

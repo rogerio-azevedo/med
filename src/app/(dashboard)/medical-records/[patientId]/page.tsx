@@ -13,6 +13,7 @@ import { getDoctorsSimple } from "@/db/queries/doctors";
 import { getHospitals } from "@/db/queries/hospitals";
 import { getProcedures } from "@/db/queries/procedures";
 import { getPatientFilesTimelineSorted } from "@/db/queries/medical-records";
+import { getPatientExamsTimeline } from "@/db/queries/exams";
 import { getActiveServiceTypes } from "@/db/queries/service-types";
 import { getClinicHealthInsurances } from "@/db/queries/health-insurances";
 import { auth } from "@/auth";
@@ -51,14 +52,15 @@ export default async function MedicalRecordsPage({ params, searchParams }: Medic
         notFound();
     }
 
-    const [consultationsRaw, surgeriesRaw, fileTimeline, serviceTypes, healthInsurances, doctors, hospitals, procedures] =
+    const [consultationsRaw, surgeriesRaw, examsRaw, fileTimeline, serviceTypes, healthInsurances, doctors, hospitals, procedures] =
         await Promise.all([
             getPatientConsultationsTimeline(patientId, session.user.clinicId),
             getPatientSurgeriesTimeline(patientId, session.user.clinicId),
+            getPatientExamsTimeline(patientId, session.user.clinicId),
             getPatientFilesTimelineSorted(patientId, session.user.clinicId),
             getActiveServiceTypes(session.user.clinicId),
             getClinicHealthInsurances(session.user.clinicId),
-            getDoctorsSimple(session.user.clinicId),
+            getDoctorsSimple(session.user.clinicId, { relationshipTypes: ["linked"] }),
             getHospitals(session.user.clinicId),
             getProcedures(session.user.clinicId),
         ]);
@@ -70,6 +72,7 @@ export default async function MedicalRecordsPage({ params, searchParams }: Medic
     }));
     const consultations = enrichTimelineRowsWithServiceTypeCatalog(consultationsRaw, catalogVisual);
     const surgeries = enrichTimelineRowsWithServiceTypeCatalog(surgeriesRaw, catalogVisual);
+    const exams = enrichTimelineRowsWithServiceTypeCatalog(examsRaw, catalogVisual);
     const latestVitalsRow = await getPatientLatestVitals(patientId, session.user.clinicId);
     const latestVitals = latestVitalsRow
         ? {
@@ -101,6 +104,8 @@ export default async function MedicalRecordsPage({ params, searchParams }: Medic
     const isDoctor = !!docId;
     const canDeleteClinicalRecordsAsAdmin =
         clinicRole === "admin" || session.user.role === "super_admin";
+    const chartCanUpdateMedicalRecords = await can("medical-records", "can_update");
+    const chartCanDeleteMedicalRecords = await can("medical-records", "can_delete");
 
     const serviceTypePayload = (st: { name: string | null; workflow: string | null; slug: string | null } | null) =>
         st ? { name: st.name, workflow: st.workflow, slug: st.slug } : null;
@@ -170,6 +175,7 @@ export default async function MedicalRecordsPage({ params, searchParams }: Medic
             clinicId={session.user.clinicId}
             patient={patient}
             consultations={consultations}
+            exams={exams}
             surgeries={surgeries}
             fileTimeline={fileTimeline}
             latestVitals={latestVitals}
@@ -184,10 +190,16 @@ export default async function MedicalRecordsPage({ params, searchParams }: Medic
             healthInsurances={healthInsurances}
             doctors={doctors.map((d) => ({ id: d.id, name: d.name }))}
             hospitals={hospitals.map((h) => ({ id: h.id, name: h.name }))}
-            procedures={procedures.map((p) => ({ id: p.id, name: p.name }))}
+            procedures={procedures.map((p) => ({
+                id: p.id,
+                name: p.name,
+                type: p.type,
+            }))}
             isDoctor={isDoctor}
             canManagePatientFiles={canManagePatientFiles}
             canDeleteClinicalRecordsAsAdmin={canDeleteClinicalRecordsAsAdmin}
+            chartCanUpdateMedicalRecords={chartCanUpdateMedicalRecords}
+            chartCanDeleteMedicalRecords={chartCanDeleteMedicalRecords}
             currentDoctorId={docId}
             queuedConsultation={queuedConsultation}
             queuedSurgery={queuedSurgery}

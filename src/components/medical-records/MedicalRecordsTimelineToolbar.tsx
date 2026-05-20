@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Microscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TimelineFilters, type TimelineTypeFilter } from "./TimelineFilters";
@@ -9,6 +9,8 @@ interface MedicalRecordsTimelineToolbarProps {
     searchTerm: string;
     onSearchChange: (value: string) => void;
     onNewConsultation: () => void;
+    /** Abre fluxo de registro de exame (sem vínculo com consulta). */
+    onNewExam?: () => void;
     isDoctor?: boolean;
     typeFilter: TimelineTypeFilter;
     onTypeFilterChange: (next: TimelineTypeFilter) => void;
@@ -18,6 +20,7 @@ export function MedicalRecordsTimelineToolbar({
     searchTerm,
     onSearchChange,
     onNewConsultation,
+    onNewExam,
     isDoctor,
     typeFilter,
     onTypeFilterChange,
@@ -36,17 +39,33 @@ export function MedicalRecordsTimelineToolbar({
                 </div>
                 <TimelineFilters filter={typeFilter} onFilterChange={onTypeFilterChange} />
             </div>
-            <Button
-                type="button"
-                size="lg"
-                onClick={onNewConsultation}
-                className="shrink-0 gap-2 text-sm"
-                disabled={!isDoctor}
-                title={!isDoctor ? "Apenas médicos podem iniciar atendimentos" : undefined}
-            >
-                <Plus className="size-4 md:size-4.5" />
-                Novo Atendimento
-            </Button>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+                {onNewExam ? (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        onClick={onNewExam}
+                        className="gap-2 text-sm"
+                        disabled={!isDoctor}
+                        title={!isDoctor ? "Apenas médicos podem registrar exames" : undefined}
+                    >
+                        <Microscope className="size-4 md:size-4.5" />
+                        Novo exame
+                    </Button>
+                ) : null}
+                <Button
+                    type="button"
+                    size="lg"
+                    onClick={onNewConsultation}
+                    className="shrink-0 gap-2 text-sm"
+                    disabled={!isDoctor}
+                    title={!isDoctor ? "Apenas médicos podem iniciar atendimentos" : undefined}
+                >
+                    <Plus className="size-4 md:size-4.5" />
+                    Novo Atendimento
+                </Button>
+            </div>
         </div>
     );
 }

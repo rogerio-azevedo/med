@@ -1,4 +1,5 @@
 import { getPatientConsultationsTimeline } from "@/db/queries/consultations";
+import { getPatientExamsTimeline } from "@/db/queries/exams";
 import { listPatientFilesByPatient } from "@/db/queries/files";
 
 export type MedicalRecordsTimelineConsultationItem = {
@@ -11,6 +12,18 @@ export type MedicalRecordsTimelineConsultationItem = {
     diagnosis: string | null;
     cidCode: string | null;
     cidDescription: string | null;
+};
+
+export type MedicalRecordsTimelineExamItem = {
+    kind: "exam";
+    sortAt: string;
+    id: string;
+    startTime: string;
+    status: string;
+    location: string;
+    doctorName: string | null;
+    serviceTypeName: string | null;
+    summary: string | null;
 };
 
 export type MedicalRecordsTimelineFileItem = {
@@ -35,7 +48,10 @@ export type MedicalRecordsTimelineFileItem = {
 /** File metadata for the sidebar timeline (without `kind`). */
 export type MedicalRecordsFileTimelineEntry = Omit<MedicalRecordsTimelineFileItem, "kind">;
 
-export type MedicalRecordsTimelineItem = MedicalRecordsTimelineConsultationItem | MedicalRecordsTimelineFileItem;
+export type MedicalRecordsTimelineItem =
+    | MedicalRecordsTimelineConsultationItem
+    | MedicalRecordsTimelineExamItem
+    | MedicalRecordsTimelineFileItem;
 
 function toIso(d: Date | string): string {
     if (d instanceof Date) return d.toISOString();
@@ -136,8 +152,9 @@ export async function getMergedMedicalRecordsTimeline(
     patientId: string,
     clinicId: string
 ): Promise<MedicalRecordsTimelineItem[]> {
-    const [consultations, fileEntries] = await Promise.all([
+    const [consultations, examsList, fileEntries] = await Promise.all([
         getPatientConsultationsTimeline(patientId, clinicId),
+        getPatientExamsTimeline(patientId, clinicId),
         getPatientFilesTimelineSorted(patientId, clinicId),
     ]);
 
@@ -155,6 +172,21 @@ export async function getMergedMedicalRecordsTimeline(
             diagnosis: c.diagnosis ?? null,
             cidCode: c.cidCode ?? null,
             cidDescription: c.cidDescription ?? null,
+        });
+    }
+
+    for (const ex of examsList) {
+        const start = toIso(ex.startTime as Date | string);
+        items.push({
+            kind: "exam",
+            sortAt: start,
+            id: ex.id,
+            startTime: start,
+            status: ex.status,
+            location: ex.location,
+            doctorName: ex.doctorName ?? null,
+            serviceTypeName: ex.serviceTypeName ?? null,
+            summary: ex.summary ?? null,
         });
     }
 

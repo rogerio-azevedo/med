@@ -390,8 +390,8 @@ export function EditAppointmentDrawer({
                                         serviceTypes.length <= 2
                                             ? "grid-cols-2"
                                             : serviceTypes.length === 3
-                                              ? "grid-cols-3"
-                                              : "grid-cols-2 sm:grid-cols-4"
+                                                ? "grid-cols-3"
+                                                : "grid-cols-2 sm:grid-cols-4"
                                     )}
                                 >
                                     {serviceTypes.map((st) => {
@@ -424,11 +424,11 @@ export function EditAppointmentDrawer({
                                                     style={
                                                         accent
                                                             ? {
-                                                                  color: accent,
-                                                                  backgroundColor: isSelected
-                                                                      ? `${accent}22`
-                                                                      : undefined,
-                                                              }
+                                                                color: accent,
+                                                                backgroundColor: isSelected
+                                                                    ? `${accent}22`
+                                                                    : undefined,
+                                                            }
                                                             : undefined
                                                     }
                                                 >

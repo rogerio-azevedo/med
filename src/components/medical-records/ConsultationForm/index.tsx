@@ -2,21 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import ReactSelect from "react-select";
+import ReactSelect, { type StylesConfig } from "react-select";
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+    Sheet,
+    SheetContent,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
 import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -51,6 +44,8 @@ import { cn } from "@/lib/utils";
 import { startConsultationAction } from "@/app/actions/consultations";
 import { startSurgeryAction } from "@/app/actions/surgeries";
 import { isSurgeryServiceType } from "@/lib/surgery-service-type";
+
+import type { ExamFormProcedureOption } from "@/components/medical-records/ExamForm";
 
 type PatientOption = {
     id: string;
@@ -128,6 +123,9 @@ interface ConsultationFormProps {
     initialData?: ConsultationInitialData;
     /** Quando o tipo de atendimento é cirurgia, abre o fluxo de registro cirúrgico em vez do SOAP. */
     onSurgeryFlowStarted?: (payload: { surgeryId: string }) => void;
+    doctors?: { id: string; name: string | null }[];
+    procedures?: ExamFormProcedureOption[];
+    currentDoctorId?: string;
 }
 
 type Option = {
@@ -170,6 +168,9 @@ export function ConsultationForm({
     onSubmit,
     initialData,
     onSurgeryFlowStarted,
+    doctors = [],
+    procedures = [],
+    currentDoctorId,
 }: ConsultationFormProps) {
     const isEditing = !!initialData?.id;
 
@@ -232,6 +233,13 @@ export function ConsultationForm({
         [allPatients]
     );
 
+    const healthInsuranceOptions: Option[] = useMemo(
+        () => [
+            { value: "", label: "Particular / Sem convênio" },
+            ...healthInsurances.map((h) => ({ value: h.id, label: h.name })),
+        ],
+        [healthInsurances]
+    );
 
     const selectedPatient = allPatients.find((item) => item.id === selectedPatientId) || patient || null;
     const selectedServiceType = serviceTypes.find((item) => item.id === selectedServiceTypeId) || null;
@@ -341,28 +349,14 @@ export function ConsultationForm({
         }
     };
 
-    // Estilos compartilhados para react-select (menu em portal evita scroll dentro do modal)
-    const reactSelectStyles = useMemo(
+    const appointmentLikeRsStyles = useMemo<StylesConfig<Option, false>>(
         () => ({
-            control: (base: Record<string, unknown>) => ({
+            control: (base) => ({
                 ...base,
                 borderColor: "hsl(var(--border))",
                 borderRadius: "0.5rem",
                 padding: "2px",
                 boxShadow: "none",
-                "&:hover": { borderColor: "hsl(var(--border))" },
-            }),
-            menu: (base: Record<string, unknown>) => ({
-                ...base,
-                zIndex: 9999,
-            }),
-            menuPortal: (base: Record<string, unknown>) => ({
-                ...base,
-                zIndex: 9999,
-            }),
-            menuList: (base: Record<string, unknown>) => ({
-                ...base,
-                maxHeight: "min(40vh, 260px)",
             }),
         }),
         []
@@ -371,34 +365,25 @@ export function ConsultationForm({
     const isCompactSetup = !isEditing && step === "setup";
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent
+        <Sheet open={isOpen} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+            <SheetContent
+                side="right"
                 className={cn(
-                    "flex min-h-0 flex-col overflow-hidden p-0",
-                    isCompactSetup
-                        ? "max-h-[min(88vh,640px)] sm:max-w-2xl"
-                        : step === "record"
-                          ? "max-h-[90vh] sm:max-w-7xl"
-                          : "max-h-[90vh] sm:max-w-6xl"
+                    "flex min-h-0 h-full flex-col gap-0 overflow-hidden p-0",
+                    // Larguras alinhadas ao modal antigo; painel pela direita (como Agenda)
+                    isCompactSetup ? "w-full max-w-xl sm:max-w-2xl" : step === "record" ? "w-full sm:max-w-7xl" : "w-full sm:max-w-6xl"
                 )}
-                onPointerDownOutside={(e) => {
-                    // Evita que cliques no menu portal do react-select fechem o dialog
-                    if ((e.target as HTMLElement).closest?.('[class*="rs-"]')) {
-                        e.preventDefault();
-                    }
-                }}
             >
-                <DialogHeader
+                <SheetHeader
                     className={cn(
                         "border-b",
                         isCompactSetup ? "p-4 pb-3" : "p-6 pb-4",
-                        // Evita sobreposição com o X absoluto do DialogContent (top-4 right-4)
                         !isEditing && step === "record" && "pr-14 sm:pr-16"
                     )}
                 >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className={cn("space-y-2", isCompactSetup && "space-y-1")}>
-                            <DialogTitle
+                            <SheetTitle
                                 className={cn(
                                     "flex items-center gap-2",
                                     isCompactSetup ? "text-xl" : "text-2xl"
@@ -412,7 +397,7 @@ export function ConsultationForm({
                                     : step === "setup"
                                       ? "Novo Atendimento"
                                       : `Registrar Atendimento: ${selectedPatient?.name || "Paciente"}`}
-                            </DialogTitle>
+                            </SheetTitle>
                             {step === "record" ? (
                                 activeWorkflow === "consultation" ? null : (
                                     <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -435,7 +420,7 @@ export function ConsultationForm({
                             </Button>
                         ) : null}
                     </div>
-                </DialogHeader>
+                </SheetHeader>
 
                 {step === "setup" ? (
                     <div className="flex min-h-0 flex-1 flex-col space-y-4 overflow-x-hidden overflow-y-auto overscroll-contain p-4 sm:p-5">
@@ -443,18 +428,14 @@ export function ConsultationForm({
                         {!patient ? (
                             <div className="space-y-2">
                                 <Label className="text-sm font-medium">Paciente <span className="text-destructive">*</span></Label>
-                                <ReactSelect
+                                <ReactSelect<Option, false>
                                     placeholder="Buscar paciente..."
                                     options={patientOptions}
                                     value={patientOptions.find((option) => option.value === selectedPatientId) ?? null}
                                     onChange={(option) => setSelectedPatientId(option?.value ?? "")}
                                     filterOption={accentInsensitiveSelectFilter}
                                     classNamePrefix="rs"
-                                    styles={reactSelectStyles}
-                                    menuPortalTarget={
-                                        typeof document !== "undefined" ? document.body : undefined
-                                    }
-                                    menuPosition="fixed"
+                                    styles={appointmentLikeRsStyles}
                                 />
                             </div>
                         ) : (
@@ -531,27 +512,28 @@ export function ConsultationForm({
                         {/* ── Convênio ─────────────────────────────────── */}
                         <div className="space-y-2">
                             <Label className="text-sm font-medium">Convênio</Label>
-                            <Select
-                                value={selectedHealthInsuranceId || "__none__"}
-                                onValueChange={(val) =>
-                                    setSelectedHealthInsuranceId(val === "__none__" ? "" : val)
+                            <ReactSelect<Option, false>
+                                placeholder="Particular / Sem convênio"
+                                isClearable={false}
+                                isSearchable={healthInsurances.length > 6}
+                                options={healthInsuranceOptions}
+                                value={
+                                    healthInsuranceOptions.find(
+                                        (opt) => opt.value === selectedHealthInsuranceId
+                                    ) ??
+                                    healthInsuranceOptions[0] ??
+                                    null
                                 }
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Particular / Sem convênio" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="__none__">Particular / Sem convênio</SelectItem>
-                                    {healthInsurances.map((h) => (
-                                        <SelectItem key={h.id} value={h.id}>
-                                            {h.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                onChange={(option) =>
+                                    setSelectedHealthInsuranceId(option?.value ?? "")
+                                }
+                                filterOption={accentInsensitiveSelectFilter}
+                                classNamePrefix="rs"
+                                styles={appointmentLikeRsStyles}
+                            />
                         </div>
 
-                        <DialogFooter className="gap-2 pt-1 sm:pt-2">
+                        <SheetFooter className="mt-0 shrink-0 flex-col-reverse gap-2 border-0 px-4 pt-1 pb-0 sm:flex-row sm:justify-end sm:pt-2 sm:pb-0">
                             <Button type="button" variant="outline" size="sm" onClick={onClose}>
                                 Cancelar
                             </Button>
@@ -563,7 +545,7 @@ export function ConsultationForm({
                             >
                                 {startingEncounter ? "Iniciando…" : "Continuar"}
                             </Button>
-                        </DialogFooter>
+                        </SheetFooter>
                     </div>
                 ) : activeWorkflow === "consultation" ? (
                     <ConsultationRecordSplitLayout
@@ -608,6 +590,13 @@ export function ConsultationForm({
                                             consultationId={effectiveConsultationId}
                                             patientId={selectedPatientId}
                                             clinicId={clinicId}
+                                            healthInsuranceId={selectedHealthInsuranceId || null}
+                                            serviceTypes={serviceTypes}
+                                            healthInsurances={healthInsurances}
+                                            doctors={doctors}
+                                            procedures={procedures}
+                                            currentDoctorId={currentDoctorId}
+                                            patientName={selectedPatient?.name ?? null}
                                         />
                                     </div>
                                     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
@@ -633,6 +622,13 @@ export function ConsultationForm({
                                             consultationId={effectiveConsultationId}
                                             patientId={selectedPatientId}
                                             clinicId={clinicId}
+                                            healthInsuranceId={selectedHealthInsuranceId || null}
+                                            serviceTypes={serviceTypes}
+                                            healthInsurances={healthInsurances}
+                                            doctors={doctors}
+                                            procedures={procedures}
+                                            currentDoctorId={currentDoctorId}
+                                            patientName={selectedPatient?.name ?? null}
                                             className="mb-2"
                                         />
                                         <TabsList className="h-11 w-full justify-start gap-6 rounded-none bg-transparent p-0">
@@ -742,7 +738,7 @@ export function ConsultationForm({
                                 </Tabs>
                             )}
 
-                            <DialogFooter className="mt-auto shrink-0 gap-3 border-t p-6">
+                            <SheetFooter className="mt-0 shrink-0 flex-col-reverse gap-3 border-t p-6 sm:flex-row sm:justify-end">
                                 <Button variant="outline" onClick={onClose}>Cancelar</Button>
                                 <Button
                                     onClick={() =>
@@ -759,7 +755,7 @@ export function ConsultationForm({
                                 >
                                     Finalizar e Salvar Atendimento
                                 </Button>
-                            </DialogFooter>
+                            </SheetFooter>
                         </div>
                     </ConsultationRecordSplitLayout>
                 ) : (
@@ -826,7 +822,7 @@ export function ConsultationForm({
                             </div>
                         </div>
 
-                        <DialogFooter className="mt-auto shrink-0 gap-3 border-t p-6">
+                        <SheetFooter className="mt-0 shrink-0 flex-col-reverse gap-3 border-t p-6 sm:flex-row sm:justify-end">
                             <Button variant="outline" onClick={onClose}>Cancelar</Button>
                             <Button
                                 disabled={!effectiveConsultationId}
@@ -844,12 +840,12 @@ export function ConsultationForm({
                             >
                                 {activeWorkflow === "return" ? "Finalizar retorno" : "Salvar Atendimento"}
                             </Button>
-                        </DialogFooter>
+                        </SheetFooter>
                         </div>
                     </ConsultationRecordSplitLayout>
                 )}
-            </DialogContent>
-        </Dialog>
+            </SheetContent>
+        </Sheet>
     );
 }
 

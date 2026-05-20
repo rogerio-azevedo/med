@@ -355,10 +355,9 @@ export function NewAppointmentDrawer({
                                                             }
                                                             className={`
                                                                 rounded-md px-3 py-1.5 text-sm font-medium border transition-all duration-200
-                                                                ${
-                                                                    isSelected
-                                                                        ? "bg-primary text-primary-foreground border-primary shadow-md transform scale-[1.02]"
-                                                                        : "bg-background border-border hover:border-primary/50 hover:bg-primary/5 text-foreground"
+                                                                ${isSelected
+                                                                    ? "bg-primary text-primary-foreground border-primary shadow-md transform scale-[1.02]"
+                                                                    : "bg-background border-border hover:border-primary/50 hover:bg-primary/5 text-foreground"
                                                                 }
                                                             `}
                                                         >
@@ -433,12 +432,12 @@ export function NewAppointmentDrawer({
                                             serviceTypes.length <= 2
                                                 ? "grid-cols-2"
                                                 : serviceTypes.length === 3
-                                                  ? "grid-cols-3"
-                                                  : serviceTypes.length === 4
-                                                    ? "grid-cols-4"
-                                                    : serviceTypes.length === 5
-                                                      ? "grid-cols-5"
-                                                      : "grid-cols-3 sm:grid-cols-4"
+                                                    ? "grid-cols-3"
+                                                    : serviceTypes.length === 4
+                                                        ? "grid-cols-4"
+                                                        : serviceTypes.length === 5
+                                                            ? "grid-cols-5"
+                                                            : "grid-cols-3 sm:grid-cols-4"
                                         )}
                                     >
                                         {serviceTypes.map((st) => {
@@ -471,11 +470,11 @@ export function NewAppointmentDrawer({
                                                         style={
                                                             accent
                                                                 ? {
-                                                                      color: accent,
-                                                                      backgroundColor: isSelected
-                                                                          ? `${accent}22`
-                                                                          : undefined,
-                                                                  }
+                                                                    color: accent,
+                                                                    backgroundColor: isSelected
+                                                                        ? `${accent}22`
+                                                                        : undefined,
+                                                                }
                                                                 : undefined
                                                         }
                                                     >

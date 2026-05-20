@@ -91,6 +91,45 @@ export const examRequestSchema = z.object({
     notes: z.string().optional().nullable(),
 });
 
+const examStatusValues = ["scheduled", "in_progress", "finished", "cancelled"] as const;
+const examLocationValues = ["in_clinic", "external"] as const;
+
+/** Criação do registro de exame (IDs de clínica vêm do servidor). */
+export const createExamSchema = z.object({
+    patientId: z.string().uuid(),
+    clinicId: z.string().uuid(),
+    doctorId: z.string().uuid().optional().nullable(),
+    consultationId: z.string().uuid().optional().nullable(),
+    examRequestId: z.string().uuid().optional().nullable(),
+    serviceTypeId: z.string().uuid().optional().nullable(),
+    healthInsuranceId: z.string().uuid().optional().nullable(),
+    status: z.enum(examStatusValues).optional().default("scheduled"),
+    location: z.enum(examLocationValues).optional().default("in_clinic"),
+    notes: z.string().optional().nullable(),
+    scheduledAt: z.string().max(40).optional().nullable(),
+});
+
+/** Atualização parcial do registro de exame. */
+export const updateExamSchema = z.object({
+    doctorId: z.string().uuid().optional().nullable(),
+    consultationId: z.string().uuid().optional().nullable(),
+    examRequestId: z.string().uuid().optional().nullable(),
+    serviceTypeId: z.string().uuid().optional().nullable(),
+    healthInsuranceId: z.string().uuid().optional().nullable(),
+    status: z.enum(examStatusValues).optional(),
+    location: z.enum(examLocationValues).optional(),
+    notes: z.string().optional().nullable(),
+    scheduledAt: z.string().max(40).optional().nullable(),
+    startTime: z.string().max(40).optional().nullable(),
+    endTime: z.string().max(40).optional().nullable(),
+});
+
+export const examProcedurePayloadSchema = z.object({
+    procedureId: z.string().uuid(),
+    quantity: z.number().int().positive().optional().default(1),
+    notes: z.string().optional().nullable(),
+});
+
 export const referralSchema = z.object({
     consultationId: z.string().uuid(),
     specialtyName: z.string().min(1).max(255),

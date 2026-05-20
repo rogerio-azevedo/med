@@ -223,7 +223,7 @@ export function AddDoctorDialog({
                 setCheckingCrm(false);
                 return;
             } else if (status === "inactive") {
-                    const doc = res.data.doctor as DoctorEligibilityCandidate;
+                const doc = res.data.doctor as DoctorEligibilityCandidate;
                 if (doc) {
                     form.reset({
                         ...form.getValues(),
@@ -244,7 +244,7 @@ export function AddDoctorDialog({
                 });
                 setStep("details");
             } else if (status === "global") {
-                    const doc = res.data.doctor as DoctorEligibilityCandidate;
+                const doc = res.data.doctor as DoctorEligibilityCandidate;
                 if (doc) {
                     form.reset({
                         ...form.getValues(),
@@ -367,12 +367,17 @@ export function AddDoctorDialog({
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent 
+            <DialogContent
                 className="sm:max-w-5xl p-0 border-none shadow-2xl bg-white/95 backdrop-blur-md max-h-[92vh] flex flex-col"
                 onInteractOutside={(e) => {
-                    // Prevent closing when clicking on the portal menu of react-select
                     const target = e.target as HTMLElement;
-                    if (target?.closest?.('.react-select__menu')) {
+                    if (target?.closest?.('.react-select__menu, .react-select__menu-portal')) {
+                        e.preventDefault();
+                    }
+                }}
+                onPointerDownOutside={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target?.closest?.('.react-select__menu, .react-select__menu-portal')) {
                         e.preventDefault();
                     }
                 }}
@@ -395,7 +400,7 @@ export function AddDoctorDialog({
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto overscroll-contain p-6">
                     {step === "crm" ? (
                         <Form {...form}>
                             <div className="max-w-md mx-auto space-y-8 py-8">
@@ -569,8 +574,10 @@ export function AddDoctorDialog({
                                                             styles={customSelectStyles}
                                                             className="react-select-container"
                                                             classNamePrefix="react-select"
-                                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
                                                             menuPosition="fixed"
+                                                            menuShouldBlockScroll
+                                                            menuShouldScrollIntoView={false}
                                                             value={specialties.filter((s) => field.value?.includes(s.value))}
                                                             onChange={(v: MultiValue<SelectOption>) => field.onChange(v.map((x) => x.value))} />
                                                     </FormControl>
@@ -586,8 +593,10 @@ export function AddDoctorDialog({
                                                             styles={customSelectStyles}
                                                             className="react-select-container"
                                                             classNamePrefix="react-select"
-                                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
                                                             menuPosition="fixed"
+                                                            menuShouldBlockScroll
+                                                            menuShouldScrollIntoView={false}
                                                             value={practiceAreas.filter((p) => field.value?.includes(p.value))}
                                                             onChange={(v: MultiValue<SelectOption>) => field.onChange(v.map((x) => x.value))} />
                                                     </FormControl>
@@ -607,8 +616,10 @@ export function AddDoctorDialog({
                                                         styles={customSelectStyles}
                                                         className="react-select-container"
                                                         classNamePrefix="react-select"
-                                                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                                        menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
                                                         menuPosition="fixed"
+                                                        menuShouldBlockScroll
+                                                        menuShouldScrollIntoView={false}
                                                         value={healthInsurances.filter((item) => field.value?.includes(item.value))}
                                                         onChange={(v: MultiValue<SelectOption>) => field.onChange(v.map((x) => x.value))}
                                                     />

@@ -7,6 +7,8 @@ import { ptBR } from "date-fns/locale";
 import { PatientContextPanel } from "../PatientContextPanel";
 import { ConsultationTimeline, type MedicalTimelineRow } from "../ConsultationTimeline";
 import { ConsultationForm, type ConsultationFormSubmitData } from "../ConsultationForm";
+import { ExamForm } from "../ExamForm";
+import { ExamDetailSheet } from "../ExamDetailSheet";
 import {
     startConsultationAction,
     saveSoapAction,
@@ -27,6 +29,7 @@ import { FileUploadModal } from "../FileUploadModal";
 import { MedicalRecordsTimelineToolbar } from "../MedicalRecordsTimelineToolbar";
 import { useHeaderStore } from "@/store/header";
 import type { MedicalRecordsFileTimelineEntry } from "@/db/queries/medical-records";
+import type { PatientExamTimelineRow } from "@/db/queries/exams";
 import { SurgeryForm } from "@/components/surgeries/SurgeryForm";
 import { isSurgeryServiceType } from "@/lib/surgery-service-type";
 import { normalizeForSearch } from "@/lib/search-normalize";
@@ -35,6 +38,7 @@ interface MedicalRecordsClientProps {
     clinicId: string;
     patient: { id: string; name: string };
     consultations: ConsultationTimelineItem[];
+    exams: PatientExamTimelineRow[];
     surgeries: MedicalTimelineRow[];
     fileTimeline: MedicalRecordsFileTimelineEntry[];
     latestVitals?: Record<string, string | number | null>;
@@ -47,12 +51,16 @@ interface MedicalRecordsClientProps {
     healthInsurances: { id: string; name: string }[];
     doctors: { id: string; name: string | null }[];
     hospitals: { id: string; name: string }[];
-    procedures: { id: string; name: string }[];
+    procedures: { id: string; name: string; type: string }[];
     isDoctor?: boolean;
     /** Attach/remove files on the chart (doctor or clinic admin). */
     canManagePatientFiles?: boolean;
     /** Admin da clínica pode excluir consultas/cirurgias */
     canDeleteClinicalRecordsAsAdmin?: boolean;
+    /** Permissão `can_update` no recurso Prontuário */
+    chartCanUpdateMedicalRecords?: boolean;
+    /** Permissão `can_delete` no recurso Prontuário */
+    chartCanDeleteMedicalRecords?: boolean;
     currentDoctorId?: string;
     /** Opens the encounter created from check-in (queue) directly. */
     queuedConsultation?: QueuedConsultationPayload | null;
@@ -118,10 +126,10 @@ function detailToFormInitial(c: ConsultationDetailData) {
     const wfRaw = c.serviceType?.workflow ?? "consultation";
     const serviceTypeWorkflow: ServiceTypeWorkflow =
         wfRaw === "generic" ||
-        wfRaw === "exam_review" ||
-        wfRaw === "procedure" ||
-        wfRaw === "consultation" ||
-        wfRaw === "return"
+            wfRaw === "exam_review" ||
+            wfRaw === "procedure" ||
+            wfRaw === "consultation" ||
+            wfRaw === "return"
             ? wfRaw
             : "consultation";
 
@@ -156,6 +164,7 @@ export function MedicalRecordsClient({
     clinicId,
     patient,
     consultations,
+    exams,
     surgeries,
     fileTimeline,
     latestVitals,
@@ -167,6 +176,8 @@ export function MedicalRecordsClient({
     isDoctor,
     canManagePatientFiles = false,
     canDeleteClinicalRecordsAsAdmin = false,
+    chartCanUpdateMedicalRecords = false,
+    chartCanDeleteMedicalRecords = false,
     currentDoctorId,
     queuedConsultation = null,
     queuedSurgery = null,
@@ -182,6 +193,12 @@ export function MedicalRecordsClient({
     const [searchTerm, setSearchTerm] = useState("");
     const [typeFilter, setTypeFilter] = useState<TimelineTypeFilter>(defaultTimelineTypeFilter);
     const [selectedConsultationId, setSelectedConsultationId] = useState<string | null>(null);
+    const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
+    const [examFormOpen, setExamFormOpen] = useState(false);
+    /** Exame `in_progress` a retomar no `ExamForm` (detalhe → continuar registro). */
+    const [examFormResumeExamId, setExamFormResumeExamId] = useState<string | null>(null);
+    /** Exame já salvo (`finished`/`in_progress`) para editar notas/procedimentos pelo `ExamForm`. */
+    const [examFormEditExamId, setExamFormEditExamId] = useState<string | null>(null);
     const [editingConsultation, setEditingConsultation] = useState<ConsultationDetailData | null>(null);
     const [isStartingReturn, setIsStartingReturn] = useState(false);
 
@@ -192,8 +209,25 @@ export function MedicalRecordsClient({
 
     const handleStartConsultation = useCallback(() => {
         setEditingConsultation(null);
+        setSelectedExamId(null);
         setFormSessionKey((value) => value + 1);
         setIsFormOpen(true);
+    }, []);
+
+    const handleNewExam = useCallback(() => {
+        setSelectedConsultationId(null);
+        setSelectedExamId(null);
+        setExamFormResumeExamId(null);
+        setExamFormEditExamId(null);
+        setExamFormOpen(true);
+    }, []);
+
+    const handleExamFormOpenChange = useCallback((next: boolean) => {
+        setExamFormOpen(next);
+        if (!next) {
+            setExamFormResumeExamId(null);
+            setExamFormEditExamId(null);
+        }
     }, []);
 
     const openReturnFormForParent = useCallback(
@@ -228,6 +262,7 @@ export function MedicalRecordsClient({
                 setFormSessionKey((value) => value + 1);
                 setIsFormOpen(true);
                 setSelectedConsultationId(null);
+                setSelectedExamId(null);
             } catch (e) {
                 const msg = e instanceof Error ? e.message : "Erro inesperado ao iniciar retorno.";
                 toast.error(msg);
@@ -256,13 +291,14 @@ export function MedicalRecordsClient({
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
                 onNewConsultation={handleStartConsultation}
+                onNewExam={handleNewExam}
                 isDoctor={isDoctor}
                 typeFilter={typeFilter}
                 onTypeFilterChange={setTypeFilter}
             />
         );
         return () => setToolbar(null);
-    }, [searchTerm, typeFilter, isDoctor, handleStartConsultation, setToolbar]);
+    }, [searchTerm, typeFilter, isDoctor, handleStartConsultation, handleNewExam, setToolbar]);
 
     useEffect(() => {
         if (!queuedConsultation?.id || !isDoctor) return;
@@ -287,10 +323,10 @@ export function MedicalRecordsClient({
             const wfRaw = queuedConsultation.serviceType?.workflow ?? "consultation";
             const workflow =
                 wfRaw === "generic" ||
-                wfRaw === "exam_review" ||
-                wfRaw === "procedure" ||
-                wfRaw === "consultation" ||
-                wfRaw === "return"
+                    wfRaw === "exam_review" ||
+                    wfRaw === "procedure" ||
+                    wfRaw === "consultation" ||
+                    wfRaw === "return"
                     ? wfRaw
                     : "consultation";
 
@@ -356,12 +392,29 @@ export function MedicalRecordsClient({
             parentConsultationId: c.parentConsultationId,
             healthInsuranceId: c.healthInsuranceId,
         }));
-        return [...cRows, ...surgeries].sort((a, b) => {
+        const eRows: MedicalTimelineRow[] = exams.map((e) => ({
+            id: e.id,
+            serviceTypeId: e.serviceTypeId,
+            startTime: e.startTime,
+            doctorName: e.doctorName,
+            diagnosis: e.summary,
+            cidCode: null,
+            serviceTypeName: e.serviceTypeName,
+            serviceTypeWorkflow: e.serviceTypeWorkflow,
+            serviceTypeSlug: e.serviceTypeSlug,
+            serviceTypeTimelineIconKey: e.serviceTypeTimelineIconKey,
+            serviceTypeTimelineColorHex: e.serviceTypeTimelineColorHex,
+            status: e.status,
+            timelineKind: "exam" as const,
+            examLocation: e.location === "external" ? "external" : "in_clinic",
+            healthInsuranceId: null,
+        }));
+        return [...cRows, ...eRows, ...surgeries].sort((a, b) => {
             const ta = new Date(a.startTime).getTime();
             const tb = new Date(b.startTime).getTime();
             return tb - ta;
         });
-    }, [consultations, surgeries]);
+    }, [consultations, exams, surgeries]);
 
     const patientForContext = useMemo(
         () => ({
@@ -393,17 +446,27 @@ export function MedicalRecordsClient({
         return list.filter((row) => timelineRowMatchesTypeFilter(row, typeFilter));
     }, [mergedTimeline, searchTerm, typeFilter]);
 
-    const handleTimelineSelect = (id: string, kind: "consultation" | "surgery") => {
+    const handleTimelineSelect = (id: string, kind: "consultation" | "surgery" | "exam") => {
         if (kind === "consultation") {
+            setSelectedExamId(null);
             setSelectedConsultationId(id);
             return;
         }
+        if (kind === "exam") {
+            setSelectedConsultationId(null);
+            setActiveSurgeryId(null);
+            setSurgeryFormOpen(false);
+            setSelectedExamId(id);
+            return;
+        }
         setSelectedConsultationId(null);
+        setSelectedExamId(null);
         setActiveSurgeryId(id);
         setSurgeryFormOpen(true);
     };
 
     const handleEditConsultation = (consultation: ConsultationDetailData) => {
+        setSelectedExamId(null);
         setEditingConsultation(consultation);
         setFormSessionKey((value) => value + 1);
         setIsFormOpen(true);
@@ -480,7 +543,7 @@ export function MedicalRecordsClient({
 
     return (
         <div className="flex min-h-screen w-full min-w-0 flex-col bg-background lg:flex-row">
-            <aside className="flex min-h-[min(50vh,28rem)] w-full shrink-0 flex-col overflow-hidden border-b border-border bg-background lg:min-h-0 lg:w-[40%] lg:min-w-[20rem] lg:max-w-[44%] lg:border-b-0 lg:border-r">
+            <aside className="flex min-h-[min(50vh,28rem)] w-full min-w-0 shrink-0 flex-col overflow-hidden border-b border-border bg-background lg:min-h-0 lg:w-2/5 lg:shrink-0 lg:grow-0 lg:border-b-0 lg:border-r">
                 <PatientContextPanel
                     patient={patientForContext}
                     latestVitals={latestVitals}
@@ -492,8 +555,8 @@ export function MedicalRecordsClient({
                 />
             </aside>
 
-            <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-muted/10">
-                <div className="border-b bg-muted/30 px-5 py-2 md:px-8">
+            <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden bg-muted/10 lg:min-w-0">
+                <div className="min-w-0 overflow-x-hidden border-b bg-muted/30 px-5 py-2 md:px-8">
                     <h2 className="text-center text-lg font-bold leading-relaxed text-muted-foreground">
                         Registros de Atendimentos
                     </h2>
@@ -509,14 +572,14 @@ export function MedicalRecordsClient({
                     ) : null}
                 </div>
 
-                <div className="w-full flex-1 overflow-y-auto p-5 md:p-8">
+                <div className="w-full min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto p-5 md:p-8">
                     <ConsultationTimeline
                         consultations={filteredTimeline}
                         onSelect={handleTimelineSelect}
                         onRequestReturn={
                             isDoctor
                                 ? ({ consultationId, healthInsuranceId }) =>
-                                      void openReturnFormForParent(consultationId, healthInsuranceId)
+                                    void openReturnFormForParent(consultationId, healthInsuranceId)
                                 : undefined
                         }
                         isRequestReturnLoading={isStartingReturn}
@@ -532,6 +595,34 @@ export function MedicalRecordsClient({
                 />
             </main>
 
+            <ExamDetailSheet
+                examId={selectedExamId}
+                patientId={patient.id}
+                onClose={() => setSelectedExamId(null)}
+                onOpenConsultation={(id) => {
+                    setSelectedExamId(null);
+                    setSelectedConsultationId(id);
+                }}
+                currentDoctorId={currentDoctorId}
+                canDeleteAsAdmin={canDeleteClinicalRecordsAsAdmin}
+                onTimelineRefresh={refreshAll}
+                onContinueRegistration={(examId) => {
+                    setSelectedExamId(null);
+                    setExamFormEditExamId(null);
+                    setExamFormResumeExamId(examId);
+                    setExamFormOpen(true);
+                }}
+                onEditExam={(examId) => {
+                    setSelectedExamId(null);
+                    setExamFormResumeExamId(null);
+                    setExamFormEditExamId(examId);
+                    setExamFormOpen(true);
+                }}
+                chartCanUpdateMedicalRecords={chartCanUpdateMedicalRecords}
+                chartCanDeleteMedicalRecords={chartCanDeleteMedicalRecords}
+                isDoctor={!!isDoctor}
+            />
+
             <ConsultationDetailSheet
                 consultationId={selectedConsultationId}
                 onClose={() => setSelectedConsultationId(null)}
@@ -539,11 +630,37 @@ export function MedicalRecordsClient({
                 onStartReturn={handleStartReturn}
                 isDoctor={isDoctor}
                 isReturnStarting={isStartingReturn}
-                onSelectConsultation={(id) => setSelectedConsultationId(id)}
+                onSelectConsultation={(id) => {
+                    setSelectedExamId(null);
+                    setSelectedConsultationId(id);
+                }}
                 patientId={patient.id}
                 currentDoctorId={currentDoctorId}
                 canDeleteAsAdmin={canDeleteClinicalRecordsAsAdmin}
                 onTimelineRefresh={refreshAll}
+            />
+
+            <ExamForm
+                key={
+                    examFormEditExamId
+                        ? `exam-edit-${examFormEditExamId}`
+                        : examFormResumeExamId
+                          ? `exam-resume-${examFormResumeExamId}`
+                          : "exam-new"
+                }
+                open={examFormOpen}
+                onOpenChange={handleExamFormOpenChange}
+                clinicId={clinicId}
+                patientId={patient.id}
+                patientName={patient.name}
+                serviceTypes={serviceTypes}
+                healthInsurances={healthInsurances}
+                doctors={doctors}
+                procedures={procedures}
+                currentDoctorId={currentDoctorId}
+                onSaved={refreshAll}
+                resumeExamId={examFormResumeExamId}
+                editExamId={examFormEditExamId}
             />
 
             <ConsultationForm
@@ -552,6 +669,9 @@ export function MedicalRecordsClient({
                 patient={patient}
                 serviceTypes={serviceTypes}
                 healthInsurances={healthInsurances}
+                doctors={doctors}
+                procedures={procedures}
+                currentDoctorId={currentDoctorId}
                 isOpen={isFormOpen}
                 onClose={() => {
                     setIsFormOpen(false);
@@ -579,7 +699,7 @@ export function MedicalRecordsClient({
                     patientName={patient.name}
                     doctors={doctors}
                     hospitals={hospitals}
-                    procedures={procedures}
+                    procedures={procedures.map(({ id, name }) => ({ id, name }))}
                     healthInsurances={healthInsurances}
                     currentDoctorId={currentDoctorId}
                     canDeleteAsAdmin={canDeleteClinicalRecordsAsAdmin}

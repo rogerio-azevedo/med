@@ -562,7 +562,21 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange, onReferredPatie
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-5xl p-0 border-none shadow-2xl bg-white/95 backdrop-blur-md max-h-[90vh] flex flex-col">
+            <DialogContent
+                className="sm:max-w-5xl p-0 border-none shadow-2xl bg-white/95 backdrop-blur-md max-h-[90vh] flex flex-col"
+                onInteractOutside={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target?.closest?.(".react-select__menu, .react-select__menu-portal")) {
+                        e.preventDefault();
+                    }
+                }}
+                onPointerDownOutside={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target?.closest?.(".react-select__menu, .react-select__menu-portal")) {
+                        e.preventDefault();
+                    }
+                }}
+            >
                 <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 pb-4 border-b shrink-0">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-primary/10 rounded-2xl text-primary shadow-inner">
@@ -577,7 +591,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange, onReferredPatie
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto overscroll-contain p-6">
                     <Form {...form}>
                         <form id="edit-doctor-form" onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-8">
 
@@ -702,6 +716,10 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange, onReferredPatie
                                                             className="react-select-container"
                                                             classNamePrefix="react-select"
                                                             styles={customSelectStyles}
+                                                            menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+                                                            menuPosition="fixed"
+                                                            menuShouldBlockScroll
+                                                            menuShouldScrollIntoView={false}
                                                             value={specialties.filter(s => field.value?.includes(s.value))}
                                                             onChange={(val: MultiValue<SelectOption>) => field.onChange(val.map((v) => v.value))}
                                                         />
@@ -725,6 +743,10 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange, onReferredPatie
                                                             className="react-select-container"
                                                             classNamePrefix="react-select"
                                                             styles={customSelectStyles}
+                                                            menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+                                                            menuPosition="fixed"
+                                                            menuShouldBlockScroll
+                                                            menuShouldScrollIntoView={false}
                                                             value={practiceAreas.filter(pa => field.value?.includes(pa.value))}
                                                             onChange={(val: MultiValue<SelectOption>) => field.onChange(val.map((v) => v.value))}
                                                         />
@@ -749,6 +771,10 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange, onReferredPatie
                                                         className="react-select-container"
                                                         classNamePrefix="react-select"
                                                         styles={customSelectStyles}
+                                                        menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+                                                        menuPosition="fixed"
+                                                        menuShouldBlockScroll
+                                                        menuShouldScrollIntoView={false}
                                                         value={healthInsurances.filter((item) => field.value?.includes(item.value))}
                                                         onChange={(val: MultiValue<SelectOption>) => field.onChange(val.map((v) => v.value))}
                                                     />
@@ -993,6 +1019,12 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange, onReferredPatie
                             e.preventDefault();
                         }
                     }}
+                    onPointerDownOutside={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (target?.closest?.(".react-select__menu, .react-select__menu-portal")) {
+                            e.preventDefault();
+                        }
+                    }}
                 >
                     <div className="space-y-5">
                         <div className="flex items-start gap-3">
@@ -1093,7 +1125,13 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange, onReferredPatie
                     className="sm:max-w-xl"
                     onInteractOutside={(e) => {
                         const target = e.target as HTMLElement;
-                        if (target?.closest?.(".react-select__menu")) {
+                        if (target?.closest?.(".react-select__menu, .react-select__menu-portal")) {
+                            e.preventDefault();
+                        }
+                    }}
+                    onPointerDownOutside={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (target?.closest?.(".react-select__menu, .react-select__menu-portal")) {
                             e.preventDefault();
                         }
                     }}

@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
+import { useReactSelectInModal } from "@/hooks/use-react-select-in-modal";
 import { cn } from "@/lib/utils";
 import { LinkedDoctorSelect } from "@/components/shared/LinkedDoctorSelect";
 
@@ -159,25 +159,7 @@ export function AddCheckInDialog({
 
     const isFormValid = Boolean(patientId && serviceTypeId && doctorId);
 
-    const reactSelectStyles = {
-        container: (base: Record<string, unknown>) => ({
-            ...base,
-            width: "100%",
-        }),
-        control: (base: Record<string, unknown>) => ({
-            ...base,
-            width: "100%",
-            borderColor: "hsl(var(--border))",
-            borderRadius: "0.5rem",
-            padding: "2px",
-            boxShadow: "none",
-            "&:hover": { borderColor: "hsl(var(--border))" },
-        }),
-        menu: (base: Record<string, unknown>) => ({
-            ...base,
-            zIndex: 50,
-        }),
-    };
+    const { styles: rsStyles, selectProps: rsSelectProps, dialogProps: rsDialogProps } = useReactSelectInModal();
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -190,18 +172,15 @@ export function AddCheckInDialog({
                 </DialogTrigger>
             ) : null}
             <DialogContent
-                className="flex max-h-[90vh] flex-col overflow-y-auto sm:max-w-2xl"
-                onPointerDownOutside={(e) => {
-                    e.preventDefault();
-                    handleOpenChange(false);
-                }}
+                className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-2xl"
+                {...rsDialogProps}
             >
-                <div className="space-y-1">
+                <div className="shrink-0 space-y-1 border-b px-6 py-4">
                     <DialogTitle>{dialogTitle}</DialogTitle>
                     <DialogDescription>{dialogDescription}</DialogDescription>
                 </div>
 
-                <div className="space-y-6 pt-2">
+                <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-6 py-4">
                     <div className="space-y-3">
                         <Label className="text-sm font-medium">
                             Tipo de atendimento <span className="text-destructive">*</span>
@@ -264,14 +243,13 @@ export function AddCheckInDialog({
                         <Label className="text-sm font-medium">
                             Paciente <span className="text-destructive">*</span>
                         </Label>
-                        <Select
+                        <Select<Option, false>
                             placeholder="Buscar paciente..."
                             options={patientOptions}
                             value={patientOptions.find((option) => option.value === patientId) ?? null}
                             onChange={(option) => setPatientId(option?.value ?? "")}
-                            filterOption={accentInsensitiveSelectFilter}
-                            classNamePrefix="rs"
-                            styles={reactSelectStyles}
+                            styles={rsStyles}
+                            {...rsSelectProps}
                         />
                     </div>
 
@@ -284,7 +262,7 @@ export function AddCheckInDialog({
 
                     <div className="space-y-2">
                         <Label className="text-sm font-medium">Convênio</Label>
-                        <Select
+                        <Select<Option, false>
                             placeholder="Particular / Sem convênio"
                             options={healthInsuranceOptions}
                             value={
@@ -293,8 +271,8 @@ export function AddCheckInDialog({
                                 null
                             }
                             onChange={(option) => setHealthInsuranceId(option?.value ?? "")}
-                            classNamePrefix="rs"
-                            styles={reactSelectStyles}
+                            styles={rsStyles}
+                            {...rsSelectProps}
                             isClearable={false}
                         />
                     </div>
@@ -309,7 +287,7 @@ export function AddCheckInDialog({
                     </div>
                 </div>
 
-                <DialogFooter className="gap-2 sm:gap-0">
+                <DialogFooter className="shrink-0 gap-2 border-t px-6 py-4 sm:gap-0">
                     <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
                         Cancelar
                     </Button>
