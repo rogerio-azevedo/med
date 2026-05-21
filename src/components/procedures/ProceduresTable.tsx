@@ -50,16 +50,24 @@ export function ProceduresTable({ procedures }: { procedures: Procedure[] }) {
     return (
         <>
             <div className="overflow-hidden rounded-xl border border-muted/20 bg-white/50 shadow-sm backdrop-blur-sm">
-                <Table>
+                <Table className="table-fixed">
                     <TableHeader className="bg-muted/30">
                         <TableRow>
-                            <TableHead className="h-12 font-semibold text-foreground/70">Tipo</TableHead>
-                            <TableHead className="h-12 font-semibold text-foreground/70">Código TUSS</TableHead>
-                            <TableHead className="h-12 font-semibold text-foreground/70">CID-10</TableHead>
-                            <TableHead className="h-12 font-semibold text-foreground/70">Nome</TableHead>
-                            <TableHead className="h-12 font-semibold text-foreground/70">Descrição</TableHead>
-                            <TableHead className="h-12 font-semibold text-foreground/70">Finalidade</TableHead>
-                            <TableHead className="h-12 text-right font-semibold text-foreground/70">Ações</TableHead>
+                            <TableHead className="h-12 w-[8%] font-semibold text-foreground/70">Tipo</TableHead>
+                            <TableHead className="h-12 w-[10%] font-semibold text-foreground/70">
+                                Código TUSS
+                            </TableHead>
+                            <TableHead className="h-12 w-[14%] font-semibold text-foreground/70">CID-10</TableHead>
+                            <TableHead className="h-12 w-[22%] font-semibold text-foreground/70">Nome</TableHead>
+                            <TableHead className="h-12 w-[22%] font-semibold text-foreground/70">
+                                Descrição
+                            </TableHead>
+                            <TableHead className="h-12 w-[18%] font-semibold text-foreground/70">
+                                Finalidade
+                            </TableHead>
+                            <TableHead className="h-12 w-[6%] text-right font-semibold text-foreground/70">
+                                Ações
+                            </TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -74,14 +82,18 @@ export function ProceduresTable({ procedures }: { procedures: Procedure[] }) {
                             </TableRow>
                         ) : (
                             procedures.map((procedure) => (
-                                <TableRow key={procedure.id} className="transition-colors hover:bg-primary/[0.02]">
+                                <TableRow key={procedure.id} className="transition-colors hover:bg-primary/2">
                                     <TableCell className="h-14 text-xs font-semibold text-muted-foreground">
                                         {procedureTypeLabel[procedure.type]}
                                     </TableCell>
-                                    <TableCell className="h-14 font-mono text-xs uppercase text-muted-foreground">
-                                        {procedure.tussCode || <span className="text-muted-foreground/30 italic">Sem código</span>}
+                                    <TableCell className="h-14 min-w-0 font-mono text-xs uppercase whitespace-normal text-muted-foreground">
+                                        <div className="truncate">
+                                            {procedure.tussCode || (
+                                                <span className="text-muted-foreground/30 italic">Sem código</span>
+                                            )}
+                                        </div>
                                     </TableCell>
-                                    <TableCell className="h-14 max-w-[220px] text-xs text-muted-foreground">
+                                    <TableCell className="h-14 min-w-0 text-xs whitespace-normal text-muted-foreground">
                                         {procedure.cidCode ? (
                                             <div className="flex min-w-0 flex-col gap-0.5">
                                                 <span className="font-mono font-semibold text-primary">{procedure.cidCode}</span>
@@ -95,25 +107,29 @@ export function ProceduresTable({ procedures }: { procedures: Procedure[] }) {
                                             <span className="text-muted-foreground/30 italic">Sem CID</span>
                                         )}
                                     </TableCell>
-                                    <TableCell className="h-14 font-medium">
-                                        <div className="flex items-center gap-2">
-                                            <div className="rounded-lg bg-primary/5 p-2 text-primary">
+                                    <TableCell className="h-14 min-w-0 font-medium whitespace-normal">
+                                        <div className="flex min-w-0 items-center gap-2">
+                                            <div className="shrink-0 rounded-lg bg-primary/5 p-2 text-primary">
                                                 <FileBadge2 size={16} />
                                             </div>
-                                            <span>{procedure.name}</span>
+                                            <span className="min-w-0 truncate">{procedure.name}</span>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="max-w-[340px] text-sm text-muted-foreground">
+                                    <TableCell className="min-w-0 text-sm whitespace-normal text-muted-foreground">
                                         {procedure.description ? (
-                                            <span className="line-clamp-2">{procedure.description}</span>
+                                            <span className="line-clamp-2 wrap-break-word">{procedure.description}</span>
                                         ) : (
                                             <span className="text-muted-foreground/30 italic">Sem descrição</span>
                                         )}
                                     </TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                        {procedure.purpose || <span className="text-muted-foreground/30 italic">Sem finalidade</span>}
+                                    <TableCell className="min-w-0 text-sm whitespace-normal text-muted-foreground">
+                                        {procedure.purpose ? (
+                                            <span className="line-clamp-2 wrap-break-word">{procedure.purpose}</span>
+                                        ) : (
+                                            <span className="text-muted-foreground/30 italic">Sem finalidade</span>
+                                        )}
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="w-[6%] text-right whitespace-nowrap">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="ghost" className="h-9 w-9 rounded-full p-0 transition-all hover:bg-muted/50">
@@ -159,6 +175,7 @@ export function ProceduresTable({ procedures }: { procedures: Procedure[] }) {
             {selectedProcedure && (
                 <>
                     <EditProcedureDialog
+                        key={`${selectedProcedure.id}-${isEditDialogOpen}`}
                         procedure={selectedProcedure}
                         isOpen={isEditDialogOpen}
                         onOpenChange={setIsEditDialogOpen}

@@ -36,7 +36,6 @@ export const sadtFieldMap = {
     nomeBeneficiario: { x: 70, y: 464, size: 8, maxWidth: 600 },
     codigoOperadoraSolicitante: { x: 65, y: 434, size: 8, gap: 8.2, maxChars: 14 },
 
-    nomeContratado: { x: 206, y: 436, size: 8, maxWidth: 520 },
     nomeProfissionalSolicitante: { x: 70, y: 415, size: 8, maxWidth: 400 },
 
     conselhoProfissional: { x: 288, y: 416, size: 8, gap: 9, maxChars: 2 },
@@ -47,8 +46,6 @@ export const sadtFieldMap = {
     dataSolicitacao: { x: 106, y: 389, size: 8, gap: 8, maxChars: 10 },
     caraterSolicitacao: { x: 76, y: 387, size: 8, gap: 10, maxChars: 1 },
     indicacaoClinica: { x: 202, y: 386, size: 7, maxWidth: 380 },
-
-    numeroGuiaPrestador: { x: 678, y: 570, size: 8, gap: 8.2, maxChars: 20 },
 
     procedureRows: [
         {

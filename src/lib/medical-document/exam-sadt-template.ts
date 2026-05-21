@@ -131,12 +131,7 @@ async function drawInsuranceLogo(
     }
 }
 
-function fillGuideFields(
-    page: PDFPage,
-    font: PDFFont,
-    ctx: ExamGuidePrintContext,
-    numeroGuiaPrestador?: string | null
-) {
+function fillGuideFields(page: PDFPage, font: PDFFont, ctx: ExamGuidePrintContext) {
     const f = sadtFieldMap;
 
     drawCharsInBoxes(page, font, onlyDigits(s(ctx.insuranceAnsCode), 6), f.registroAns);
@@ -149,7 +144,6 @@ function fillGuideFields(
         f.codigoOperadoraSolicitante
     );
 
-    drawTextField(page, font, s(ctx.clinicName), f.nomeContratado);
     drawTextField(page, font, s(ctx.doctorName), f.nomeProfissionalSolicitante);
 
     drawCharsInBoxes(page, font, "06", f.conselhoProfissional);
@@ -157,12 +151,6 @@ function fillGuideFields(
     drawCharsInBoxes(page, font, pdfText(s(ctx.crmState)).slice(0, 2), f.ufConselho);
     drawCharsInBoxes(page, font, onlyDigits(s(ctx.cboCode), 6), f.cbo);
 
-    drawCharsInBoxes(
-        page,
-        font,
-        onlyDigits(numeroGuiaPrestador ?? "", 20),
-        f.numeroGuiaPrestador
-    );
     drawCharsInBoxes(page, font, formatDateBr(ctx.guideDateTime), f.dataSolicitacao);
     drawCharsInBoxes(page, font, careLetter(ctx.careType), f.caraterSolicitacao);
     drawTextField(page, font, s(ctx.clinicalIndication), f.indicacaoClinica);
@@ -191,8 +179,6 @@ function fillGuideFields(
  */
 export type GenerateSadtPdfOptions = {
     insuranceLogoGetUrl?: string | null;
-    /** Campo 2 — Nº guia no prestador (ex.: prefixo do id do exame). */
-    numeroGuiaPrestador?: string | null;
 };
 
 export async function generateSadtPdfFromTemplate(
@@ -207,7 +193,7 @@ export async function generateSadtPdfFromTemplate(
     const logoUrl = options?.insuranceLogoGetUrl?.trim();
     const logoBytes = logoUrl ? await fetchInsuranceLogoBytesForTemplate(logoUrl) : null;
     await drawInsuranceLogo(pdfDoc, page, logoBytes);
-    fillGuideFields(page, font, context, options?.numeroGuiaPrestador);
+    fillGuideFields(page, font, context);
 
     return pdfDoc.save();
 }

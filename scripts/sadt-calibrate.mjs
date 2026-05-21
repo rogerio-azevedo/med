@@ -31,7 +31,6 @@ const FIELD_MAP = {
     numeroCarteira: { x: 64, y: 483, gap: 8.3, sample: "12345678901234567890", label: "numeroCarteira" },
     nomeBeneficiario: { x: 120, y: 466, sample: "NOME DO BENEFICIARIO", label: "nomeBeneficiario" },
     codigoOperadoraSolicitante: { x: 65, y: 434, gap: 8.2, sample: "12345678901234", label: "codigoOperadora13" },
-    nomeContratado: { x: 285, y: 442, sample: "CLINICA SOLICITANTE LTDA", label: "nomeContratado" },
     nomeProfissionalSolicitante: { x: 200, y: 420, sample: "DR. MEDICO SOLICITANTE", label: "nomeProfissional" },
     conselhoProfissional: { x: 288, y: 411, gap: 9, sample: "06", label: "conselho" },
     numeroConselho: { x: 322, y: 411, gap: 8.2, sample: "123456", label: "numeroConselho" },
@@ -40,7 +39,6 @@ const FIELD_MAP = {
     dataSolicitacao: { x: 106, y: 384, gap: 8.5, sample: "20052026", label: "dataSolicitacao" },
     caraterSolicitacao: { x: 76, y: 387, gap: 10, sample: "E", label: "carater" },
     indicacaoClinica: { x: 233, y: 384, sample: "INDICACAO CLINICA DE TESTE", label: "indicacaoClinica" },
-    numeroGuiaPrestador: { x: 678, y: 570, gap: 8.2, sample: "12345678901234567890", label: "numeroGuiaPrestador" },
     procedureRows: [
         { y: 366, tabela: { x: 66, y: 366, gap: 9 }, codigo: { x: 92, y: 366, gap: 8.2 }, descricao: { x: 130, y: 366 }, qtdSolic: { x: 668, y: 366, gap: 9 } },
         { y: 356, tabela: { x: 66, y: 356, gap: 9 }, codigo: { x: 92, y: 356, gap: 8.2 }, descricao: { x: 130, y: 356 }, qtdSolic: { x: 668, y: 356, gap: 9 } },

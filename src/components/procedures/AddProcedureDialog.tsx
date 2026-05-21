@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, FileBadge2, Loader2, Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { createProcedureAction } from "@/app/actions/procedures";
@@ -22,7 +22,7 @@ import type { ProcedurePayload } from "@/db/queries/procedures";
 
 export function AddProcedureDialog() {
     const [isOpen, setIsOpen] = useState(false);
-    const [isPending, setIsPending] = useState(false);
+    const [isPending, startTransition] = useTransition();
 
     const form = useForm<ProcedureFormValues>({
         resolver: zodResolver(procedureFormSchema),
@@ -38,36 +38,35 @@ export function AddProcedureDialog() {
         },
     });
 
-    async function onSubmit(values: ProcedureFormValues) {
-        setIsPending(true);
-        try {
-            const payload: ProcedurePayload = {
-                type: values.type,
-                tussCode: values.tussCode,
-                name: values.name,
-                description: values.description,
-                purpose: values.purpose,
-                cidId: values.cidId,
-            };
-            const result = await createProcedureAction(payload);
-            if (result.success) {
-                toast.success("Procedimento cadastrado com sucesso!");
-                form.reset();
-                setIsOpen(false);
-            } else {
-                toast.error(result.error || "Erro ao cadastrar procedimento");
+    function onSubmit(values: ProcedureFormValues) {
+        startTransition(async () => {
+            try {
+                const payload: ProcedurePayload = {
+                    type: values.type,
+                    tussCode: values.tussCode,
+                    name: values.name,
+                    description: values.description,
+                    purpose: values.purpose,
+                    cidId: values.cidId,
+                };
+                const result = await createProcedureAction(payload);
+                if (result.success) {
+                    toast.success("Procedimento cadastrado com sucesso!");
+                    form.reset();
+                    setIsOpen(false);
+                } else {
+                    toast.error(result.error || "Erro ao cadastrar procedimento");
+                }
+            } catch {
+                toast.error("Erro ao cadastrar procedimento");
             }
-        } catch {
-            toast.error("Erro ao cadastrar procedimento");
-        } finally {
-            setIsPending(false);
-        }
+        });
     }
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-primary text-white shadow-lg shadow-primary/20 transition-all active:scale-95 hover:bg-primary/90">
+                <Button className="bg-primary text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 active:scale-95">
                     <Plus className="mr-2 h-4 w-4" />
                     Adicionar Procedimento
                 </Button>
@@ -90,37 +89,37 @@ export function AddProcedureDialog() {
                 </div>
 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-6">
-                        <ProcedureFormFields control={form.control} />
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col">
+                        <div className="space-y-6 p-6">
+                            <ProcedureFormFields control={form.control} />
+                        </div>
+                        <DialogFooter className="flex items-center justify-between border-t bg-muted/20 p-6 sm:justify-between">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setIsOpen(false)}
+                                className="transition-all hover:bg-muted/50"
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isPending}
+                                className="min-w-[160px] bg-primary text-white shadow-xl shadow-primary/10 transition-all hover:bg-primary/90 active:scale-95"
+                            >
+                                {isPending ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="mr-2 h-4 w-4" /> Cadastrar
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
                     </form>
                 </Form>
-
-                <DialogFooter className="flex items-center justify-between border-t bg-muted/20 p-6 sm:justify-between">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => setIsOpen(false)}
-                        className="transition-all hover:bg-muted/50"
-                    >
-                        Cancelar
-                    </Button>
-                    <Button
-                        type="submit"
-                        disabled={isPending}
-                        onClick={form.handleSubmit(onSubmit)}
-                        className="min-w-[160px] bg-primary text-white shadow-xl shadow-primary/10 transition-all active:scale-95 hover:bg-primary/90"
-                    >
-                        {isPending ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...
-                            </>
-                        ) : (
-                            <>
-                                <Check className="mr-2 h-4 w-4" /> Cadastrar
-                            </>
-                        )}
-                    </Button>
-                </DialogFooter>
             </DialogContent>
         </Dialog>
     );

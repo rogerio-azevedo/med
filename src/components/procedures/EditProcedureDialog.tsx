@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, FileBadge2, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { updateProcedureAction } from "@/app/actions/procedures";
@@ -36,7 +36,7 @@ interface EditProcedureDialogProps {
 }
 
 export function EditProcedureDialog({ procedure, isOpen, onOpenChange }: EditProcedureDialogProps) {
-    const [isPending, setIsPending] = useState(false);
+    const [isPending, startTransition] = useTransition();
 
     const form = useForm<ProcedureFormValues>({
         resolver: zodResolver(procedureFormSchema),
@@ -52,42 +52,28 @@ export function EditProcedureDialog({ procedure, isOpen, onOpenChange }: EditPro
         },
     });
 
-    useEffect(() => {
-        form.reset({
-            type: procedure.type,
-            tussCode: procedure.tussCode || "",
-            name: procedure.name,
-            description: procedure.description || "",
-            purpose: procedure.purpose || "",
-            cidId: procedure.cidId,
-            cidMetaCode: procedure.cidCode || "",
-            cidMetaDescription: procedure.cidDescription || "",
-        });
-    }, [form, procedure]);
-
-    async function onSubmit(values: ProcedureFormValues) {
-        setIsPending(true);
-        try {
-            const payload: ProcedurePayload = {
-                type: values.type,
-                tussCode: values.tussCode,
-                name: values.name,
-                description: values.description,
-                purpose: values.purpose,
-                cidId: values.cidId,
-            };
-            const result = await updateProcedureAction(procedure.id, payload);
-            if (result.success) {
-                toast.success("Procedimento atualizado com sucesso!");
-                onOpenChange(false);
-            } else {
-                toast.error(result.error || "Erro ao atualizar procedimento");
+    function onSubmit(values: ProcedureFormValues) {
+        startTransition(async () => {
+            try {
+                const payload: ProcedurePayload = {
+                    type: values.type,
+                    tussCode: values.tussCode,
+                    name: values.name,
+                    description: values.description,
+                    purpose: values.purpose,
+                    cidId: values.cidId,
+                };
+                const result = await updateProcedureAction(procedure.id, payload);
+                if (result.success) {
+                    toast.success("Procedimento atualizado com sucesso!");
+                    onOpenChange(false);
+                } else {
+                    toast.error(result.error || "Erro ao atualizar procedimento");
+                }
+            } catch {
+                toast.error("Erro ao atualizar procedimento");
             }
-        } catch {
-            toast.error("Erro ao atualizar procedimento");
-        } finally {
-            setIsPending(false);
-        }
+        });
     }
 
     return (
@@ -110,37 +96,37 @@ export function EditProcedureDialog({ procedure, isOpen, onOpenChange }: EditPro
                 </div>
 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-6">
-                        <ProcedureFormFields control={form.control} />
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col">
+                        <div className="space-y-6 p-6">
+                            <ProcedureFormFields control={form.control} />
+                        </div>
+                        <DialogFooter className="flex items-center justify-between border-t bg-muted/20 p-6 sm:justify-between">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => onOpenChange(false)}
+                                className="transition-all hover:bg-muted/50"
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isPending}
+                                className="min-w-[160px] bg-primary text-white shadow-xl shadow-primary/10 transition-all hover:bg-primary/90 active:scale-95"
+                            >
+                                {isPending ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="mr-2 h-4 w-4" /> Salvar Alterações
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
                     </form>
                 </Form>
-
-                <DialogFooter className="flex items-center justify-between border-t bg-muted/20 p-6 sm:justify-between">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => onOpenChange(false)}
-                        className="transition-all hover:bg-muted/50"
-                    >
-                        Cancelar
-                    </Button>
-                    <Button
-                        type="submit"
-                        disabled={isPending}
-                        onClick={form.handleSubmit(onSubmit)}
-                        className="min-w-[160px] bg-primary text-white shadow-xl shadow-primary/10 transition-all active:scale-95 hover:bg-primary/90"
-                    >
-                        {isPending ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...
-                            </>
-                        ) : (
-                            <>
-                                <Check className="mr-2 h-4 w-4" /> Salvar Alterações
-                            </>
-                        )}
-                    </Button>
-                </DialogFooter>
             </DialogContent>
         </Dialog>
     );

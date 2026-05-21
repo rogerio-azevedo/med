@@ -32,7 +32,6 @@ export async function GET(
         const logoUrl = await resolveHealthInsuranceLogoUrlForPrint(context.insuranceLogoKeyOrUrl);
         const pdf = await generateSadtPdfFromTemplate(context, {
             insuranceLogoGetUrl: logoUrl,
-            numeroGuiaPrestador: examId.replace(/\D/g, "").slice(0, 20) || examId.slice(0, 20),
         });
 
         const filename = `Guia-SP-SADT-${examId.slice(0, 8)}.pdf`;
