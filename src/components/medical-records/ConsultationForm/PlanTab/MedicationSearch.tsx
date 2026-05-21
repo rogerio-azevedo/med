@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type WheelEvent, type TouchEvent } from "react";
 import type { ReactNode } from "react";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Loader2, Info } from "lucide-react";
+import Select from "react-select";
+import type { GroupBase, MenuListProps, OnChangeValue, OptionProps, StylesConfig } from "react-select";
+import { components as RSComponents } from "react-select";
+import { Loader2, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useReactSelectInModal } from "@/hooks/use-react-select-in-modal";
 import { searchMedicationsAction } from "@/app/actions/prescriptions";
 import { mapCatalogRouteToPrescriptionRoute } from "@/lib/prescription-route-map";
 
@@ -17,6 +19,13 @@ type MedicationSearchRow = {
     concentration: string | null;
     pharmaceuticalForm: string;
     route: string | null;
+};
+
+/** Opção vinda da busca no catálogo (campo extra `row` para o menu). */
+type CatalogMedicationOption = {
+    value: string;
+    label: string;
+    row: MedicationSearchRow;
 };
 
 export type MedicationPickResult = {
@@ -41,6 +50,47 @@ type MedicationSearchProps = {
     inputRowEnd?: ReactNode;
 };
 
+function MenuListStopWheel(
+    props: MenuListProps<CatalogMedicationOption, false, GroupBase<CatalogMedicationOption>>,
+) {
+    const { innerProps, ...rest } = props;
+    return (
+        <RSComponents.MenuList
+            {...rest}
+            innerProps={{
+                ...(innerProps ?? {}),
+                onWheel: (e: WheelEvent<HTMLDivElement>) => {
+                    e.stopPropagation();
+                    innerProps?.onWheel?.(e);
+                },
+                onTouchMove: (e: TouchEvent<HTMLDivElement>) => {
+                    e.stopPropagation();
+                    innerProps?.onTouchMove?.(e);
+                },
+            }}
+        />
+    );
+}
+
+function CatalogOptionInner(
+    props: OptionProps<CatalogMedicationOption, false, GroupBase<CatalogMedicationOption>>,
+) {
+    const { data } = props;
+    const row = data.row;
+    return (
+        <RSComponents.Option {...props}>
+            <div className="flex flex-col items-start gap-0.5 py-0.5 text-left">
+                <span className="font-medium text-foreground">{row.name}</span>
+                <span className="line-clamp-2 text-xs text-muted-foreground">
+                    {row.pharmaceuticalForm}
+                    {row.concentration ? ` · ${row.concentration}` : ""}
+                    {row.activeIngredient ? ` · ${row.activeIngredient}` : ""}
+                </span>
+            </div>
+        </RSComponents.Option>
+    );
+}
+
 export function MedicationSearch({
     value,
     onChangeName,
@@ -51,35 +101,122 @@ export function MedicationSearch({
     formMode = "add",
     inputRowEnd,
 }: MedicationSearchProps) {
-    const [results, setResults] = useState<MedicationSearchRow[]>([]);
+    const [options, setOptions] = useState<CatalogMedicationOption[]>([]);
     const [loading, setLoading] = useState(false);
     const debounced = useDebounce(value, 300);
 
-    const search = useCallback(async (term: string) => {
-        if (term.trim().length < 2) {
-            setResults([]);
-            return;
-        }
-        setLoading(true);
-        try {
-            const res = await searchMedicationsAction(term);
-            if (res.success) {
-                setResults(res.items as MedicationSearchRow[]);
-            } else {
-                setResults([]);
-            }
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const { styles: hookStyles, selectProps: selectPropsFromHook } = useReactSelectInModal({ maxMenuHeight: 420 });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- opções já filtradas no servidor; prefixo igual à Agenda (`rs`)
+    const { filterOption, className: _hookClassName, classNamePrefix: _hookPrefix, ...selectProps } = selectPropsFromHook;
+    void _hookClassName;
+    void _hookPrefix;
+
+    const styles = useMemo<StylesConfig<CatalogMedicationOption, false, GroupBase<CatalogMedicationOption>>>(
+        () => ({
+            ...hookStyles,
+            control: (base, state) => {
+                const b = hookStyles.control
+                    ? (hookStyles.control as (a: typeof base, s: typeof state) => typeof base)(base, state)
+                    : base;
+                return {
+                    ...b,
+                    minHeight: "40px",
+                    borderRadius: "0.375rem",
+                };
+            },
+        }),
+        [hookStyles],
+    );
 
     useEffect(() => {
-        void search(debounced);
-    }, [debounced, search]);
+        let cancelled = false;
+        const run = async () => {
+            if (debounced.trim().length < 2) {
+                setOptions([]);
+                setLoading(false);
+                return;
+            }
+            setLoading(true);
+            try {
+                const res = await searchMedicationsAction(debounced);
+                if (cancelled) return;
+                if (res.success) {
+                    const rows = res.items as MedicationSearchRow[];
+                    setOptions(
+                        rows.map((row) => ({
+                            value: row.id,
+                            label: row.name,
+                            row,
+                        })),
+                    );
+                } else {
+                    setOptions([]);
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+        void run();
+        return () => {
+            cancelled = true;
+        };
+    }, [debounced]);
+
+    /** Só mostra “chip” quando veio do catálogo; texto livre aparece só no input (`inputValue`). */
+    const selectValue = useMemo((): CatalogMedicationOption | null => {
+        if (!selectedMedicationId) return null;
+        const v = value.trim();
+        return {
+            value: selectedMedicationId,
+            label: v || "—",
+            row: {
+                id: selectedMedicationId,
+                name: v,
+                activeIngredient: "",
+                concentration: null,
+                pharmaceuticalForm: "",
+                route: null,
+            } satisfies MedicationSearchRow,
+        };
+    }, [value, selectedMedicationId]);
+
+    const handleChange = useCallback(
+        (newValue: OnChangeValue<CatalogMedicationOption, false>) => {
+            if (!newValue) {
+                onChangeName("");
+                onClearMedicationId();
+                return;
+            }
+            const fromList = options.find((o) => o.value === newValue.value);
+            const row = fromList?.row ?? newValue.row;
+            const dosageHint = row.concentration?.trim() || null;
+            onSelectMedication({
+                medicationId: row.id,
+                medicineName: row.name,
+                pharmaceuticalForm: row.pharmaceuticalForm,
+                dosageHint,
+                route: mapCatalogRouteToPrescriptionRoute(row.route),
+            });
+        },
+        [onChangeName, onClearMedicationId, onSelectMedication, options],
+    );
+
+    const selectComponents = useMemo(
+        () => ({
+            MenuList: MenuListStopWheel,
+            Option: CatalogOptionInner,
+            LoadingIndicator: () => <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" aria-hidden />,
+        }),
+        [],
+    );
 
     return (
         <div className="w-full space-y-1.5">
-            <label className="text-sm font-medium">Medicamento</label>
+            <label className="text-sm font-medium" htmlFor="medication-search-select">
+                Medicamento
+            </label>
             <div
                 className={
                     inputRowEnd
@@ -87,21 +224,38 @@ export function MedicationSearch({
                         : "block"
                 }
             >
-                <div className="relative min-w-0 flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
+                <div className="min-w-0 flex-1">
+                    <Select<CatalogMedicationOption, false, GroupBase<CatalogMedicationOption>>
+                        {...selectProps}
+                        inputId="medication-search-select"
+                        instanceId="medication-search-select"
+                        className="w-full"
+                        classNamePrefix="rs"
+                        isClearable
+                        isSearchable
+                        blurInputOnSelect
                         placeholder="Buscar na base ou digite livremente (ex.: manipulado)…"
-                        value={value}
-                        onChange={(e) => {
-                            onChangeName(e.target.value);
-                            if (selectedMedicationId) onClearMedicationId();
+                        noOptionsMessage={({ inputValue }) =>
+                            (inputValue?.trim().length ?? 0) < 2
+                                ? "Digite pelo menos 2 caracteres para buscar no catálogo."
+                                : "Nenhum resultado na base. Você pode continuar digitando (ex.: manipulado)."
+                        }
+                        loadingMessage={() => "Buscando…"}
+                        isLoading={loading}
+                        filterOption={null}
+                        options={options}
+                        value={selectValue}
+                        onChange={handleChange}
+                        inputValue={value}
+                        onInputChange={(v, meta) => {
+                            if (meta.action === "input-change") {
+                                onChangeName(v);
+                                if (selectedMedicationId) onClearMedicationId();
+                            }
                         }}
-                        className="pl-10"
-                        autoComplete="off"
+                        components={selectComponents}
+                        styles={styles}
                     />
-                    {loading ? (
-                        <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-                    ) : null}
                 </div>
                 {inputRowEnd ? <div className="w-full shrink-0 sm:w-[30%] sm:min-w-44 sm:max-w-xs">{inputRowEnd}</div> : null}
             </div>
@@ -136,38 +290,6 @@ export function MedicationSearch({
                         Dados carregados do <strong className="text-foreground">catálogo da clínica</strong>. Altere os
                         campos se precisar e use <strong className="text-foreground">Atualizar na prescrição</strong>.
                     </span>
-                </div>
-            ) : null}
-
-            {results.length > 0 && debounced.trim().length >= 2 ? (
-                <div className="mt-1 max-h-56 w-full overflow-hidden rounded-md border bg-popover shadow-md">
-                    <ScrollArea className="max-h-56">
-                        {results.map((row) => (
-                            <button
-                                key={row.id}
-                                type="button"
-                                onClick={() => {
-                                    const dosageHint = row.concentration?.trim() || null;
-                                    onSelectMedication({
-                                        medicationId: row.id,
-                                        medicineName: row.name,
-                                        pharmaceuticalForm: row.pharmaceuticalForm,
-                                        dosageHint,
-                                        route: mapCatalogRouteToPrescriptionRoute(row.route),
-                                    });
-                                    setResults([]);
-                                }}
-                                className="flex w-full flex-col items-start gap-0.5 border-b px-3 py-2.5 text-left text-sm last:border-0 hover:bg-muted"
-                            >
-                                <span className="font-medium text-foreground">{row.name}</span>
-                                <span className="line-clamp-2 text-xs text-muted-foreground">
-                                    {row.pharmaceuticalForm}
-                                    {row.concentration ? ` · ${row.concentration}` : ""}
-                                    {row.activeIngredient ? ` · ${row.activeIngredient}` : ""}
-                                </span>
-                            </button>
-                        ))}
-                    </ScrollArea>
                 </div>
             ) : null}
         </div>

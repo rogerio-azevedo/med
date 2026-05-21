@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useCallback } from "react";
-import type { StylesConfig, GroupBase } from "react-select";
+import type { StylesConfig } from "react-select";
 import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
 
 /**
@@ -74,12 +74,14 @@ export interface UseReactSelectInModalReturn {
   };
 }
 
-const PORTAL_SELECTORS = ".react-select__menu, .react-select__menu-portal";
+/** Inclui o prefixo `rs` usado na Agenda (`NewAppointmentDrawer`, `ScheduleView`). */
+const PORTAL_SELECTORS =
+  ".react-select__menu, .react-select__menu-portal, .rs__menu, .rs__menu-portal";
 
 export function useReactSelectInModal(
   options: UseReactSelectInModalOptions = {}
 ): UseReactSelectInModalReturn {
-  const { maxMenuHeight = 260 } = options;
+  const { maxMenuHeight = 360 } = options;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const styles = useMemo<StylesConfig<any, any, any>>(
@@ -103,7 +105,12 @@ export function useReactSelectInModal(
       }),
       menuList: (base) => ({
         ...base,
-        maxHeight: `min(40vh, ${maxMenuHeight}px)`,
+        /* Scroll interno confiável dentro de Sheet/Dialog (evita altura “solta” sem overflow). */
+        maxHeight: `min(55vh, ${maxMenuHeight}px)`,
+        overflowY: "auto",
+        overflowX: "hidden",
+        WebkitOverflowScrolling: "touch",
+        minHeight: 0,
       }),
     }),
     [maxMenuHeight]

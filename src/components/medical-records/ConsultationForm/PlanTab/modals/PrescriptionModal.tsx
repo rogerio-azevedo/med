@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Pencil, Pill, Trash2, X } from "lucide-react";
 import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { deletePrescriptionAction, listConsultationPrescriptionsAction } from "@/app/actions/prescriptions";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ import { prescriptions } from "@/db/schema";
 import { PrescriptionItemDetails } from "@/components/medical-records/PrescriptionItemDetails";
 import { PrescriptionPrintButtons } from "@/components/medical-records/PrescriptionPrintButtons";
 import { PrescriptionItemFormPanel } from "./PrescriptionItemFormPanel";
+import { useReactSelectInModal } from "@/hooks/use-react-select-in-modal";
 
 type PrescriptionRow = InferSelectModel<typeof prescriptions>;
 
@@ -38,6 +39,8 @@ export function PrescriptionModal({
     clinicId,
 }: PrescriptionModalProps) {
     void clinicId;
+
+    const { dialogProps } = useReactSelectInModal({ maxMenuHeight: 420 });
 
     const [list, setList] = useState<PrescriptionRow[]>([]);
     const [loadingList, setLoadingList] = useState(false);
@@ -102,18 +105,19 @@ export function PrescriptionModal({
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent
+                {...dialogProps}
                 showCloseButton={false}
-                className="flex max-h-[92vh] max-w-6xl flex-col gap-0 p-0 sm:max-w-6xl"
+                className="flex h-full w-full flex-col overflow-hidden bg-background p-0 sm:max-w-4xl"
             >
-                <DialogHeader className="border-b px-6 py-4">
+                <SheetHeader className="border-b bg-card px-6 py-5">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div className="min-w-0 flex-1 space-y-1 pr-0 sm:pr-2">
-                            <DialogTitle className="flex items-center gap-2 text-xl">
+                            <SheetTitle className="flex items-center gap-2 text-xl">
                                 <Pill className="h-5 w-5 shrink-0 text-primary" />
                                 Prescrição
-                            </DialogTitle>
+                            </SheetTitle>
                             <p className="text-left text-sm text-muted-foreground">Prescrição desta consulta</p>
                             {!canUse ? (
                                 <p className="text-left text-sm text-muted-foreground">
@@ -126,7 +130,7 @@ export function PrescriptionModal({
                             {canUse && consultationId && patientId && list.length > 0 ? (
                                 <PrescriptionPrintButtons patientId={patientId} consultationId={consultationId} />
                             ) : null}
-                            <DialogClose asChild>
+                            <SheetClose asChild>
                                 <Button
                                     type="button"
                                     variant="ghost"
@@ -136,10 +140,10 @@ export function PrescriptionModal({
                                 >
                                     <X className="h-4 w-4" />
                                 </Button>
-                            </DialogClose>
+                            </SheetClose>
                         </div>
                     </div>
-                </DialogHeader>
+                </SheetHeader>
 
                 <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5">
                     <section
@@ -187,8 +191,9 @@ export function PrescriptionModal({
                         ) : list.length === 0 ? (
                             <div className="rounded-lg border border-dashed border-border/70 bg-muted/10 px-4 py-6 text-center">
                                 <p className="text-sm text-muted-foreground">
-                                    Nenhum medicamento salvo. Use a seção <strong className="text-foreground">Lançar medicamento</strong>{" "}
-                                    e clique em <strong className="text-foreground">Salvar na prescrição</strong>.
+                                    Nenhum medicamento salvo. Use a seção{" "}
+                                    <strong className="text-foreground">Lançar medicamento</strong> e clique em{" "}
+                                    <strong className="text-foreground">Salvar na prescrição</strong>.
                                 </p>
                             </div>
                         ) : (
@@ -244,12 +249,12 @@ export function PrescriptionModal({
                     </section>
                 </div>
 
-                <DialogFooter className="border-t px-6 py-4">
+                <SheetFooter className="border-t px-6 py-4">
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                         Fechar
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </SheetFooter>
+            </SheetContent>
+        </Sheet>
     );
 }
