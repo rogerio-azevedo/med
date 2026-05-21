@@ -414,6 +414,13 @@
       "when": 1778948220503,
       "tag": "0058_material_bloodstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1779299561217,
+      "tag": "0059_lyrical_wild_child",
+      "breakpoints": true
     }
   ]
 }

@@ -17,6 +17,8 @@ export const doctors = pgTable("doctors", {
         .references(() => users.id, { onDelete: "cascade" }),
     crm: varchar("crm", { length: 20 }),
     crmState: varchar("crm_state", { length: 2 }),
+    /** Código CBO (TUSS/ANS) para guias SADT. */
+    cboCode: varchar("cbo_code", { length: 10 }),
     /**
      * Assinatura para PDF/impressão: URL https pública ou chave de objeto no R2
      * (prefixo de caminho sem protocolo; resolvida com URL assinada na impressão).

@@ -58,6 +58,7 @@ const doctorFormSchema = z.object({
     relationshipType: z.enum(["linked", "partner"]),
     crm: z.string().optional(),
     crmState: z.string().optional(),
+    cboCode: z.string().max(10).optional(),
     phone: z.string().optional(),
     specialtyIds: z.array(z.string()).optional(),
     practiceAreaIds: z.array(z.string()).optional(),
@@ -164,7 +165,7 @@ export function AddDoctorDialog({
     const form = useForm<DoctorFormValues>({
         resolver: zodResolver(doctorFormSchema),
         defaultValues: {
-            name: "", email: "", password: "", crm: "", crmState: "", phone: "",
+            name: "", email: "", password: "", crm: "", crmState: "", cboCode: "", phone: "",
             relationshipType: "linked",
             specialtyIds: [], practiceAreaIds: [], healthInsuranceIds: [],
             addressZipCode: "", addressStreet: "", addressNumber: "",
@@ -563,6 +564,25 @@ export function AddDoctorDialog({
                                                 </FormItem>
                                             )} />
                                         </div>
+
+                                        <FormField
+                                            control={form.control}
+                                            name="cboCode"
+                                            render={({ field }) => (
+                                                <FormItem className="col-span-2">
+                                                    <FormLabel>Código CBO</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="Ex.: TUSS ocupação (guia SADT)"
+                                                            maxLength={10}
+                                                            {...field}
+                                                            className="h-11 bg-muted/30 border-muted-foreground/10 focus:border-primary/30 transition-all"
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
 
                                         {/* Especialidades + Áreas de Atuação */}
                                         <div className="col-span-2 grid grid-cols-2 gap-4">

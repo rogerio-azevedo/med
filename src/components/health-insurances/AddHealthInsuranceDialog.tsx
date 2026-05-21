@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadHealthInsuranceLogoFile } from "@/lib/client/health-insurance-logo-upload";
 
 const formSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -39,6 +40,8 @@ type FormValues = z.infer<typeof formSchema>;
 export function AddHealthInsuranceDialog() {
     const [open, setOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
+    const [pendingLogo, setPendingLogo] = useState<File | null>(null);
+    const logoInputRef = useRef<HTMLInputElement>(null);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -54,11 +57,21 @@ export function AddHealthInsuranceDialog() {
         setIsPending(true);
         try {
             const result = await createHealthInsuranceAction(values);
-            if (result.success) {
+            if (result.success && "id" in result && result.id) {
+                if (pendingLogo) {
+                    try {
+                        await uploadHealthInsuranceLogoFile(result.id, pendingLogo);
+                    } catch (e) {
+                        const msg = e instanceof Error ? e.message : "Erro ao enviar logo";
+                        toast.error(msg);
+                    }
+                }
                 toast.success("Convênio cadastrado com sucesso!");
                 form.reset();
+                setPendingLogo(null);
+                if (logoInputRef.current) logoInputRef.current.value = "";
                 setOpen(false);
-            } else {
+            } else if (!result.success) {
                 toast.error(result.error || "Erro ao cadastrar convênio");
             }
         } catch {
@@ -140,6 +153,22 @@ export function AddHealthInsuranceDialog() {
                                 </FormItem>
                             )}
                         />
+                        <div className="space-y-2">
+                            <FormLabel>Logo para guia (opcional)</FormLabel>
+                            <p className="text-xs text-muted-foreground">
+                                Após salvar, a logo será enviada automaticamente (PNG, JPEG ou WebP).
+                            </p>
+                            <input
+                                ref={logoInputRef}
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp"
+                                className="text-sm file:mr-2"
+                                onChange={(e) => {
+                                    const f = e.target.files?.[0];
+                                    setPendingLogo(f ?? null);
+                                }}
+                            />
+                        </div>
                         <DialogFooter>
                             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
                                 Cancelar

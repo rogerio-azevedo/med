@@ -60,6 +60,9 @@ export const examStatusEnum = pgEnum("exam_status", ["scheduled", "in_progress",
 
 export const examLocationEnum = pgEnum("exam_location", ["in_clinic", "external"]);
 
+/** Caráter de atendimento (guia SADT): eletivo ou urgência/emergência. */
+export const examCareTypeEnum = pgEnum("exam_care_type", ["elective", "urgent_emergency"]);
+
 // 1. Consultations (encounters)
 export const consultations = pgTable("consultations", {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -244,6 +247,8 @@ export const exams = pgTable("exams", {
     }),
     status: examStatusEnum("status").notNull().default("scheduled"),
     location: examLocationEnum("location").notNull().default("in_clinic"),
+    careType: examCareTypeEnum("care_type"),
+    clinicalIndication: text("clinical_indication"),
     notes: text("notes"),
     scheduledAt: timestamp("scheduled_at"),
     startTime: timestamp("start_time").defaultNow().notNull(),

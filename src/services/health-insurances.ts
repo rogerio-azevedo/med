@@ -13,7 +13,7 @@ import type {
 
 export async function createHealthInsuranceService(
     data: HealthInsuranceInput
-): Promise<{ success: true } | { success: false; error: string }> {
+): Promise<{ success: true; id: string } | { success: false; error: string }> {
     const existing = await db.query.healthInsurances.findFirst({
         where: (table, { eq }) => eq(table.name, data.name.trim()),
     });
@@ -22,14 +22,21 @@ export async function createHealthInsuranceService(
         return { success: false, error: "Já existe um convênio com este nome." };
     }
 
-    await db.insert(healthInsurances).values({
-        name: data.name.trim(),
-        code: data.code?.trim() || null,
-        ansCode: data.ansCode?.trim() || null,
-        notes: data.notes?.trim() || null,
-    });
+    const [created] = await db
+        .insert(healthInsurances)
+        .values({
+            name: data.name.trim(),
+            code: data.code?.trim() || null,
+            ansCode: data.ansCode?.trim() || null,
+            notes: data.notes?.trim() || null,
+        })
+        .returning({ id: healthInsurances.id });
 
-    return { success: true };
+    if (!created) {
+        return { success: false, error: "Falha ao criar convênio." };
+    }
+
+    return { success: true, id: created.id };
 }
 
 export async function updateHealthInsuranceService(

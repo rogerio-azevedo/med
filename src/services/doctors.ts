@@ -30,6 +30,7 @@ export async function createDoctor(
         relationshipType,
         crm,
         crmState,
+        cboCode,
         phone,
         specialtyIds,
         practiceAreaIds,
@@ -79,6 +80,7 @@ export async function createDoctor(
         userId,
         crm: crm || null,
         crmState: crmState || null,
+        cboCode: cboCode?.trim() || null,
         phone: phone || null,
         observations: observations || null,
     }).returning();
@@ -168,6 +170,7 @@ export async function updateDoctor(
         relationshipType,
         crm,
         crmState,
+        cboCode,
         phone,
         specialtyIds,
         practiceAreaIds,
@@ -211,6 +214,7 @@ export async function updateDoctor(
         .set({
             crm: crm || null,
             crmState: crmState || null,
+            cboCode: cboCode?.trim() || null,
             phone: phone || null,
             observations: observations || null,
         })

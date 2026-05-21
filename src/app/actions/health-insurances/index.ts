@@ -70,7 +70,7 @@ export async function createHealthInsuranceAction(data: unknown) {
     }
 
     revalidatePath("/health-insurances");
-    return { success: true };
+    return { success: true, id: result.id };
 }
 
 export async function updateHealthInsuranceAction(id: string, data: unknown) {

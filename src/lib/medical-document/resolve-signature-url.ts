@@ -19,3 +19,19 @@ export async function resolveDoctorSignatureUrlForPrint(
         return null;
     }
 }
+
+/**
+ * Valor em `health_insurances.logo_url`: URL pública ou chave de objeto no R2.
+ */
+export async function resolveHealthInsuranceLogoUrlForPrint(
+    logoUrl: string | null | undefined
+): Promise<string | null> {
+    const v = logoUrl?.trim();
+    if (!v) return null;
+    if (isAbsoluteHttpUrl(v)) return v;
+    try {
+        return await createPresignedGetUrl(v);
+    } catch {
+        return null;
+    }
+}

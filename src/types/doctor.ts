@@ -3,6 +3,7 @@ export interface Doctor {
     name: string | null;
     crm: string | null;
     crmState: string | null;
+    cboCode?: string | null;
     phone: string | null;
     email: string | null;
     inviteCode?: string | null;

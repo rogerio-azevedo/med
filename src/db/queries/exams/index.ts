@@ -255,6 +255,8 @@ export async function updateExamQuery(
             | "healthInsuranceId"
             | "status"
             | "location"
+            | "careType"
+            | "clinicalIndication"
             | "notes"
             | "scheduledAt"
             | "startTime"

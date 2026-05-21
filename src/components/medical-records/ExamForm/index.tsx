@@ -13,6 +13,13 @@ import { accentInsensitiveSelectFilter } from "@/lib/search-normalize";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
     addExamProcedureAction,
@@ -79,6 +86,8 @@ export function ExamForm({
     const [serviceTypeId, setServiceTypeId] = useState("");
     const [doctorId, setDoctorId] = useState("");
     const [location, setLocation] = useState<"in_clinic" | "external">("in_clinic");
+    const [careType, setCareType] = useState<"elective" | "urgent_emergency">("elective");
+    const [clinicalIndication, setClinicalIndication] = useState("");
     const [healthInsuranceId, setHealthInsuranceId] = useState<string>(
         initialHealthInsuranceId ?? ""
     );
@@ -154,6 +163,8 @@ export function ExamForm({
         setServiceTypeId("");
         setDoctorId(currentDoctorId ?? doctors[0]?.id ?? "");
         setLocation("in_clinic");
+        setCareType("elective");
+        setClinicalIndication("");
         setHealthInsuranceId(initialHealthInsuranceId ?? "");
         setProcedureSelectKey((k) => k + 1);
         setAddingProcedure(false);
@@ -189,6 +200,12 @@ export function ExamForm({
                     patientId?: string | null;
                     status?: string;
                     notes?: string | null;
+                    location?: string | null;
+                    careType?: string | null;
+                    clinicalIndication?: string | null;
+                    doctorId?: string | null;
+                    serviceTypeId?: string | null;
+                    healthInsuranceId?: string | null;
                     procedureLinks?: Array<{
                         id: string;
                         procedure: { id: string; name: string };
@@ -224,6 +241,16 @@ export function ExamForm({
 
                 setExamId(data.id);
                 setNotes(data.notes ?? "");
+                if (data.location === "in_clinic" || data.location === "external") {
+                    setLocation(data.location);
+                }
+                if (data.doctorId) setDoctorId(data.doctorId);
+                if (data.serviceTypeId) setServiceTypeId(data.serviceTypeId);
+                if (data.healthInsuranceId != null) setHealthInsuranceId(data.healthInsuranceId);
+                if (data.careType === "elective" || data.careType === "urgent_emergency") {
+                    setCareType(data.careType);
+                }
+                setClinicalIndication(data.clinicalIndication?.trim() ?? "");
                 setLines(
                     (data.procedureLinks ?? []).map((pl) => ({
                         linkId: pl.id,
@@ -269,7 +296,7 @@ export function ExamForm({
     const handleContinue = async () => {
         setBusy(true);
         try {
-            const res = await createExamAction({
+            const payload: Record<string, unknown> = {
                 patientId,
                 clinicId,
                 consultationId,
@@ -278,7 +305,12 @@ export function ExamForm({
                 healthInsuranceId: healthInsuranceId || null,
                 location,
                 status: "in_progress",
-            });
+            };
+            if (location === "external") {
+                payload.careType = careType;
+                payload.clinicalIndication = clinicalIndication.trim();
+            }
+            const res = await createExamAction(payload);
             if (!res.success) {
                 toast.error(typeof res.error === "string" ? res.error : "Não foi possível iniciar o exame.");
                 return;
@@ -509,6 +541,38 @@ export function ExamForm({
                                     {...rsPanelCommon}
                                 />
                             </div>
+                            {location === "external" ? (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label>Caráter de atendimento</Label>
+                                        <Select
+                                            value={careType}
+                                            onValueChange={(v) =>
+                                                setCareType(v as "elective" | "urgent_emergency")
+                                            }
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="elective">Eletivo</SelectItem>
+                                                <SelectItem value="urgent_emergency">
+                                                    Urgência / Emergência
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Indicação clínica</Label>
+                                        <Textarea
+                                            value={clinicalIndication}
+                                            onChange={(e) => setClinicalIndication(e.target.value)}
+                                            placeholder="Campo 23 da guia SADT"
+                                            className="min-h-[100px] text-sm"
+                                        />
+                                    </div>
+                                </>
+                            ) : null}
                             {consultationId ? (
                                 <p className="text-xs text-muted-foreground">
                                     Vinculado ao atendimento em aberto (consulta atual).

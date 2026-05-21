@@ -93,21 +93,43 @@ export const examRequestSchema = z.object({
 
 const examStatusValues = ["scheduled", "in_progress", "finished", "cancelled"] as const;
 const examLocationValues = ["in_clinic", "external"] as const;
+const examCareTypeValues = ["elective", "urgent_emergency"] as const;
 
 /** Criação do registro de exame (IDs de clínica vêm do servidor). */
-export const createExamSchema = z.object({
-    patientId: z.string().uuid(),
-    clinicId: z.string().uuid(),
-    doctorId: z.string().uuid().optional().nullable(),
-    consultationId: z.string().uuid().optional().nullable(),
-    examRequestId: z.string().uuid().optional().nullable(),
-    serviceTypeId: z.string().uuid().optional().nullable(),
-    healthInsuranceId: z.string().uuid().optional().nullable(),
-    status: z.enum(examStatusValues).optional().default("scheduled"),
-    location: z.enum(examLocationValues).optional().default("in_clinic"),
-    notes: z.string().optional().nullable(),
-    scheduledAt: z.string().max(40).optional().nullable(),
-});
+export const createExamSchema = z
+    .object({
+        patientId: z.string().uuid(),
+        clinicId: z.string().uuid(),
+        doctorId: z.string().uuid().optional().nullable(),
+        consultationId: z.string().uuid().optional().nullable(),
+        examRequestId: z.string().uuid().optional().nullable(),
+        serviceTypeId: z.string().uuid().optional().nullable(),
+        healthInsuranceId: z.string().uuid().optional().nullable(),
+        status: z.enum(examStatusValues).optional().default("scheduled"),
+        location: z.enum(examLocationValues).optional().default("in_clinic"),
+        careType: z.enum(examCareTypeValues).optional().nullable(),
+        clinicalIndication: z.string().max(4000).optional().nullable(),
+        notes: z.string().optional().nullable(),
+        scheduledAt: z.string().max(40).optional().nullable(),
+    })
+    .superRefine((data, ctx) => {
+        if (data.location === "external") {
+            if (data.careType == null) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Caráter de atendimento é obrigatório para exame externo.",
+                    path: ["careType"],
+                });
+            }
+            if (!data.clinicalIndication?.trim()) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Indicação clínica é obrigatória para exame externo.",
+                    path: ["clinicalIndication"],
+                });
+            }
+        }
+    });
 
 /** Atualização parcial do registro de exame. */
 export const updateExamSchema = z.object({
@@ -118,6 +140,8 @@ export const updateExamSchema = z.object({
     healthInsuranceId: z.string().uuid().optional().nullable(),
     status: z.enum(examStatusValues).optional(),
     location: z.enum(examLocationValues).optional(),
+    careType: z.enum(examCareTypeValues).optional().nullable(),
+    clinicalIndication: z.string().max(4000).optional().nullable(),
     notes: z.string().optional().nullable(),
     scheduledAt: z.string().max(40).optional().nullable(),
     startTime: z.string().max(40).optional().nullable(),

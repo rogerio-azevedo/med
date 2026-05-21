@@ -133,6 +133,9 @@ export async function createExamAction(data: Record<string, unknown>) {
             healthInsuranceId: validated.healthInsuranceId ?? null,
             status: validated.status,
             location: validated.location,
+            careType: validated.location === "external" ? (validated.careType ?? null) : null,
+            clinicalIndication:
+                validated.location === "external" ? (validated.clinicalIndication?.trim() || null) : null,
             notes: validated.notes ?? null,
             scheduledAt: parseOptionalDate(validated.scheduledAt ?? undefined),
             startTime: new Date(),
@@ -207,6 +210,16 @@ export async function updateExamAction(examId: string, patientId: string, data: 
         }
         if (validated.status !== undefined) patch.status = validated.status;
         if (validated.location !== undefined) patch.location = validated.location;
+        if (Object.prototype.hasOwnProperty.call(data, "careType")) {
+            patch.careType = validated.careType ?? null;
+        }
+        if (Object.prototype.hasOwnProperty.call(data, "clinicalIndication")) {
+            patch.clinicalIndication = validated.clinicalIndication?.trim() || null;
+        }
+        if (patch.location === "in_clinic") {
+            patch.careType = null;
+            patch.clinicalIndication = null;
+        }
         if (Object.prototype.hasOwnProperty.call(data, "notes")) {
             patch.notes = validated.notes ?? null;
         }

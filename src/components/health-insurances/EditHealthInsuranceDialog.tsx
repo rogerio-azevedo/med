@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { HealthInsuranceLogoField } from "./HealthInsuranceLogoField";
 
 const formSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -52,6 +54,7 @@ export function EditHealthInsuranceDialog({
     isOpen,
     onOpenChange,
 }: EditHealthInsuranceDialogProps) {
+    const router = useRouter();
     const [isPending, setIsPending] = useState(false);
 
     const form = useForm<FormValues>({
@@ -157,6 +160,10 @@ export function EditHealthInsuranceDialog({
                                     <FormMessage />
                                 </FormItem>
                             )}
+                        />
+                        <HealthInsuranceLogoField
+                            healthInsuranceId={healthInsurance.id}
+                            onUploaded={() => router.refresh()}
                         />
                         <DialogFooter>
                             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>

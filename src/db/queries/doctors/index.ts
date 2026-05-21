@@ -30,6 +30,7 @@ type DoctorListJoinRow = {
     id: string;
     crm: string | null;
     crmState: string | null;
+    cboCode: string | null;
     phone: string | null;
     relationshipType: "linked" | "partner" | null;
     isAssociated: string | null;
@@ -70,6 +71,7 @@ function accumulateDoctorsFromJoinRows(
                 id: row.id,
                 crm: row.crm,
                 crmState: row.crmState,
+                cboCode: row.cboCode,
                 phone: row.phone,
                 relationshipType: row.relationshipType ?? null,
                 isAssociated: !!row.isAssociated,
@@ -128,6 +130,7 @@ const doctorListSelectShape = {
     id: doctors.id,
     crm: doctors.crm,
     crmState: doctors.crmState,
+    cboCode: doctors.cboCode,
     phone: doctors.phone,
     relationshipType: clinicDoctors.relationshipType,
     isAssociated: clinicDoctors.id,
@@ -524,6 +527,7 @@ export async function getDoctorDetails(doctorId: string, clinicId: string) {
             id: doctors.id,
             crm: doctors.crm,
             crmState: doctors.crmState,
+            cboCode: doctors.cboCode,
             phone: doctors.phone,
             relationshipType: clinicDoctors.relationshipType,
             observations: doctors.observations,
@@ -593,6 +597,7 @@ export async function getDoctorDetails(doctorId: string, clinicId: string) {
         phone: rawResults[0].phone,
         crm: rawResults[0].crm,
         crmState: rawResults[0].crmState,
+        cboCode: rawResults[0].cboCode,
         relationshipType: rawResults[0].relationshipType,
         observations: rawResults[0].observations,
         address: rawResults[0].address?.id ? rawResults[0].address : null,

@@ -56,6 +56,28 @@ export function assertDoctorSignatureRemoteKey(remoteKey: string, clinicId: stri
     }
 }
 
+const HEALTH_INSURANCE_LOGO_FOLDER = "health-insurances";
+
+/**
+ * Logo do convênio para guias: chave no R2 (sem protocolo).
+ * Padrão: `health-insurances/{healthInsuranceId}/logo-{uuid}.{ext}`
+ */
+export function buildHealthInsuranceLogoRemoteKey(
+    healthInsuranceId: string,
+    originalFileName: string
+): string {
+    const ext = extname(originalFileName).slice(0, 10).toLowerCase();
+    const safeExt = ext && /^\.[a-z0-9]+$/i.test(ext) ? ext : ".png";
+    return `${HEALTH_INSURANCE_LOGO_FOLDER}/${healthInsuranceId}/logo-${randomUUID()}${safeExt}`;
+}
+
+export function assertHealthInsuranceLogoRemoteKey(remoteKey: string, healthInsuranceId: string): void {
+    const prefix = `${HEALTH_INSURANCE_LOGO_FOLDER}/${healthInsuranceId}/`;
+    if (!remoteKey.startsWith(prefix) || remoteKey.includes("..")) {
+        throw new Error("Chave de objeto inválida");
+    }
+}
+
 export async function validateFileUploadContext(input: {
     clinicId: string;
     patientId: string;

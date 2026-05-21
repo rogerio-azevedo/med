@@ -71,6 +71,7 @@ const doctorFormSchema = z.object({
     relationshipType: z.enum(["linked", "partner"]),
     crm: z.string().optional(),
     crmState: z.string().optional(),
+    cboCode: z.string().max(10).optional(),
     phone: z.string().optional(),
     specialtyIds: z.array(z.string()).optional(),
     practiceAreaIds: z.array(z.string()).optional(),
@@ -202,6 +203,7 @@ interface EditDoctorDialogProps {
         email: string | null;
         crm: string | null;
         crmState: string | null;
+        cboCode?: string | null;
         phone: string | null;
         specialties: { id: string; name: string }[];
         practiceAreas: { id: string; name: string }[];
@@ -269,6 +271,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange, onReferredPatie
             relationshipType: doctor.relationshipType,
             crm: doctor.crm || "",
             crmState: doctor.crmState || "",
+            cboCode: doctor.cboCode || "",
             specialtyIds: [],
             practiceAreaIds: [],
             healthInsuranceIds: [],
@@ -311,6 +314,7 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange, onReferredPatie
                 relationshipType: doctor.relationshipType,
                 crm: doctor.crm || "",
                 crmState: doctor.crmState || "",
+                cboCode: doctor.cboCode || "",
                 phone: doctor.phone ? maskPhone(doctor.phone) : "",
                 specialtyIds: doctor.specialties.map(s => s.id),
                 practiceAreaIds: doctor.practiceAreas.map(pa => pa.id),
@@ -699,6 +703,25 @@ export function EditDoctorDialog({ doctor, isOpen, onOpenChange, onReferredPatie
                                             )}
                                         />
                                     </div>
+
+                                    <FormField
+                                        control={form.control}
+                                        name="cboCode"
+                                        render={({ field }) => (
+                                            <FormItem className="col-span-2">
+                                                <FormLabel>Código CBO</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="Ex.: ocupação TUSS (guia SADT)"
+                                                        maxLength={10}
+                                                        {...field}
+                                                        className="h-11 bg-muted/30 border-muted-foreground/10 focus:border-primary/30 transition-all"
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
 
                                     {/* Especialidades + Áreas de Atuação lado a lado */}
                                     <div className="col-span-2 grid grid-cols-2 gap-4">

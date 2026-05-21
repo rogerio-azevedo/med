@@ -6,6 +6,8 @@ export const healthInsurances = pgTable("health_insurances", {
     name: varchar("name", { length: 150 }).notNull(),
     code: varchar("code", { length: 50 }),
     ansCode: varchar("ans_code", { length: 30 }),
+    /** Logo para guias/PDF: URL https pública ou chave de objeto no R2. */
+    logoUrl: varchar("logo_url", { length: 800 }),
     notes: text("notes"),
     isActive: boolean("is_active").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),

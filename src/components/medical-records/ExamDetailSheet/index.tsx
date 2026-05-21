@@ -15,6 +15,7 @@ import {
     Loader2,
     Stethoscope,
     Pencil,
+    FileText,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -274,6 +275,42 @@ export function ExamDetailSheet({
                                             </div>
                                         </div>
                                     </dl>
+
+                                    {exam.location === "external" ? (
+                                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                className="w-full gap-2"
+                                                onClick={() => {
+                                                    window.open(
+                                                        `/api/exams/${exam.id}/guide/pdf`,
+                                                        "_blank",
+                                                        "noopener,noreferrer"
+                                                    );
+                                                }}
+                                            >
+                                                <FileText className="size-4" />
+                                                Visualizar Guia SADT
+                                            </Button>
+                                            <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                                                Abre o PDF em uma nova aba do navegador.{" "}
+                                                <button
+                                                    type="button"
+                                                    className="underline hover:text-foreground"
+                                                    onClick={() => {
+                                                        window.open(
+                                                            `/api/exams/${exam.id}/guide/pdf?download=1`,
+                                                            "_blank",
+                                                            "noopener,noreferrer"
+                                                        );
+                                                    }}
+                                                >
+                                                    Baixar PDF
+                                                </button>
+                                            </p>
+                                        </div>
+                                    ) : null}
 
                                     {exam.consultationId ? (
                                         <div className="rounded-lg border bg-muted/30 p-3">
